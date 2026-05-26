@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sociuly · Site Hi-Fi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Geist:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body { font-family: 'Geist', system-ui, sans-serif; background: #f4efe4; color: #1a1a1a; }
+  #root { min-height: 100vh; }
+
+  /* --- Screen frame: each artboard renders at 1440x900 native, scales down on small screens --- */
+  .site-frame {
+    width: 1440px;
+    margin: 0 auto;
+    background: var(--bg, #f4efe4);
+    position: relative;
+  }
+  .site-frame.tall { min-height: 1500px; }
+  .site-frame.std { min-height: 920px; }
+  .site-frame.dash { min-height: 980px; }
+
+  /* --- Floating page switcher --- */
+  .nav-dock {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(20, 20, 20, 0.92); color: #fcf9f1;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-radius: 999px; padding: 6px;
+    display: flex; gap: 2px; align-items: center;
+    box-shadow: 0 12px 36px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.06) inset;
+    z-index: 9999; font-family: 'Geist', system-ui, sans-serif;
+    font-size: 13px; font-weight: 500;
+  }
+  .nav-dock a {
+    color: #fcf9f1; text-decoration: none;
+    padding: 8px 14px; border-radius: 999px;
+    transition: background 120ms ease, color 120ms ease;
+    white-space: nowrap;
+  }
+  .nav-dock a:hover { background: rgba(255,255,255,.08); }
+  .nav-dock a.on { background: #fcf9f1; color: #14332b; }
+  .nav-dock .sep { width: 1px; height: 18px; background: rgba(255,255,255,.12); margin: 0 4px; }
+  .nav-dock .brand {
+    padding: 0 10px 0 12px; font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 700; letter-spacing: -0.02em; font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-dock .brand-dot { width: 14px; height: 14px; border-radius: 50%;
+    background: radial-gradient(circle, #f1c14a 30%, #14332b 32%); }
+
+  /* Ensure screen components fit naturally inside scrolling page */
+  .site-frame > .sy { min-height: inherit; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "stade",
+    "font": "bricolage",
+    "radius": "balanced",
+    "density": "compact"
+  }/*EDITMODE-END*/;
+</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- design system foundations -->
+<script type="text/babel" src="ds-tokens.jsx"></script>
+<script type="text/babel" src="ds-components.jsx"></script>
+<script type="text/babel" src="ds-patterns.jsx"></script>
+<script type="text/babel" src="ds-signature.jsx"></script>
+
+<!-- screens -->
+<script type="text/babel" src="screen-landing.jsx"></script>
+<script type="text/babel" src="screen-marketplace.jsx"></script>
+<script type="text/babel" src="screen-detail.jsx"></script>
+<script type="text/babel" src="screen-asso.jsx"></script>
+<script type="text/babel" src="screen-booking.jsx"></script>
+<script type="text/babel" src="screen-dashboard.jsx"></script>
+<script type="text/babel" src="screen-projects-admin.jsx"></script>
+
+<script type="text/babel">
+  applySociulyTheme(TWEAK_DEFAULTS);
+
+  const ROUTES = [
+    { hash: '#/', label: 'Landing', frame: 'tall', comp: () => (
+      <div>
+        <LandingDesktop />
+        <LandingDesktop2 />
+        <LandingDesktop3 />
+      </div>
+    )},
+    { hash: '#/marketplace', label: 'Marketplace', frame: 'std', comp: () => <MarketplaceDesktop /> },
+    { hash: '#/prestation', label: 'Prestation', frame: 'tall', comp: () => <DetailDesktop /> },
+    { hash: '#/association', label: 'Association', frame: 'dash', comp: () => <AssoProfileDesktop /> },
+    { hash: '#/reservation', label: 'Réservation', frame: 'dash', comp: () => <BookingDesktop /> },
+    { hash: '#/confirmation', label: 'Confirmation', frame: 'dash', comp: () => <BookingConfirmDesktop /> },
+    { hash: '#/club', label: 'Console club', frame: 'dash', comp: () => <ClubDashboardDesktop /> },
+    { hash: '#/projets', label: 'Projets', frame: 'tall', comp: () => <ProjectsDesktop /> },
+    { hash: '#/admin', label: 'Admin', frame: 'tall', comp: () => <AdminDesktop /> },
+  ];
+
+  function useRoute() {
+    const [hash, setHash] = React.useState(window.location.hash || '#/');
+    React.useEffect(() => {
+      const onHash = () => {
+        setHash(window.location.hash || '#/');
+        window.scrollTo(0, 0);
+      };
+      window.addEventListener('hashchange', onHash);
+      return () => window.removeEventListener('hashchange', onHash);
+    }, []);
+    return hash;
+  }
+
+  function NavDock({ current }) {
+    return (
+      <nav className="nav-dock" aria-label="Pages">
+        <span className="brand"><span className="brand-dot" />Sociuly</span>
+        <span className="sep" />
+        {ROUTES.map(r => (
+          <a key={r.hash} href={r.hash} className={current === r.hash ? 'on' : ''}>{r.label}</a>
+        ))}
+      </nav>
+    );
+  }
+
+  function App() {
+    const hash = useRoute();
+    const route = ROUTES.find(r => r.hash === hash) || ROUTES[0];
+    const Screen = route.comp;
+    return (
+      <div data-screen-label={route.label}>
+        <div className={`site-frame ${route.frame}`}>
+          <Screen />
+        </div>
+        <NavDock current={route.hash} />
+      </div>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sociuly · Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Geist:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* Hard reset — base CSS injected by ds-tokens.jsx via <style id="sociuly-css"> */
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Geist', system-ui, sans-serif; background: #f4efe4; }
+  #root { height: 100%; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+  // Apply default theme via inline script BEFORE React mounts (avoids flash)
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "stade",
+    "font": "bricolage",
+    "radius": "balanced",
+    "density": "compact"
+  }/*EDITMODE-END*/;
+</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<!-- design system foundations -->
+<script type="text/babel" src="ds-tokens.jsx"></script>
+<script type="text/babel" src="ds-components.jsx"></script>
+<script type="text/babel" src="ds-patterns.jsx"></script>
+<script type="text/babel" src="ds-signature.jsx"></script>
+
+<!-- showcase pages -->
+<script type="text/babel" src="ds-showcase.jsx"></script>
+
+<!-- screens -->
+<script type="text/babel" src="screen-landing.jsx"></script>
+<script type="text/babel" src="screen-marketplace.jsx"></script>
+<script type="text/babel" src="screen-detail.jsx"></script>
+<script type="text/babel" src="screen-asso.jsx"></script>
+<script type="text/babel" src="screen-booking.jsx"></script>
+<script type="text/babel" src="screen-dashboard.jsx"></script>
+<script type="text/babel" src="screen-projects-admin.jsx"></script>
+
+<script type="text/babel">
+  // Apply theme on first render
+  applySociulyTheme(TWEAK_DEFAULTS);
+
+  // Tweakable system options
+  function SociulyTweaks() {
+    const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+    React.useEffect(() => {
+      applySociulyTheme(t);
+    }, [t.theme, t.font, t.radius, t.density]);
+    return (
+      <TweaksPanel title="Tweaks">
+        <TweakSection label="Palette">
+          <TweakRadio label="Thème" value={t.theme} onChange={v => setTweak('theme', v)}
+            options={[
+              { value: 'outdoor', label: 'Outdoor' },
+              { value: 'pitch', label: 'Pitch' },
+              { value: 'daybreak', label: 'Daybreak' },
+              { value: 'stade', label: 'Stade' },
+            ]} />
+        </TweakSection>
+        <TweakSection label="Type & forme">
+          <TweakRadio label="Display" value={t.font} onChange={v => setTweak('font', v)}
+            options={[{ value: 'bricolage', label: 'Bricolage' }, { value: 'instrument', label: 'Instrument' }]} />
+          <TweakRadio label="Rayon" value={t.radius} onChange={v => setTweak('radius', v)}
+            options={[{ value: 'sharp', label: 'Sharp' }, { value: 'balanced', label: 'Balance' }, { value: 'soft', label: 'Soft' }]} />
+          <TweakRadio label="Densité" value={t.density} onChange={v => setTweak('density', v)}
+            options={[{ value: 'compact', label: 'Compact' }, { value: 'comfortable', label: 'Comfort' }, { value: 'spacious', label: 'Spacious' }]} />
+        </TweakSection>
+      </TweaksPanel>
+    );
+  }
+
+  function App() {
+    return (
+      <>
+        <DesignCanvas
+          title="Sociuly · Design System"
+          subtitle="Tokens · Composants · Patterns · Signature · Écrans hi-fi (en cours)"
+        >
+          <DCSection
+            id="foundations"
+            title="① Foundations"
+            subtitle="Couleur, typographie, rayon, espace, ombre — les briques que tout le reste consomme."
+          >
+            <DCArtboard id="found-1" label="Foundations" width={1640} height={1240}>
+              <FoundationsPage />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="components"
+            title="② Composants"
+            subtitle="Boutons, chips, inputs, surfaces, tabs, avatars, progress."
+          >
+            <DCArtboard id="comp-1" label="Composants" width={1640} height={1240}>
+              <ComponentsPage />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="patterns"
+            title="③ Patterns"
+            subtitle="Composites métier : carte prestation, projet, asso, bloc impact, avis, encart de réservation."
+          >
+            <DCArtboard id="pat-1" label="Patterns" width={1640} height={1200}>
+              <PatternsPage />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="signature"
+            title="④ Signature · Impact"
+            subtitle="Le moment distinctif de Sociuly : la visualisation de l'impact d'une réservation sur un projet."
+          >
+            <DCArtboard id="sig-1" label="Signature · Impact" width={1640} height={1080}>
+              <SignaturePage />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="landing"
+            title="⑤ Landing"
+            subtitle="Page d'accueil — hero / recherche, ‘comment ça marche', prestations populaires, impact."
+          >
+            <DCArtboard id="land-d-1" label="Landing · desktop · hero" width={1440} height={920}>
+              <LandingDesktop />
+            </DCArtboard>
+            <DCArtboard id="land-d-2" label="Landing · desktop · scroll 2" width={1440} height={1100}>
+              <LandingDesktop2 />
+            </DCArtboard>
+            <DCArtboard id="land-m-1" label="Landing · mobile" width={390} height={1100}>
+              <LandingMobile />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="marketplace"
+            title="⑥ Marketplace"
+            subtitle="Recherche · liste + carte (split 50/50). Carte interactive avec pins prix et bandeau d'impact local."
+          >
+            <DCArtboard id="mkt-d" label="Marketplace · desktop" width={1440} height={920}>
+              <MarketplaceDesktop />
+            </DCArtboard>
+            <DCArtboard id="mkt-m" label="Marketplace · mobile" width={390} height={820}>
+              <MarketplaceMobile />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="detail"
+            title="⑦ Détail prestation"
+            subtitle="Galerie, encart de réservation sticky, hero d'impact projet. Le ‘booking pushes the project' joue ici."
+          >
+            <DCArtboard id="det-d" label="Détail prestation · desktop" width={1440} height={1500}>
+              <DetailDesktop />
+            </DCArtboard>
+            <DCArtboard id="det-m" label="Détail prestation · mobile" width={390} height={1100}>
+              <DetailMobile />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="asso"
+            title="⑧ Fiche association"
+            subtitle="Page club : couverture, identité vérifiée, projet phare, prestations proposées, avis, équipe."
+          >
+            <DCArtboard id="asso-d" label="Asso · desktop" width={1440} height={1080}>
+              <AssoProfileDesktop />
+            </DCArtboard>
+            <DCArtboard id="asso-m" label="Asso · mobile" width={390} height={920}>
+              <AssoProfileMobile />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="booking"
+            title="⑨ Flow de réservation"
+            subtitle="Une seule page progressive, récap impact-aware sticky à droite. Étape 2 ouverte + confirmation finale."
+          >
+            <DCArtboard id="book-d-1" label="Réservation · étape 2 ouverte" width={1440} height={1080}>
+              <BookingDesktop />
+            </DCArtboard>
+            <DCArtboard id="book-d-2" label="Confirmation · impact hero" width={1440} height={1080}>
+              <BookingConfirmDesktop />
+            </DCArtboard>
+            <DCArtboard id="book-m" label="Réservation · mobile" width={390} height={820}>
+              <BookingMobile />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="club"
+            title="⑩ Console club"
+            subtitle="Vue d'administration côté club : stats, prestations à valider, courbe de financement, tâches."
+          >
+            <DCArtboard id="club-dash" label="Console club · accueil" width={1440} height={920}>
+              <ClubDashboardDesktop />
+            </DCArtboard>
+            <DCArtboard id="club-projects" label="Console club · projets · master/detail" width={1640} height={1080}>
+              <ProjectsDesktop />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="admin"
+            title="⑪ Admin Sociuly"
+            subtitle="Validation-first : file de revue à gauche, fiche en détail à droite, checklist conformité + note interne."
+          >
+            <DCArtboard id="admin-q" label="Admin · file de validation" width={1640} height={1080}>
+              <AdminDesktop />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+        <SociulyTweaks />
+      </>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+</script>
+</body>
+</html>
