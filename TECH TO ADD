@@ -1,0 +1,27 @@
+https://context7.com/ : référence utiles pour l'IA des outils, ex : npx ctx7 skills search Next.js
+https://github.com/nextlevelbuilder/ui-ux-pro-max-skill ui ux pro max skill : 
+    # Install CLI globally
+    npm install -g uipro-cli
+    
+    # Go to your project
+    cd /path/to/your/project
+    
+    # Install for your AI assistant
+    uipro init --ai claude      # Claude Code
+    uipro init --ai cursor      # Cursor
+
+
+https://21st.dev/ éléments ui + MCP pour rechercher avec l'IA des exmeples à implémenter
+
+https://github.com/colbymchenry/codegraph SQLite
+  npm i -g @colbymchenry/codegraph
+  cd your-project
+  codegraph init -i
+
+
+
+https://www.rtk-ai.app/#install réduit le bruit des appels de commande faites par le LLM pour réduire les tokens parsé par les résultats d'un grep/find par exemple
+  curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+  rtk init --global
+rtk --version   # rtk x.y.z
+rtk gain        # token savings dashboard
