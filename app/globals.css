@@ -234,6 +234,17 @@ button { font-family: inherit; }
 .sy-kbd { font-family: var(--mono); font-size: 11px; padding: 2px 6px; border-radius: 4px;
   background: var(--surface-2); border: 1px solid var(--line-2); color: var(--ink-2); }
 
+/* ─────── skeleton / loading ─────── */
+@keyframes sy-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.sy-skel {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  animation: sy-pulse 1.5s ease-in-out infinite;
+}
+
 /* ─────── responsive (SPEC §7) ─────── */
 /* Tablet: 4-col grids → 3-col, 3-col → 2-col */
 @media (max-width: 1024px) {
