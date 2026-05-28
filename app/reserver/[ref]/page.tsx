@@ -4,6 +4,7 @@ import { Icon } from "@/components/ds/icon";
 import { Logo } from "@/components/ds/patterns";
 import { ImpactMini } from "@/components/ds/impact";
 import { BookingStepper } from "@/components/booking/stepper";
+import { TipSelector } from "@/components/booking/tip-selector";
 
 type Props = { params: Promise<{ ref: string }> };
 
@@ -195,14 +196,7 @@ export default async function BookingPage({ params }: Props) {
                 <div className="sy-small" style={{ color: "var(--ink-2)" }}>
                   100% reversé au tournoi U17. Optionnel et déductible d&apos;impôts.
                 </div>
-                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {[0, 5, 10, 20].map((v, i) => (
-                    <Btn key={v} variant={i === 2 ? "primary" : "soft"} size="sm">
-                      {v === 0 ? "aucun" : `+€${v}`}
-                    </Btn>
-                  ))}
-                  <Btn variant="soft" size="sm">autre</Btn>
-                </div>
+                <TipSelector projectName="le tournoi U17" />
               </Card>
 
               <div

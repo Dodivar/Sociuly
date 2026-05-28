@@ -401,33 +401,42 @@ export function SiteFooter() {
           </p>
           <div style={{ marginTop: 22 }}>
             <div className="sy-mono" style={{ color: "var(--ink-3)" }}>Restez au courant</div>
-            <div
-              style={{
-                marginTop: 10, display: "flex",
-                background: "var(--surface-2)", borderRadius: "var(--radius-md)",
-                padding: 4, gap: 4, maxWidth: 340,
-              }}
+            <form
+              action="/api/newsletter/subscribe"
+              method="post"
+              style={{ marginTop: 10, maxWidth: 340 }}
             >
-              <input
-                type="email"
-                placeholder="vous@asso.fr"
+              <div
                 style={{
-                  flex: 1, border: "none", background: "transparent", outline: "none",
-                  padding: "8px 12px", fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)",
-                }}
-              />
-              <button
-                type="button"
-                style={{
-                  background: "var(--accent)", color: "var(--surface)",
-                  border: "none", borderRadius: "var(--radius-sm)",
-                  padding: "8px 16px", fontSize: 13, fontWeight: 600,
-                  fontFamily: "var(--sans)", cursor: "pointer",
+                  display: "flex",
+                  background: "var(--surface-2)", borderRadius: "var(--radius-md)",
+                  padding: 4, gap: 4,
                 }}
               >
-                S&apos;abonner
-              </button>
-            </div>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  placeholder="vous@asso.fr"
+                  autoComplete="email"
+                  style={{
+                    flex: 1, border: "none", background: "transparent", outline: "none",
+                    padding: "8px 12px", fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)",
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    background: "var(--accent)", color: "var(--surface)",
+                    border: "none", borderRadius: "var(--radius-sm)",
+                    padding: "8px 16px", fontSize: 13, fontWeight: 600,
+                    fontFamily: "var(--sans)", cursor: "pointer",
+                  }}
+                >
+                  S&apos;abonner
+                </button>
+              </div>
+            </form>
             <div className="sy-small" style={{ marginTop: 8, color: "var(--ink-3)" }}>
               Une newsletter mensuelle. Pas de spam.
             </div>
