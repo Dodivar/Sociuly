@@ -1,3 +1,5 @@
+"use client";
+
 import type {
   ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactNode,
   TextareaHTMLAttributes,
@@ -73,8 +75,16 @@ export function Chip({ variant, size, children, style, leadingDot, onClick }: Ch
     size === "sm" && "sy-chip-sm",
     size === "lg" && "sy-chip-lg",
   );
+  const interactive = !!onClick;
   return (
-    <span className={cls} style={style} {...(onClick ? { onClick } : {})}>
+    <span
+      className={cls}
+      style={style}
+      onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(); } : undefined}
+    >
       {leadingDot && (
         <span className="sy-dot" style={{ background: "currentColor", width: 6, height: 6 }} />
       )}
@@ -175,14 +185,13 @@ export function Tabs({ items, active, onChange, variant = "pill" }: TabsProps) {
       {items.map((t) => {
         const id = typeof t === "string" ? t : t.id;
         const label = typeof t === "string" ? t : t.label;
-        return (
-          <span
-            key={id}
-            className={cx("sy-tab", active === id && "on")}
-            {...(onChange ? { onClick: () => onChange(id) } : {})}
-          >
+        const tabCls = cx("sy-tab", active === id && "on");
+        return onChange ? (
+          <button key={id} type="button" className={tabCls} onClick={() => onChange(id)}>
             {label}
-          </span>
+          </button>
+        ) : (
+          <span key={id} className={tabCls}>{label}</span>
         );
       })}
     </div>

@@ -1,7 +1,8 @@
-import { Avatar, Btn, Chip, IconBtn, SearchBar, Tabs } from "@/components/ds/components";
+import { Avatar, IconBtn, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo, PrestationCard } from "@/components/ds/patterns";
 import { MarketMap } from "@/components/ds/impact";
+import { MarketplaceFilters } from "@/components/marketplace/filters";
 
 export default function MarketplacePage() {
   return (
@@ -28,22 +29,8 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      {/* Filter chip bar */}
-      <div
-        style={{
-          padding: "14px 32px", borderBottom: "1px solid var(--line)",
-          background: "var(--surface)", display: "flex", alignItems: "center", gap: 8,
-          flexWrap: "wrap",
-        }}
-      >
-        <Btn variant="outline" size="sm" icon={<Icon name="filter" size={13} />}>Filtres · 0</Btn>
-        <div className="sy-divider-vert" style={{ height: 24, margin: "0 6px" }} />
-        {["Toutes", "BBQ", "Animation", "Buvette", "Événement", "Initiation", "Tournoi", "Stage"].map((c, i) => (
-          <Chip key={c} variant={i === 0 ? "solid" : "outline"}>{c}</Chip>
-        ))}
-        <div style={{ flex: 1 }} />
-        <Tabs variant="pill" items={["Pertinence", "Prix ↑", "Note ★", "Distance"]} active="Pertinence" />
-      </div>
+      {/* Filter chip bar — interactive Client Component */}
+      <MarketplaceFilters />
 
       {/* Main split */}
       <div className="marketplace-split">
