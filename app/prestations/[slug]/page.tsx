@@ -1,10 +1,115 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Avatar, Btn, Card, Chip, Stars } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { BookingCard, ReviewCard, TopNav } from "@/components/ds/patterns";
 import { ImpactHero } from "@/components/ds/impact";
+import {
+  getPrestationBySlug,
+  getAllPrestationSlugs,
+  BASE_URL,
+  truncate,
+  type Prestation,
+} from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }> };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pré-génération des routes statiques connues
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  const slugs = await getAllPrestationSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Métadonnées dynamiques SEO
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const prestation = await getPrestationBySlug(slug);
+
+  if (!prestation) {
+    return { title: "Prestation introuvable" };
+  }
+
+  // Titre ≤ 60 car. : "Titre · Ville — Prix€ | Sociuly" via le template layout
+  const rawTitle = `${prestation.title} · ${prestation.city} — ${prestation.price}€`;
+  const title = truncate(rawTitle, 46); // 46 + " | Sociuly" (10) = 56 max
+  const description = truncate(prestation.shortDescription, 155);
+  const url = `${BASE_URL}/prestations/${slug}`;
+
+  return {
+    title,
+    description,
+    // URL canonique explicite
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      images: [
+        {
+          url: prestation.image,
+          width: 1200,
+          height: 630,
+          alt: prestation.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [prestation.image],
+    },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Construit le JSON-LD Schema.org Service pour une prestation
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildServiceSchema(prestation: Prestation, slug: string): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: prestation.title,
+    description: prestation.description,
+    url: `${BASE_URL}/prestations/${slug}`,
+    image: prestation.image,
+    category: prestation.category,
+    areaServed: {
+      "@type": "City",
+      name: prestation.city,
+    },
+    provider: {
+      "@type": "SportsOrganization",
+      name: prestation.clubName,
+      url: `${BASE_URL}/associations/${prestation.clubSlug}`,
+    },
+    offers: {
+      "@type": "Offer",
+      price: prestation.price.toString(),
+      priceCurrency: "EUR",
+      availability: "https://schema.org/InStock",
+      // Date de la prochaine disponibilité si connue
+      ...(prestation.nextDate && { availabilityStarts: prestation.nextDate }),
+    },
+    ...(prestation.reviewCount > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: prestation.rating.toFixed(1),
+        reviewCount: prestation.reviewCount,
+        bestRating: "5",
+        worstRating: "1",
+      },
+    }),
+  };
+}
 
 const FACTS: Array<[string, string, "users" | "calendar" | "pin" | "check"]> = [
   ["Capacité", "10–60 pers.",          "users"],
@@ -21,9 +126,19 @@ const INCLUDED = [
 
 export default async function PrestationDetailPage({ params }: Props) {
   const { slug } = await params;
+  const prestation = await getPrestationBySlug(slug);
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
+      {/* Schema.org Service — injecté dans <body>, valide pour Google */}
+      {prestation && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(buildServiceSchema(prestation, slug)),
+          }}
+        />
+      )}
       <TopNav active="prestations" />
 
       <div style={{ padding: "20px 48px 40px", maxWidth: 1440, margin: "0 auto" }}>

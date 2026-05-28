@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { BASE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Sociuly — Réservez près de chez vous. Financez le club d'à côté.",
+  // metadataBase résout les URLs relatives dans tous les generateMetadata de l'app
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "Sociuly — Réservez près de chez vous. Financez le club d'à côté.",
+    template: "%s | Sociuly",
+  },
   description:
     "Marketplace de prestations proposées par les associations sportives locales. Chaque réservation finance un projet de saison réel.",
+  openGraph: {
+    siteName: "Sociuly",
+    locale: "fr_FR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
