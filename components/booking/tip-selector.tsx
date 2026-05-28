@@ -7,17 +7,33 @@ const PRESET_TIPS = [0, 5, 10, 20] as const;
 
 type Props = {
   projectName?: string;
-  onChange?: (amount: number) => void;
+  /** Valeur en euros. Fourni → mode contrôlé ; absent → état interne. */
+  value?: number;
+  onChange?: (euros: number) => void;
 };
 
-export function TipSelector({ projectName = "le projet", onChange }: Props) {
-  const [selected, setSelected] = useState<number>(10);
+export function TipSelector({ projectName = "le projet", value, onChange }: Props) {
+  const isControlled = value !== undefined;
+  const [internal, setInternal] = useState<number>(10);
   const [custom, setCustom] = useState(false);
 
-  function handleSelect(amount: number) {
-    setSelected(amount);
+  const selected = isControlled ? value : internal;
+
+  function select(euros: number) {
+    if (!isControlled) setInternal(euros);
     setCustom(false);
-    onChange?.(amount);
+    onChange?.(euros);
+  }
+
+  function openCustom() {
+    setCustom(true);
+    onChange?.(selected);
+  }
+
+  function handleCustomInput(raw: string) {
+    const euros = Math.max(0, parseInt(raw, 10) || 0);
+    if (!isControlled) setInternal(euros);
+    onChange?.(euros);
   }
 
   return (
@@ -27,19 +43,12 @@ export function TipSelector({ projectName = "le projet", onChange }: Props) {
           key={v}
           variant={!custom && v === selected ? "primary" : "soft"}
           size="sm"
-          onClick={() => handleSelect(v)}
+          onClick={() => select(v)}
         >
           {v === 0 ? "aucun" : `+€${v}`}
         </Btn>
       ))}
-      <Btn
-        variant={custom ? "primary" : "soft"}
-        size="sm"
-        onClick={() => {
-          setCustom(true);
-          onChange?.(selected);
-        }}
-      >
+      <Btn variant={custom ? "primary" : "soft"} size="sm" onClick={openCustom}>
         autre
       </Btn>
       {custom && (
@@ -50,11 +59,7 @@ export function TipSelector({ projectName = "le projet", onChange }: Props) {
             min={1}
             max={500}
             defaultValue={selected || 15}
-            onChange={(e) => {
-              const val = Math.max(0, parseInt(e.target.value, 10) || 0);
-              setSelected(val);
-              onChange?.(val);
-            }}
+            onChange={(e) => handleCustomInput(e.target.value)}
             style={{
               width: 72, padding: "6px 10px", borderRadius: "var(--radius-sm)",
               border: "1.5px solid var(--ink)", fontFamily: "var(--sans)",

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Btn, Card, Field, Input, Stars, Textarea } from "@/components/ds/components";
+import { Btn, Card, Stars } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo } from "@/components/ds/patterns";
 import { ImpactMini } from "@/components/ds/impact";
 import { BookingStepper } from "@/components/booking/stepper";
-import { TipSelector } from "@/components/booking/tip-selector";
+import { BookingForm } from "@/components/booking/booking-form";
 
 type Props = { params: Promise<{ ref: string }> };
 
@@ -132,8 +132,6 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export default async function BookingPage({ params }: Props) {
   const { ref } = await params;
-  // Pretend booking number generated server-side. In Phase B this lives in DB.
-  const fakeBookingNumber = "SOC-2026-00042";
   const prestationSlug = ref;
 
   return (
@@ -172,49 +170,7 @@ export default async function BookingPage({ params }: Props) {
             />
 
             <BookSection n={2} state="active" open title="Message à l'association">
-              <Field label="Votre nom">
-                <Input defaultValue="Camille Léger" />
-              </Field>
-              <div style={{ height: 14 }} />
-              <Field label="Téléphone (optionnel)" hint="Pour faciliter la coordination le jour J">
-                <Input defaultValue="06 12 34 56 78" />
-              </Field>
-              <div style={{ height: 14 }} />
-              <Field
-                label="Message au club"
-                hint="Précisez vos attentes, allergies, contraintes d'accès…"
-              >
-                <Textarea defaultValue="Bonjour, c'est pour l'anniversaire de mon père (65 ans). On sera plutôt 22 adultes + 2 enfants. Pas d'allergies particulières, mais on aimerait des merguez et des saucisses végé." />
-              </Field>
-              <div style={{ height: 14 }} />
-
-              <Card variant="accent" style={{ padding: 16, borderRadius: "var(--radius-md)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <Icon name="sparkle" size={16} color="var(--accent-deep)" />
-                  <div className="sy-h4">Ajouter un coup de pouce au projet ?</div>
-                </div>
-                <div className="sy-small" style={{ color: "var(--ink-2)" }}>
-                  100% reversé au tournoi U17. Optionnel et déductible d&apos;impôts.
-                </div>
-                <TipSelector projectName="le tournoi U17" />
-              </Card>
-
-              <div
-                style={{
-                  display: "flex", justifyContent: "space-between", marginTop: 20,
-                  flexWrap: "wrap", gap: 8,
-                }}
-              >
-                <Btn variant="ghost">← Étape précédente</Btn>
-                <Link
-                  href={`/reserver/${fakeBookingNumber}/confirmation`}
-                  style={{ textDecoration: "none" }}
-                >
-                  <Btn variant="dark" iconRight={<Icon name="arrow" size={14} color="#fff" />}>
-                    Continuer vers le paiement
-                  </Btn>
-                </Link>
-              </div>
+              <BookingForm prestationRef={ref} defaultNom="Camille Léger" />
             </BookSection>
 
             <BookSection n={3} state="upcoming" title="Paiement" />
