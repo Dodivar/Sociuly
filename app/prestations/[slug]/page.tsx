@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Avatar, Btn, Card, Chip, Stars } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { BookingCard, ReviewCard, TopNav } from "@/components/ds/patterns";
+import { BookingCard, ReviewCard, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactHero } from "@/components/ds/impact";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -106,9 +106,11 @@ export default async function PrestationDetailPage({ params }: Props) {
                 <div className="sy-h3">Proposé par USB Volley</div>
                 <div className="sy-small sy-muted">42 prestations · membre depuis 2024 · répond en 2h</div>
               </div>
-              <Btn variant="outline" size="sm" iconRight={<Icon name="arrow" size={13} />}>
-                Voir l&apos;asso
-              </Btn>
+              <Link href="/associations/usb-volley" style={{ textDecoration: "none" }}>
+                <Btn variant="outline" size="sm" iconRight={<Icon name="arrow" size={13} />}>
+                  Voir l&apos;asso
+                </Btn>
+              </Link>
             </div>
 
             {/* facts */}
@@ -216,6 +218,8 @@ export default async function PrestationDetailPage({ params }: Props) {
           </aside>
         </div>
       </div>
+
+      <SiteFooter />
 
       <style>{`
         .detail-gallery {

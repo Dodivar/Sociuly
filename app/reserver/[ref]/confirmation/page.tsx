@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Btn } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { Logo } from "@/components/ds/patterns";
+import { Logo, SiteFooter } from "@/components/ds/patterns";
 import { ImpactHero } from "@/components/ds/impact";
 import { BookingStepper } from "@/components/booking/stepper";
 
@@ -79,6 +79,7 @@ export default async function BookingConfirmationPage({ params }: Props) {
           </Btn>
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }
