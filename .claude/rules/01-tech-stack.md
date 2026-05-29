@@ -5,6 +5,7 @@
 | Domaine | Outil | Notes |
 |---|---|---|
 | Framework | Next.js 15 — App Router | Pas de Pages Router |
+| Hébergement | Vercel | Région EU (Frankfurt) pour les Edge/Serverless Functions |
 | Langage | TypeScript 5.6 | Strict, pas de `any` sans justification |
 | Runtime UI | React 19 | |
 | ORM | Prisma + `@prisma/client` | Supabase PostgreSQL EU-Frankfurt |
@@ -49,6 +50,15 @@ Les schémas sont co-localisés avec le code qui les utilise ou dans `lib/schema
 - Toutes les clés secrètes dans `.env.local` (non committé).
 - Toutes les variables documentées dans `.env.example` (committé, sans valeurs).
 - Les variables exposées au client sont préfixées `NEXT_PUBLIC_` et ne contiennent rien de secret.
+
+### Déploiement Vercel
+- L'application est hébergée sur **Vercel**, toutes les fonctions déployées en région **EU (Frankfurt — fra1)**.
+- Configurer `{ region: "fra1" }` dans `vercel.json` pour forcer la région sur les Serverless Functions.
+- **Cron jobs** (emails lifecycle, rappels 24h) : utiliser **Vercel Cron** (`vercel.json` → `crons`) plutôt qu'un service externe.
+- **Variables d'environnement** : les définir dans le dashboard Vercel (Environments : Production / Preview / Development). Le `.env.local` reste pour le dev local uniquement.
+- **Edge Runtime** : ne pas ajouter `export const runtime = "edge"` sans vérifier la compatibilité — Prisma Client n'est pas compatible Edge. Réserver l'Edge Runtime aux middlewares légers (auth check, redirections).
+- **Limites de durée** : les Serverless Functions Vercel ont une durée max de 60s (plan Pro) — les routes lourdes (PDF, batch) doivent rester sous cette limite ou être déléguées à une queue.
+- Ne pas utiliser `next export` ou `output: "export"` dans `next.config.ts` : incompatible avec les Server Actions et l'App Router dynamique.
 
 ### Contrainte commission Stripe
 Le calcul `commissionCents = round(totalCents * 0.06)` se fait uniquement côté serveur.

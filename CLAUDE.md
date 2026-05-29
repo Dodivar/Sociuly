@@ -14,6 +14,7 @@ Voir `TODO_PHASE_B.md` pour la feuille de route complète.
 ## Architecture
 
 - **Framework** : Next.js 15, App Router, SSR/SSG selon les pages
+- **Hébergement** : Vercel (région EU — Frankfurt)
 - **Langage** : TypeScript strict — pas de `any`, pas de `@ts-ignore` sans justification
 - **BDD** : PostgreSQL sur Supabase (EU — Frankfurt) via Prisma ORM
 - **Auth** : Supabase Auth, magic-link email via Resend, PrismaAdapter
