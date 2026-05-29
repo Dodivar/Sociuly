@@ -16,7 +16,7 @@ export default function MarketplacePage() {
       {/* Top bar */}
       <div
         style={{
-          padding: "14px 32px", borderBottom: "1px solid var(--line)",
+          padding: "14px var(--page-pad)", borderBottom: "1px solid var(--line)",
           background: "var(--surface)", display: "flex", alignItems: "center", gap: 24,
         }}
       >
@@ -35,7 +35,7 @@ export default function MarketplacePage() {
       {/* Main split */}
       <div className="marketplace-split">
         {/* List side */}
-        <div style={{ padding: "20px 32px", overflow: "auto" }}>
+        <div style={{ padding: "20px var(--page-pad)", overflow: "auto" }}>
           <div
             style={{
               display: "flex", alignItems: "baseline", justifyContent: "space-between",
@@ -102,6 +102,7 @@ export default function MarketplacePage() {
         }
         @media (max-width: 768px) {
           .prestation-grid { grid-template-columns: 1fr; }
+          .marketplace-map { display: none; }
         }
       `}</style>
     </main>

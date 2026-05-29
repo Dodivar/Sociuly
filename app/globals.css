@@ -5,6 +5,9 @@
  */
 
 :root {
+  /* ─── page-level horizontal padding ─── */
+  --page-pad: 48px;
+
   /* ─── theme: stade ─── */
   --bg:              #eef2fb;
   --surface:         #ffffff;
@@ -63,6 +66,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -243,5 +247,87 @@ button { font-family: inherit; }
 
 /* Mobile: collapse most grids to single column */
 @media (max-width: 768px) {
+  :root { --page-pad: 16px; --screen-pad: 12px; }
   .sy-grid-2, .sy-grid-3, .sy-grid-4 { grid-template-columns: 1fr; }
+  .sy-display-xl { font-size: 52px; }
+  .sy-display    { font-size: 40px; }
+  .sy-display-sm { font-size: 28px; }
+}
+
+/* ─────── TopNav ─────── */
+.sy-topnav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px;
+}
+.sy-topnav-nav { display: flex; align-items: center; gap: 36px; }
+.sy-topnav-actions { display: flex; gap: 10px; align-items: center; }
+
+@media (max-width: 768px) {
+  .sy-topnav { padding: 14px 16px; }
+  .sy-topnav-tabs { display: none; }
+  .sy-topnav-ghost-hide { display: none; }
+}
+
+/* ─────── SiteFooter ─────── */
+.sy-footer {
+  margin-top: 64px; background: var(--ink); color: var(--surface);
+  padding: 56px var(--page-pad) 28px;
+}
+.sy-footer-grid {
+  display: grid;
+  grid-template-columns: 1.6fr repeat(4, 1fr);
+  gap: 36px;
+}
+.sy-footer-bottom {
+  margin-top: 56px; padding-top: 22px;
+  border-top: 1px solid rgba(252,249,241,.12);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap;
+}
+
+@media (max-width: 1024px) {
+  .sy-footer-grid { grid-template-columns: repeat(3, 1fr); gap: 28px; }
+}
+@media (max-width: 768px) {
+  .sy-footer { margin-top: 48px; }
+  .sy-footer-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+}
+@media (max-width: 480px) {
+  .sy-footer-grid { grid-template-columns: 1fr; }
+}
+
+/* ─────── SearchBar full (hero) ─────── */
+.sy-searchbar-full {
+  display: flex; align-items: stretch;
+  border-radius: 999px; padding: 6px;
+  background: var(--surface); box-shadow: var(--shadow-md);
+}
+.sy-searchbar-full .sb-section {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 8px 22px; cursor: pointer; flex: 1.2;
+}
+.sy-searchbar-full .sb-section-cause { flex: 1; }
+.sy-searchbar-full .sb-cta {
+  display: flex; align-items: center; padding-right: 6px;
+}
+
+@media (max-width: 768px) {
+  .sy-searchbar-full {
+    flex-direction: column;
+    border-radius: var(--radius-xl);
+    padding: 8px;
+    gap: 0;
+  }
+  .sy-searchbar-full .sb-section {
+    padding: 10px 14px;
+    border-right: none !important;
+    border-bottom: 1px solid var(--line);
+    flex: none;
+  }
+  .sy-searchbar-full .sb-section:last-of-type { border-bottom: none; }
+  .sy-searchbar-full .sy-divider-vert { display: none; }
+  .sy-searchbar-full .sb-cta {
+    padding: 8px 0 0;
+  }
+  .sy-searchbar-full .sb-cta .sy-btn { width: 100%; border-radius: var(--radius-lg); }
 }

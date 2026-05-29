@@ -276,17 +276,16 @@ export function TopNav({
   variant = "default",
 }: { active?: string; variant?: "default" | "transparent" }) {
   return (
-    <div
+    <nav
+      className="sy-topnav"
       style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "18px 32px",
         borderBottom: variant === "transparent" ? "none" : "1px solid var(--line)",
         background: variant === "transparent" ? "transparent" : "var(--surface)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 36 }}>
+      <div className="sy-topnav-nav">
         <Link href="/" style={{ textDecoration: "none", color: "inherit" }}><Logo /></Link>
-        <div className="sy-tab-underline sy-tabs" style={{ padding: 0 }}>
+        <div className="sy-topnav-tabs sy-tab-underline sy-tabs" style={{ padding: 0 }}>
           {TOPNAV_ITEMS.map((it) => (
             <Link
               key={it.id}
@@ -299,15 +298,15 @@ export function TopNav({
           ))}
         </div>
       </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <Link href="/inscription-club" style={{ textDecoration: "none" }}>
+      <div className="sy-topnav-actions">
+        <Link href="/inscription-club" style={{ textDecoration: "none" }} className="sy-topnav-ghost-hide">
           <Btn variant="ghost" size="sm">Inscrire mon asso</Btn>
         </Link>
         <Link href="/connexion" style={{ textDecoration: "none" }}>
           <Btn variant="dark" size="sm">Se connecter</Btn>
         </Link>
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -373,13 +372,8 @@ const FOOTER_COLS: Array<{ title: string; links: Array<[string, string]> }> = [
 
 export function SiteFooter() {
   return (
-    <footer
-      style={{
-        marginTop: 64, background: "var(--ink)", color: "var(--surface)",
-        padding: "56px 48px 28px",
-      }}
-    >
-      <div style={{ display: "grid", gridTemplateColumns: "1.6fr repeat(4, 1fr)", gap: 36 }}>
+    <footer className="sy-footer">
+      <div className="sy-footer-grid">
         <div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
             <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden>
@@ -461,14 +455,7 @@ export function SiteFooter() {
         ))}
       </div>
 
-      <div
-        style={{
-          marginTop: 56, paddingTop: 22,
-          borderTop: "1px solid rgba(252,249,241,.12)",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: 18, flexWrap: "wrap",
-        }}
-      >
+      <div className="sy-footer-bottom">
         <div className="sy-mono" style={{ color: "var(--ink-3)" }}>
           © 2026 Sociuly SAS · Strasbourg · RCS B 924 318 027
         </div>

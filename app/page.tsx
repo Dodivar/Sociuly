@@ -70,14 +70,14 @@ export default function LandingPage() {
       <TopNav active="prestations" />
 
       {/* HERO */}
-      <section style={{ padding: "36px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "36px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <div className="hero-grid">
           <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
               <Chip variant="primary" leadingDot>en direct</Chip>
               <span className="sy-mono sy-num">€184 230 reversés · 238 clubs · 1 612 projets</span>
             </div>
-            <h1 className="sy-display" style={{ fontSize: 84, letterSpacing: "-0.038em", lineHeight: 0.93 }}>
+            <h1 className="sy-display hero-h1" style={{ fontSize: 84, letterSpacing: "-0.038em", lineHeight: 0.93 }}>
               Réservez<br />près de chez vous.<br />
               <span style={{ color: "var(--accent)" }}>Financez le club d&apos;à côté.</span>
             </h1>
@@ -165,7 +165,7 @@ export default function LandingPage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section style={{ padding: "40px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "40px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <div
           className="sy-card howitworks-grid"
           style={{
@@ -179,7 +179,7 @@ export default function LandingPage() {
               Réserver, c&apos;est<br />financer un projet local.
             </h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, alignItems: "flex-start" }}>
+          <div className="howitworks-steps" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, alignItems: "flex-start" }}>
             {[
               ["01", "Choisissez une prestation", "BBQ, animation, événement — proposés par les clubs proches."],
               ["02", "Réservez en ligne", "Paiement sécurisé Stripe. Annulation J-7 gratuite."],
@@ -203,7 +203,7 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURED PRESTATIONS */}
-      <section style={{ padding: "56px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
           <div>
             <div className="sy-mono">Prestations populaires · Strasbourg</div>
@@ -222,7 +222,7 @@ export default function LandingPage() {
       </section>
 
       {/* IMPACT */}
-      <section style={{ padding: "56px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <div className="impact-grid" style={{ gap: 36, alignItems: "center" }}>
           <div>
             <div className="sy-mono">Notre impact</div>
@@ -258,7 +258,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA BLOCK */}
-      <section style={{ padding: "56px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <Card
           variant="accent"
           style={{
@@ -282,7 +282,7 @@ export default function LandingPage() {
       </section>
 
       {/* CATEGORIES */}
-      <section style={{ padding: "56px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <SectionHeader
           kicker="Par type d'expérience"
           title="Quel moment cherchez-vous ?"
@@ -333,7 +333,7 @@ export default function LandingPage() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section style={{ padding: "64px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "64px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <SectionHeader
           kicker="Témoignages"
           title="Clubs et entreprises en parlent."
@@ -386,9 +386,9 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section style={{ padding: "64px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "64px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <div className="faq-grid" style={{ gap: 48, alignItems: "flex-start" }}>
-          <div style={{ position: "sticky", top: 24 }}>
+          <div className="faq-sticky" style={{ position: "sticky", top: 24 }}>
             <div className="sy-mono">Questions fréquentes</div>
             <h2 className="sy-h1" style={{ marginTop: 6 }}>
               Tout ce qu&apos;il faut<br />savoir avant de réserver.
@@ -440,7 +440,7 @@ export default function LandingPage() {
       </section>
 
       {/* PARTNERS / TRUST */}
-      <section style={{ padding: "64px 48px 0", maxWidth: 1440, margin: "0 auto" }}>
+      <section style={{ padding: "64px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <div
           className="sy-card partners-grid"
           style={{
@@ -454,7 +454,7 @@ export default function LandingPage() {
               Fédérations, collectivités, partenaires institutionnels.
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 24, alignItems: "center" }}>
+          <div className="partners-inner-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 24, alignItems: "center" }}>
             {["FFF", "FFR", "FFHB", "Strasbourg Eurométropole", "CROS Grand Est"].map((p) => (
               <div
                 key={p}
@@ -503,6 +503,7 @@ export default function LandingPage() {
             grid-template-columns: 1fr;
           }
           .hero-collage { height: 360px; }
+          .partners-inner-grid { grid-template-columns: repeat(3, 1fr) !important; }
         }
         @media (max-width: 768px) {
           .hero-collage {
@@ -511,6 +512,13 @@ export default function LandingPage() {
             height: auto;
           }
           .hero-collage > .collage-tall { grid-row: 1 / 2; grid-column: 1 / 3; }
+          .hero-h1 { font-size: clamp(36px, 10vw, 84px) !important; }
+          .howitworks-steps { grid-template-columns: 1fr !important; gap: 14px !important; }
+          .partners-inner-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .faq-sticky { position: static !important; }
+        }
+        @media (max-width: 480px) {
+          .partners-inner-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </main>
