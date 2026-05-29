@@ -4,7 +4,8 @@
       "Bash(unzip -o \"C:\\\\Users\\\\dorya\\\\Downloads\\\\Sociuly-handoff.zip\")",
       "Bash(gh repo:*)",
       "Bash(git remote:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(mkdir -p /home/user/Sociuly/.claude/rules)"
     ]
   }
 }
