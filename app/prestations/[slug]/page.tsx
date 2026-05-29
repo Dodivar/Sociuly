@@ -26,7 +26,7 @@ export default async function PrestationDetailPage({ params }: Props) {
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <TopNav active="prestations" />
 
-      <div style={{ padding: "20px 48px 40px", maxWidth: 1440, margin: "0 auto" }}>
+      <div style={{ padding: "20px var(--page-pad) 40px", maxWidth: 1440, margin: "0 auto" }}>
         {/* breadcrumb */}
         <div className="sy-mono" style={{ marginBottom: 8 }}>
           <Link href="/prestations" style={{ color: "inherit", textDecoration: "none" }}>Marketplace</Link>
@@ -268,6 +268,12 @@ export default async function PrestationDetailPage({ params }: Props) {
           .detail-gallery > :nth-child(n+4) { display: none; }
           .reviews-grid { grid-template-columns: 1fr; }
           .included-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+          .facts-grid { grid-template-columns: repeat(2, 1fr); }
+          .detail-gallery { grid-template-columns: 1fr; grid-template-rows: 220px; }
+          .detail-gallery > .gallery-hero { grid-column: 1; }
+          .detail-gallery > :nth-child(n+2) { display: none; }
         }
       `}</style>
     </main>

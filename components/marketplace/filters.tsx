@@ -34,7 +34,7 @@ export function MarketplaceFilters({ onChange }: Props) {
   return (
     <div
       style={{
-        padding: "14px 32px",
+        padding: "14px var(--page-pad)",
         borderBottom: "1px solid var(--line)",
         background: "var(--surface)",
         display: "flex",

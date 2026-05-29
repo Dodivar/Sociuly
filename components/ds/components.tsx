@@ -261,33 +261,27 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
     );
   }
   return (
-    <div
-      className="sy-card sy-card-elevated"
-      style={{
-        display: "flex", alignItems: "stretch", borderRadius: 999, padding: 6,
-        background: "var(--surface)", boxShadow: "var(--shadow-md)", ...style,
-      }}
-    >
-      <div style={{ flex: 1.2, padding: "8px 22px", cursor: "pointer" }}>
+    <div className="sy-searchbar-full sy-card sy-card-elevated" style={style}>
+      <div className="sb-section">
         <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quoi</div>
         <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Toutes prestations</div>
       </div>
       <div className="sy-divider-vert" />
-      <div style={{ flex: 1.2, padding: "8px 22px", cursor: "pointer" }}>
+      <div className="sb-section">
         <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Où</div>
         <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Strasbourg · 10 km</div>
       </div>
       <div className="sy-divider-vert" />
-      <div style={{ flex: 1.2, padding: "8px 22px", cursor: "pointer" }}>
+      <div className="sb-section">
         <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quand</div>
         <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Ce week-end</div>
       </div>
       <div className="sy-divider-vert" />
-      <div style={{ flex: 1, padding: "8px 22px", cursor: "pointer" }}>
+      <div className="sb-section sb-section-cause">
         <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Cause</div>
         <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Toutes</div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", paddingRight: 6 }}>
+      <div className="sb-cta">
         <Btn variant="primary" size="lg" style={{ borderRadius: 999, padding: "0 24px" }}>
           <Icon name="search" /> Rechercher
         </Btn>
