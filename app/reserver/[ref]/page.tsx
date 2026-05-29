@@ -205,7 +205,9 @@ export default async function BookingPage({ params }: Props) {
                   flexWrap: "wrap", gap: 8,
                 }}
               >
-                <Btn variant="ghost">← Étape précédente</Btn>
+                <Link href={`/prestations/${prestationSlug}`} style={{ textDecoration: "none" }}>
+                  <Btn variant="ghost">← Étape précédente</Btn>
+                </Link>
                 <Link
                   href={`/reserver/${fakeBookingNumber}/confirmation`}
                   style={{ textDecoration: "none" }}

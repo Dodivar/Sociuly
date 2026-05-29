@@ -266,9 +266,9 @@ export function Logo({ size = 22, color = "var(--ink)" }: { size?: number; color
 
 const TOPNAV_ITEMS = [
   { id: "prestations",  label: "Prestations",  href: "/prestations" },
-  { id: "associations", label: "Associations", href: "/prestations" },
-  { id: "carte",        label: "Carte",        href: "/prestations" },
-  { id: "projets",      label: "Projets",      href: "/prestations" },
+  { id: "associations", label: "Associations", href: "/associations" },
+  { id: "carte",        label: "Carte",        href: "/prestations?vue=carte" },
+  { id: "projets",      label: "Projets",      href: "/projets" },
 ];
 
 export function TopNav({

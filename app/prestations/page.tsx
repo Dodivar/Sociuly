@@ -1,6 +1,6 @@
 import { Avatar, IconBtn, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { Logo, PrestationCard } from "@/components/ds/patterns";
+import { Logo, PrestationCard, SiteFooter } from "@/components/ds/patterns";
 import { MarketMap } from "@/components/ds/impact";
 import { MarketplaceFilters } from "@/components/marketplace/filters";
 
@@ -80,6 +80,8 @@ export default function MarketplacePage() {
           <MarketMap />
         </div>
       </div>
+
+      <SiteFooter />
 
       <style>{`
         .marketplace-split {
