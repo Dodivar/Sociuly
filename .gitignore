@@ -5,3 +5,4 @@ out/
 *.tsbuildinfo
 .DS_Store
 .codegraph/
+__pycache__/
