@@ -6,6 +6,11 @@
       "Bash(git remote:*)",
       "Bash(git add:*)",
       "Bash(mkdir -p /home/user/Sociuly/.claude/rules)"
+      "Bash(git commit:*)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(git checkout *)",
+      "Bash(git push *)"
     ]
   }
 }
