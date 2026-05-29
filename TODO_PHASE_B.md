@@ -24,8 +24,8 @@ parallelize once their shared prerequisites are met.
       region. SPEC §10 mandates EU residency.
 - [ ] `.env.local` template + `.env.example` checked into repo. Document every
       variable in `README.md`.
-- [ ] Add `prisma`, `@prisma/client`, `@auth/core`, `next-auth@5`,
-      `@auth/prisma-adapter`, `stripe`, `resend`, `react-email`,
+- [ ] Add `prisma`, `@prisma/client`, `@supabase/supabase-js`, `@supabase/ssr`,
+      `stripe`, `resend`, `react-email`,
       `maplibre-gl`, `zod`, `@sentry/nextjs`, `posthog-js` to deps.
 - [ ] Add `vitest` + `@testing-library/react` + `playwright` + `@axe-core/playwright`.
 - [ ] CI: GitHub Actions — lint, typecheck, vitest, playwright (smoke +
@@ -37,8 +37,11 @@ parallelize once their shared prerequisites are met.
 
 Schema (`prisma/schema.prisma`) — see SPEC §6 entities:
 
-- [ ] `User` — id, email (unique), name, role (`CUSTOMER` | `CLUB_ADMIN` | `STAFF`),
-      createdAt. Hooked to NextAuth adapter tables.
+- [ ] `User` — id (UUID, mirrors `auth.users.id` Supabase), email (unique), name,
+      role (`CUSTOMER` | `CLUB_ADMIN` | `STAFF`), createdAt. Pas d'adapter
+      NextAuth — l'identité est gérée par Supabase Auth ; la ligne Prisma
+      est créée via un trigger PostgreSQL `on_auth_user_created` ou lors
+      du premier accès à `/compte`.
 - [ ] `Association` — id, slug, name, siret, ridet, rna, presidentName,
       iban (encrypted at-rest), city, region, geo (PostGIS Point),
       stripeAccountId, stripeAccountStatus, kycCompletedAt, createdAt.
@@ -71,23 +74,47 @@ Schema (`prisma/schema.prisma`) — see SPEC §6 entities:
 
 ---
 
-## 2. Auth (NextAuth v5 / Auth.js)
+## 2. Auth (Supabase Auth)
 
-- [ ] `lib/auth.ts` — Auth.js config with `EmailProvider` (Resend transport),
-      PrismaAdapter, JWT session strategy, callbacks attaching `role` +
-      `associationIds` to the session.
-- [ ] `/connexion` page — single email field → POST → `signIn("email", ...)`.
-      Use existing `SearchBar` and `Btn` from design system; match landing tone.
-- [ ] `/api/auth/[...nextauth]/route.ts` — Auth.js handler.
-- [ ] Magic-link email template (`emails/MagicLink.tsx`) via React Email.
-- [ ] Middleware (`middleware.ts`) gating `/club/**`, `/admin/**`, `/compte/**`.
+- [ ] `lib/supabase/server.ts` — helper `createServerClient()` basé sur
+      `@supabase/ssr` + cookies Next.js (`cookies()` from `next/headers`).
+      `lib/supabase/client.ts` — helper `createBrowserClient()` pour les
+      Client Components.
+- [ ] Activer **Email OTP / Magic Link** dans le dashboard Supabase
+      (Auth → Providers → Email). Configurer le transport SMTP avec Resend
+      (Host: `smtp.resend.com`, port 465, clé API Resend).
+- [ ] Personnaliser le template d'email Magic Link dans Supabase Dashboard
+      (Auth → Email Templates) — ou désactiver le template natif et envoyer
+      via `resend.emails.send()` dans une Route Handler après
+      `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })`.
+- [ ] `/connexion` page — champ email unique → `supabase.auth.signInWithOtp()`
+      côté client (Client Component). Afficher un écran "Vérifiez votre email"
+      après soumission. Utiliser `Btn` et design system existants.
+- [ ] `/api/auth/callback/route.ts` — Route Handler qui échange le `code`
+      Supabase contre une session (`supabase.auth.exchangeCodeForSession(code)`)
+      puis redirige vers l'URL d'origine.
+- [ ] Configurer `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+      `SUPABASE_SERVICE_ROLE_KEY` dans `.env.local`.
+- [ ] Trigger PostgreSQL `on_auth_user_created` (function PL/pgSQL dans
+      Supabase) → insère une ligne dans `public.User` avec `id = NEW.id`,
+      `email = NEW.email`, `role = 'CUSTOMER'`, `createdAt = now()`.
+- [ ] `middleware.ts` — utilise `createServerClient` (SSR) pour lire la
+      session ; protège `/club/**`, `/admin/**`, `/compte/**` → redirige vers
+      `/connexion?redirect=<path>` si non authentifié. Vérifie le `role`
+      Prisma pour les routes `/club/**` (`CLUB_ADMIN`) et `/admin/**` (`STAFF`).
+- [ ] Exposer `role` + `associationIds` via un helper serveur
+      `lib/session.ts` → `getSession()` : lit la session Supabase, joint le
+      `User` Prisma et retourne `{ user, role, associationIds }`.
 - [ ] `/inscription-club` page — multi-step form: SIRET/RNA lookup
-      (INSEE API for SIRET validation), legal docs upload, president
-      contact, initial project. On submit → create `User` (OWNER) +
-      `Association` (`kycCompletedAt: null`) + first `Project (DRAFT)`, then
-      kick off Stripe Connect onboarding (see §3).
-- [ ] `/compte` — customer self-service: bookings list, edit profile,
-      review prompts for completed bookings, GDPR export + delete (SPEC §10).
+      (INSEE API pour validation SIRET), upload documents légaux
+      (Supabase Storage, bucket `legal-docs`, EU), contact président,
+      premier projet. On submit → `User.role = CLUB_ADMIN` +
+      `Association` (`kycCompletedAt: null`) + `Project (DRAFT)`, puis
+      lancement du Stripe Connect onboarding (§3).
+- [ ] `/compte` — espace client : liste des réservations, édition du profil
+      (`User.name`), invitations à laisser un avis sur les réservations
+      terminées, export RGPD + suppression de compte (`supabase.auth.admin.deleteUser`
+      + purge `User` Prisma) — SPEC §10.
 
 ---
 
@@ -195,7 +222,8 @@ Schema (`prisma/schema.prisma`) — see SPEC §6 entities:
 
 React Email templates (`emails/`):
 
-- [ ] `MagicLink` — auth.
+- [ ] `MagicLink` — auth (optionnel si le template Supabase est utilisé ;
+      requis si l'envoi est géré manuellement via Resend).
 - [ ] `BookingConfirmedCustomer` — sent on `payment_intent.succeeded`.
       Includes receipt link + project progress.
 - [ ] `BookingConfirmedClub` — sent to all `OWNER`/`EDITOR` of the asso.
@@ -241,7 +269,8 @@ Currently linked from nav/footer but unbuilt:
       `tip_added`, with `commissionCents` on internal events only.
 - [ ] Rate-limiting middleware (`@upstash/ratelimit` + Upstash Redis):
       `/api/bookings/create` (10/min/IP), contact forms (5/hour/IP),
-      auth magic-link request (5/hour/email).
+      auth magic-link request (5/hour/email — Supabase applique aussi sa propre
+      limite native, configurable dans Auth → Rate Limits).
 - [ ] CSP headers via `next.config.ts` — allow Stripe, MapTiler, Resend
       tracking pixel domains only.
 
