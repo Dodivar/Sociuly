@@ -16,7 +16,7 @@ Voir `TODO_PHASE_B.md` pour la feuille de route complète.
 - **Framework** : Next.js 15, App Router, SSR/SSG selon les pages
 - **Langage** : TypeScript strict — pas de `any`, pas de `@ts-ignore` sans justification
 - **BDD** : PostgreSQL sur Supabase (EU — Frankfurt) via Prisma ORM
-- **Auth** : NextAuth v5 (Auth.js), magic-link email via Resend, PrismaAdapter
+- **Auth** : Supabase Auth, magic-link email via Resend, PrismaAdapter
 - **Paiements** : Stripe Connect Express — commission 6% prélevée côté serveur uniquement
 - **Email** : Resend + React Email (templates dans `emails/`)
 - **Cartes** : MapLibre GL JS + tuiles MapTiler (lazy-loadé, Client Component)
@@ -42,4 +42,3 @@ prisma/               # schema.prisma, migrations, seed
 
 - Les règles de stack et de design system sont dans `.claude/rules/`.
 - Respecter la contrainte RGPD : toutes les données personnelles restent en EU.
-- La commission de 6% ne doit JAMAIS apparaître dans le HTML côté client.
