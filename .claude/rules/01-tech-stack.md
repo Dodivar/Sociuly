@@ -8,7 +8,7 @@
 | Langage | TypeScript 5.6 | Strict, pas de `any` sans justification |
 | Runtime UI | React 19 | |
 | ORM | Prisma + `@prisma/client` | Supabase PostgreSQL EU-Frankfurt |
-| Auth | NextAuth v5 (`next-auth@5`) + PrismaAdapter | Magic-link via Resend |
+| Auth | Supabase Auth + PrismaAdapter | Magic-link via Resend |
 | Paiements | Stripe Connect Express (`stripe`) | |
 | Email | Resend + React Email (`resend`, `react-email`) | Templates dans `emails/` |
 | Validation | Zod | Toutes les entrées : Server Actions, routes API, webhooks |
@@ -52,4 +52,3 @@ Les schémas sont co-localisés avec le code qui les utilise ou dans `lib/schema
 
 ### Contrainte commission Stripe
 Le calcul `commissionCents = round(totalCents * 0.06)` se fait uniquement côté serveur.
-La chaîne `"commission"` ne doit jamais apparaître dans le HTML rendu côté client.
