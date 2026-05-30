@@ -214,14 +214,17 @@ export function Stars({ value = 5, size = 13, mono }: { value?: number; size?: n
 }
 
 // ─────── Field / Input ───────
-export function Field({ label, hint, children, style }: {
-  label?: string; hint?: string; children: ReactNode; style?: CSSProperties;
+export function Field({ label, hint, error, children, style }: {
+  label?: string; hint?: string; error?: string; children: ReactNode; style?: CSSProperties;
 }) {
   return (
     <div className="sy-field" style={style}>
       {label && <label className="sy-label">{label}</label>}
       {children}
-      {hint && <div className="sy-small sy-muted" style={{ marginTop: 6 }}>{hint}</div>}
+      {error
+        ? <div className="sy-small" role="alert" style={{ marginTop: 6, color: "var(--danger)" }}>{error}</div>
+        : hint && <div className="sy-small sy-muted" style={{ marginTop: 6 }}>{hint}</div>
+      }
     </div>
   );
 }
