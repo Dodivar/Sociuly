@@ -141,7 +141,7 @@ export default async function BookingPage({ params }: Props) {
       {/* Slim top bar */}
       <div
         style={{
-          padding: "16px 32px", borderBottom: "1px solid var(--line)",
+          padding: "16px var(--page-pad)", borderBottom: "1px solid var(--line)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           gap: 24, background: "var(--surface)", flexWrap: "wrap",
         }}
@@ -205,7 +205,9 @@ export default async function BookingPage({ params }: Props) {
                   flexWrap: "wrap", gap: 8,
                 }}
               >
-                <Btn variant="ghost">← Étape précédente</Btn>
+                <Link href={`/prestations/${prestationSlug}`} style={{ textDecoration: "none" }}>
+                  <Btn variant="ghost">← Étape précédente</Btn>
+                </Link>
                 <Link
                   href={`/reserver/${fakeBookingNumber}/confirmation`}
                   style={{ textDecoration: "none" }}
@@ -230,7 +232,7 @@ export default async function BookingPage({ params }: Props) {
 
       <style>{`
         .booking-grid {
-          padding: 28px 48px;
+          padding: 28px var(--page-pad);
           max-width: 1440px;
           margin: 0 auto;
           display: grid;
@@ -238,7 +240,10 @@ export default async function BookingPage({ params }: Props) {
           gap: 32px;
         }
         @media (max-width: 1024px) {
-          .booking-grid { grid-template-columns: 1fr; padding: 24px 24px; }
+          .booking-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+          .booking-grid { padding-top: 20px; padding-bottom: 20px; }
         }
       `}</style>
     </main>

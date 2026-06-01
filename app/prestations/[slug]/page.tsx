@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Avatar, Btn, Card, Chip, Stars } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { BookingCard, ReviewCard, TopNav } from "@/components/ds/patterns";
+import { BookingCard, ReviewCard, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactHero } from "@/components/ds/impact";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -26,7 +26,7 @@ export default async function PrestationDetailPage({ params }: Props) {
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <TopNav active="prestations" />
 
-      <div style={{ padding: "20px 48px 40px", maxWidth: 1440, margin: "0 auto" }}>
+      <div style={{ padding: "20px var(--page-pad) 40px", maxWidth: 1440, margin: "0 auto" }}>
         {/* breadcrumb */}
         <div className="sy-mono" style={{ marginBottom: 8 }}>
           <Link href="/prestations" style={{ color: "inherit", textDecoration: "none" }}>Marketplace</Link>
@@ -106,9 +106,11 @@ export default async function PrestationDetailPage({ params }: Props) {
                 <div className="sy-h3">Proposé par USB Volley</div>
                 <div className="sy-small sy-muted">42 prestations · membre depuis 2024 · répond en 2h</div>
               </div>
-              <Btn variant="outline" size="sm" iconRight={<Icon name="arrow" size={13} />}>
-                Voir l&apos;asso
-              </Btn>
+              <Link href="/associations/usb-volley" style={{ textDecoration: "none" }}>
+                <Btn variant="outline" size="sm" iconRight={<Icon name="arrow" size={13} />}>
+                  Voir l&apos;asso
+                </Btn>
+              </Link>
             </div>
 
             {/* facts */}
@@ -217,6 +219,8 @@ export default async function PrestationDetailPage({ params }: Props) {
         </div>
       </div>
 
+      <SiteFooter />
+
       <style>{`
         .detail-gallery {
           margin-top: 18px;
@@ -268,6 +272,12 @@ export default async function PrestationDetailPage({ params }: Props) {
           .detail-gallery > :nth-child(n+4) { display: none; }
           .reviews-grid { grid-template-columns: 1fr; }
           .included-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+          .facts-grid { grid-template-columns: repeat(2, 1fr); }
+          .detail-gallery { grid-template-columns: 1fr; grid-template-rows: 220px; }
+          .detail-gallery > .gallery-hero { grid-column: 1; }
+          .detail-gallery > :nth-child(n+2) { display: none; }
         }
       `}</style>
     </main>
