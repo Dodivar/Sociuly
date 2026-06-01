@@ -52,7 +52,7 @@ Sociuly est une marketplace qui relie particuliers et entreprises aux **associat
 - **Front + Back** : **Next.js 15** (App Router, React Server Components) en TypeScript.
 - **DB** : **PostgreSQL 16** (hébergé sur Supabase).
 - **ORM** : **Prisma**.
-- **Auth** : **Auth.js (NextAuth v5)** avec provider email magic link.
+- **Auth** : **Supabase Auth** avec provider email magic link.
 - **Paiement** : **Stripe Connect (Express accounts)** — chaque association = un compte connecté ; Sociuly est la plateforme, prélève 6% via `application_fee_amount`.
 - **Emails transactionnels** : **Resend** + templates React Email.
 - **Stockage fichiers** (RIB, attestations, photos prestations) : **Supabase Storage**.

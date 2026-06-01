@@ -1,0 +1,220 @@
+# Sociuly — Règles techniques (Claude Code)
+
+> Ce fichier est automatiquement chargé dans chaque session Claude Code de ce repo.
+> Pendant tout travail sur ce projet, respecter strictement les contraintes ci-dessous.
+> **Source de vérité métier** : `designs/SPEC.md` + maquettes (`designs/Sociuly Site Hi-Fi.html`, `Sociuly Design System.html`, `screen-*.jsx`, `ds-*.jsx`).
+> Toute divergence entre une demande utilisateur et `SPEC.md` doit être signalée avant code. Ne jamais trancher seul.
+> Le fichier `.cursor/rules/sociuly.mdc` est la version équivalente pour Cursor — garder les deux synchronisés en cas de modification.
+
+---
+
+## 1. Stack imposée (ne pas substituer)
+
+- **Framework** : Next.js 15 (App Router + React Server Components) en TypeScript strict.
+- **DB** : PostgreSQL 16 (Supabase). **ORM** : Prisma.
+- **Auth** : Supabase Auth — provider **email magic link uniquement**, pas de mot de passe en v1.
+- **Paiement** : Stripe Connect (Express accounts). Commission via `application_fee_amount`. Sandbox d'abord.
+- **Emails** : Resend + templates React Email.
+- **Stockage** : Supabase Storage (RIB, attestations, photos).
+- **Recherche/filtres** : Postgres full-text + index GIN (**pas Algolia/Meilisearch**).
+- **Géo** : PostGIS pour rayon km.
+- **Carte** : MapLibre GL JS + tuiles MapTiler. **Interdit : Google Maps, Mapbox propriétaire.**
+- **Hosting** : Vercel (front) + Supabase (DB).
+- **Observabilité** : Sentry (erreurs) + PostHog (analytics).
+- **CI/CD** : GitHub Actions + preview Vercel par PR.
+- **Rate limiting** : Upstash Redis sur `/api/*` (100 req/min/IP par défaut).
+
+**Interdit d'ajouter sans validation** : ORM autre que Prisma, runtime autre que Node/Edge Next, bibliothèque d'icônes externe, framework CSS autre que Tailwind, state manager (Redux/Zustand/Jotai) — RSC + URL state d'abord.
+
+---
+
+## 2. Hors-scope v1 — NE PAS implémenter
+
+Refuser ou questionner toute demande qui touche à :
+- App mobile native (le site est responsive, point).
+- **Multilingue** (FR uniquement) / **multi-devise** (EUR uniquement).
+- Notifications push.
+- Messagerie interne client ↔ club (email seulement).
+- Marketplace au-delà de **Strasbourg, Nancy, Metz** (3 villes pilotes v1).
+- Parrainage / codes promo.
+- Module mécénat / dons défiscalisés (séparé, v2).
+- Comptabilité avancée trésorier.
+- Thèmes design `outdoor`, `pitch`, `daybreak` — **seul `stade` (bleu marine + accent orange) est en prod v1**.
+- `pricingModel: per_person` (v1 = `fixed` uniquement).
+- Réponse club aux reviews (v2).
+- Calendrier de disponibilité complet (v1 = JSON simple jours/créneaux récurrents).
+
+Si l'utilisateur demande un de ces points : signaler "hors-scope v1 selon SPEC.md §2", proposer un ticket v2, ne pas coder.
+
+---
+
+## 3. Modèle de données (Prisma)
+
+Entités obligatoires et leurs invariants — respecter strictement (cf. SPEC.md §4) :
+
+- `User` : `role` ∈ `customer | club_admin | sociuly_admin`. Un user peut être `customer` ET `club_admin` via `AssociationMember`.
+- `Association` : `siret` (14 chars, unique), `status` ∈ `pending_verification | active | suspended`, `geo` = PostGIS Point, `stripeAccountId`, `bankDetailsVerified`.
+- `AssociationMember` : `role` ∈ `president | treasurer | member` avec permissions strictes (cf. SPEC.md §4).
+- `Project` : `targetAmount`, `collectedAmount` (cents), `status` ∈ `draft | active | funded | archived`.
+- `Prestation` : `category` ∈ `bbq | animation_kids | olympiades | event | coaching | tournoi | buvette`, `priceCents` TTC, `location` ∈ `at_client | at_club | flexible`, `status` ∈ `draft | published | paused | archived`.
+- `Booking` : `bookingNumber` au format **`SOC-YYYY-NNNNN`** (humain). `status` ∈ `pending_payment | confirmed | cancelled_by_customer | cancelled_by_club | completed | refunded`. Triple montant `grossAmountCents` / `feeAmountCents` / `netAmountCents`.
+- `Review` : `rating` 1–5, `comment` ≤ 600 chars, `bookingId` unique (1 review max par booking).
+
+**Tous les montants en `cents` (Int)**, jamais en float. Devise implicite EUR.
+
+**Index critiques à créer** :
+- `Prestation(geo, status, category)` (marketplace filtrée).
+- `Booking(customerId, status)`, `Booking(prestationId, requestedDate)`.
+- `Association(siret)` unique.
+
+---
+
+## 4. Règles métier — invariants à coder
+
+### KYC association (avant publication)
+`Association.status = 'active'` requiert **les 4 conditions** :
+1. SIRET vérifié API INSEE Sirene.
+2. Numéro affiliation fédérale renseigné (validation manuelle admin).
+3. Onboarding Stripe Connect complété (RIB validé Stripe).
+4. Au moins un `AssociationMember` avec `role = 'president'`.
+
+Tant que `status != 'active'` → toutes les `Prestation` du club restent `draft`. Garde-fou serveur obligatoire.
+
+### Commission Sociuly
+- **6 % du TTC** sur chaque `Booking` confirmé.
+- Stripe : `application_fee_amount = Math.round(priceCents * 0.06)` + `transfer_data.destination = association.stripeAccountId`.
+- **Le client ne voit jamais la commission.** Prix affiché = montant payé TTC.
+- Pas de TVA sur la commission (asso loi 1901). À reconfirmer avec comptable — laisser TODO si on touche au calcul.
+
+### Annulation
+- **Client avant J−7** (`cancellationDeadline = requestedDate - 7 days`) : remboursement intégral Stripe.
+- **Client après J−7** : montant retenu, converti en **avoir 1 an chez le même club** (pas chez Sociuly).
+- **Club** : remboursement intégral systématique + email d'excuse auto. **3 annulations club / 6 mois → suspension auto.**
+- **No-show client** : montant retenu, pas d'avoir.
+
+### Versement aux clubs
+- Auto **J+1 après `completedAt`** via Stripe transfer.
+- `completedAt = requestedDate + durationMinutes` (passage `confirmed → completed` par cron).
+- Fenêtre litige client de **48h post-completion** → bloque le versement, dispute manuelle admin v1.
+
+### Reviews
+- Possibles **uniquement entre `completedAt` et J+30**.
+- Rating 1–5 obligatoire, commentaire optionnel (≤ 600 chars).
+- Modération a posteriori (signalement public possible).
+
+### Géo
+- Défaut rayon **30 km**, configurable par filtre.
+- `at_club` → filtre via `Association.geo`. `at_client` → filtre via `Prestation.geoBoundary` qui contient le point client.
+- Autocomplete ville limité aux **3 villes pilotes** v1.
+
+---
+
+## 5. Routes & écrans
+
+Routes canoniques (cf. SPEC.md §6) :
+
+| Route | Auth | Écran de référence |
+|---|---|---|
+| `/` | public | `screen-landing.jsx` (Landing 3 sections) |
+| `/prestations` | public | `screen-marketplace.jsx` |
+| `/prestations/[slug]` | public | `screen-detail.jsx` |
+| `/associations/[slug]` | public | `screen-asso.jsx` |
+| `/reserver/[prestationSlug]` | auth | `screen-booking.jsx` |
+| `/reserver/[bookingNumber]/confirmation` | auth | `BookingConfirmDesktop` |
+| `/club` | `club_admin` | `screen-dashboard.jsx` |
+| `/club/projets` | `club_admin` | `screen-projects-admin.jsx` |
+| `/admin` | `sociuly_admin` | (cf. wireframes admin) |
+| `/connexion` | public | (à concevoir, magic link) |
+| `/inscription-club` | public | (à concevoir, onboarding) |
+
+**Ne pas créer d'autres routes** sans signaler. Pages manquantes à concevoir avant code : `/connexion`, `/inscription-club`, `/compte`, `/cgu`, `/confidentialite`, `/mentions-legales`.
+
+---
+
+## 6. Design system — règles strictes
+
+- **Tokens** : `designs/ds-tokens.jsx` est canonique. Porter en CSS variables (`globals.css`) + variables Tailwind. **Ne jamais régénérer une palette.**
+- **Composants atomiques** : porter depuis `designs/ds-components.jsx` (Btn, Card, Chip, Avatar, Icon, Stars, Progress…).
+- **Composants composites** : porter depuis `designs/ds-patterns.jsx` (PrestationCard, ProjectCard, AssoCard, TopNav, Footer, BookingCard…).
+- **Thème** : `stade` (bleu marine + accent orange) uniquement.
+- **Fonts** (Google Fonts) :
+  - Display : **Bricolage Grotesque** (400–800, opsz/wdth variable).
+  - Sans : **Geist**.
+  - Mono : **JetBrains Mono**.
+  - Italique éditorial : **Instrument Serif**.
+- **Iconographie** : utiliser **uniquement** le set `Icon` de `ds-components.jsx`. **Interdit** : Lucide, Heroicons, Tabler, Phosphor, react-icons.
+- **Pas de CSS-in-JS runtime** (emotion, styled-components). Tailwind + CSS modules si besoin.
+- **Copy** : reprendre les textes des maquettes **au mot près** en v1. Aucune reformulation sans validation.
+
+### Responsive
+- Maquettes en 1440 px de base.
+- Breakpoint mobile : **768 px** (basculer sur patterns `LandingMobile` / `MobileTopNav`).
+- Tablette ~1024 px : `repeat(N, 1fr)` → `repeat(N-1, 1fr)`.
+- Vérifier chaque écran sur **1440 / 1024 / 768 / 375** avant de passer au suivant.
+
+---
+
+## 7. Accessibilité
+
+- **WCAG 2.1 AA** minimum, non négociable.
+- Contrastes du DS calculés AA → **ne pas inventer de couleur** hors tokens.
+- FAQ via `<details>`/`<summary>` natifs.
+- Hit targets mobile **≥ 44×44 px**.
+- `:focus-visible` obligatoire sur tout élément interactif.
+- Tests : axe-core en CI, navigation clavier vérifiée à chaque sprint.
+
+---
+
+## 8. Sécurité
+
+- HTTPS partout (Vercel).
+- **`process.env` jamais exposé côté client.** Préfixer `NEXT_PUBLIC_` uniquement pour les vars vraiment publiques. Vérifier deux fois.
+- Webhooks Stripe : **toujours** signés via `stripe.webhooks.constructEvent(body, sig, secret)`. Rejeter si signature invalide.
+- RGPD : registre traitements, rétention **3 ans post-dernière activité**, export & suppression self-service.
+- **Ne jamais logger** : données carte, magic-link tokens, contenu webhook brut.
+- Rate limiting `/api/*` : 100 req/min/IP via Upstash Redis.
+- Validation entrées : Zod sur toutes les routes API et server actions.
+
+---
+
+## 9. Ordre d'implémentation imposé (SPEC.md §12)
+
+Ne pas sauter d'étape :
+1. Tokens → `globals.css` + Tailwind theme.
+2. Composants atomiques (Btn, Card, Chip…).
+3. Composants composites (PrestationCard, TopNav…).
+4. Écrans dans cet ordre : **Landing → Marketplace → Détail prestation → Booking → Confirmation → Console club → Admin**, puis Profil asso et Projets.
+
+---
+
+## 10. Données de seed (dev)
+
+Le seed Prisma doit fournir :
+- 1 admin Sociuly (`admin@sociuly.fr`).
+- 6 associations vérifiées réparties sur les villes pilotes (noms réalistes cf. `screen-asso.jsx`, `screen-marketplace.jsx`).
+- 12 prestations publiées couvrant les **7 catégories**.
+- 8 projets de saison liés.
+- 3 utilisateurs clients avec bookings à différents stades (`pending_payment`, `confirmed`, `completed`).
+- 1 association `pending_verification` (test console admin).
+
+---
+
+## 11. Décisions ouvertes — NE PAS trancher
+
+Cf. SPEC.md §11. Si une demande touche à un de ces points, **demander avant de coder** :
+- Exonération TVA commission (confirmation comptable).
+- Apple Pay / Google Pay via Stripe Checkout.
+- Avoir annulation tardive : chez le club seul ou cross-asso.
+- Multi-club par user (président de plusieurs clubs).
+- Notation club : moyenne pondérée des prestations ou note distincte.
+
+---
+
+## 12. Réflexes attendus pendant une session
+
+- **Avant de coder un écran** : ouvrir le `screen-*.jsx` correspondant + relire la section SPEC.md concernée.
+- **Avant d'ajouter une dépendance npm** : vérifier qu'elle n'est pas déjà couverte par la stack §1 et qu'elle ne tombe pas dans les interdits §1/§6.
+- **Avant de toucher au schéma Prisma** : vérifier les invariants §3/§4 et la présence des index §3.
+- **Avant de modifier un montant ou un statut** : vérifier la machine d'état (`Booking.status`, `Association.status`, `Prestation.status`, `Project.status`) et les transitions autorisées §4.
+- **Toujours en français** dans la copy produit et les commentaires métier.
+- En cas de conflit entre une instruction utilisateur et ce fichier → signaler le conflit, citer la section concernée, demander arbitrage.

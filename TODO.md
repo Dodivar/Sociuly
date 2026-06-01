@@ -9,19 +9,19 @@ Périmètre : **frontend uniquement**. N'inclut pas l'intégration Stripe ou Sup
 
 ### A. Pages déjà maquettées (priorité 1 — référence visuelle existante)
 
-- [ ] **`/associations/[slug]`** — profil club public
+- [x] **`/associations/[slug]`** — profil club public
   Référence : `designs/screen-asso.jsx` (cover + identité vérifiée + onglets prestations/projets/équipe)
-- [ ] **`/console/[clubId]/projets`** — gestion projets de saison (master/detail + timeline)
+- [x] **`/console/[clubId]/projets`** — gestion projets de saison (master/detail + timeline)
   Référence : `designs/screen-projects-admin.jsx`
-- [ ] **`/admin`** — console Sociuly (validation KYC, modération, finances, signalements)
+- [A FINALISER ] **`/admin`** — console Sociuly (validation KYC, modération, finances, signalements)
   Référence : `designs/wire-admin.jsx`
 
 ### B. Pages console club restantes (la sidebar les liste, elles 404 actuellement)
 
 Voir `components/console/club-sidebar.tsx` (lignes 19-27) — 6 entrées sans page :
 
-- [ ] `/console/[clubId]/prestations` — liste + édition prestations (avec statut `draft/published/paused`)
-- [ ] `/console/[clubId]/reservations` — liste filtrable, vue détail booking, actions confirm/cancel
+- [x] `/console/[clubId]/prestations` — liste + édition prestations (avec statut `draft/published/paused`)
+- [x] `/console/[clubId]/reservations` — liste filtrable, vue détail booking, actions confirm/cancel
 - [ ] `/console/[clubId]/revenus` — encaissements, versements à venir, historique
 - [ ] `/console/[clubId]/avis` — modération avis reçus
 - [ ] `/console/[clubId]/equipe` — membres + invitations (rôles `president/treasurer/member`)

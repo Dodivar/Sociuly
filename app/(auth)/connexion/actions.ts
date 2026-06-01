@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { parseLogin, isValid, type FieldErrors, type LoginField } from "@/lib/auth/validation";
+import { DEV_CLUB_ID, DEV_CONSOLE_HOME } from "@/lib/console/dev";
 
 export type LoginActionState = {
   ok: boolean;
@@ -49,6 +50,12 @@ export async function loginAction(
   // Pour l'instant on simule l'échec de credentials pour éviter une fausse
   // réussite tant que le provider n'est pas câblé.
   if (process.env.SUPABASE_URL === undefined) {
+    // Dev sans provider : on laisse entrer dans la console du club fictif pour
+    // naviguer les écrans. Inatteignable en prod (NODE_ENV=production impose un
+    // provider configuré → la branche ci-dessous n'est jamais empruntée).
+    if (process.env.NODE_ENV !== "production") {
+      redirect(DEV_CONSOLE_HOME);
+    }
     return {
       ok: false,
       formError:
@@ -58,6 +65,6 @@ export async function loginAction(
   }
 
   // const clubId = await resolveDefaultClubId(data.user.id); // TODO
-  const clubId = "demo";
+  const clubId = DEV_CLUB_ID;
   redirect(`/console/${clubId}/dashboard`);
 }

@@ -9,7 +9,19 @@
       "Bash(npm run *)",
       "Bash(npx tsc *)",
       "Bash(git checkout *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git log *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npx next *)",
+      "Bash(npx --no-install tsc --noEmit)",
+      "Read(//c/Users/dorya/AppData/Local/Temp/claude/D--Github-sociuly/05c66303-cd3b-434b-919d-ee19576ac046/tasks/**)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' --max-time 60 http://localhost:3001__TRACKED_VAR__)",
+      "Bash(curl -s --max-time 60 \"http://localhost:3001/\")",
+      "Bash(taskkill //F //IM node.exe)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -o NUL -w \"HTTP %{http_code} in %{time_total}s\\\\n\" http://localhost:3001/console/usb-volley/reservations)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} in %{time_total}s\\\\n\" http://localhost:3001/admin)"
     ]
   }
 }
