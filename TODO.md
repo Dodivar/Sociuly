@@ -65,7 +65,6 @@ Voir `components/console/club-sidebar.tsx` (lignes 19-27) — 6 entrées sans pa
 - [ ] Navigation entre les 4 étapes du `BookingStepper` (avant/arrière, blocage si étape invalide)
 - [ ] Validation par étape (date dispo, adresse si `at_client`, infos client)
 - [ ] État persistant entre étapes (form context ou query params)
-- [ ] `TipSelector` : sélection + impact sur récap latéral
 - [ ] CTA paiement → placeholder (UI seulement, à brancher plus tard)
 
 ### Confirmation `/reserver/[ref]/confirmation`
