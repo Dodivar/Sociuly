@@ -4,6 +4,7 @@ import { Logo, PrestationCard, SiteFooter } from "@/components/ds/patterns";
 import { MarketMap } from "@/components/ds/impact";
 import { MarketplaceFilters } from "@/components/marketplace/filters";
 
+export default function MarketplacePage() {
   return (
     <main
       style={{

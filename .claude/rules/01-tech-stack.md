@@ -8,6 +8,7 @@
 | Hébergement | Vercel | Région EU (Frankfurt) pour les Edge/Serverless Functions |
 | Langage | TypeScript 5.6 | Strict, pas de `any` sans justification |
 | Runtime UI | React 19 | |
+| Styling | Tailwind CSS | Utilitaires + tokens CSS du design system ; coexiste avec les variables/classes existantes |
 | ORM | Prisma + `@prisma/client` | Supabase PostgreSQL EU-Frankfurt |
 | Auth | Supabase Auth + PrismaAdapter | Magic-link via Resend |
 | Paiements | Stripe Connect Express (`stripe`) | |
@@ -22,7 +23,6 @@
 
 ## Ce qui est interdit
 
-- **Tailwind CSS** — le projet a son propre système de design CSS (classes `sy-*`). Ne pas installer.
 - **CSS-in-JS** (styled-components, emotion, stitches) — non compatible avec la stratégie CSS variable.
 - **Redux / Zustand / Jotai / Recoil** — pas de state manager global. Utiliser React state + Server Components. Exception : si un formulaire multi-étapes complexe le nécessite vraiment, poser la question avant d'ajouter une dépendance.
 - **clsx / classnames** — le projet utilise `cx()` de `@/lib/cx`. Ne pas introduire d'autres utilitaires de merge de classes.
