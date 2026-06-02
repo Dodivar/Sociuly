@@ -1,21 +1,8 @@
-<<<<<<< HEAD
-import { SiteFooter, TopNav } from "@/components/ds/patterns";
-import { MarketplaceShell } from "@/components/marketplace/marketplace-shell";
-
-export default async function MarketplacePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ view?: string }>;
-}) {
-  const { view } = await searchParams;
-  const initialView = view === "map" ? "map" : "list";
-=======
 import { Avatar, IconBtn, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo, PrestationCard, SiteFooter } from "@/components/ds/patterns";
 import { MarketMap } from "@/components/ds/impact";
 import { MarketplaceFilters } from "@/components/marketplace/filters";
->>>>>>> e82c7c61783bbc408216ebbc5e45947e667bc44b
 
   return (
     <main
@@ -25,11 +12,6 @@ import { MarketplaceFilters } from "@/components/marketplace/filters";
         display: "flex", flexDirection: "column",
       }}
     >
-<<<<<<< HEAD
-      <TopNav active="prestations" />
-      <MarketplaceShell view={initialView} />
-      <SiteFooter />
-=======
       {/* Top bar */}
       <div
         style={{
@@ -122,7 +104,6 @@ import { MarketplaceFilters } from "@/components/marketplace/filters";
           .marketplace-map { display: none; }
         }
       `}</style>
->>>>>>> e82c7c61783bbc408216ebbc5e45947e667bc44b
     </main>
   );
 }
