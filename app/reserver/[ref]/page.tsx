@@ -62,13 +62,27 @@ function BookSection({
   );
 }
 
+// Montants de démonstration (cents). En Phase B ils viennent du Quote accepté.
+// SPEC §4 — acompte par défaut 30%, solde réglé avant l'événement.
+const TOTAL_TTC_CENTS = 480_000;
+const DEPOSIT_RATE = 0.3;
+const DEPOSIT_CENTS = Math.round(TOTAL_TTC_CENTS * DEPOSIT_RATE);
+const BALANCE_CENTS = TOTAL_TTC_CENTS - DEPOSIT_CENTS;
+
+const eur = (cents: number) =>
+  `€${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 /**
- * Booking summary right rail.
+ * Récapitulatif de réservation (rail droit).
  *
- * Per SPEC §5: "Affichage prix : prix TTC visible pour le client = montant payé.
- * La commission n'est pas surfacée publiquement." We therefore show the prestation
- * price as the total (no separate Sociuly fee line) — this differs from the
- * Hi-Fi maquette which surfaced a 3% fee line. Source-of-truth conflict; SPEC wins.
+ * SPEC §5 : « prix TTC visible pour l'acheteur = montant payé. La commission
+ * Sociuly (6% du TTC) n'est pas surfacée publiquement. » On affiche donc le
+ * montant TTC du devis comme total, sans ligne de commission séparée.
+ *
+ * TODO(§11) — décomposition HT / TVA / TTC pour la facture : la base TVA dépend
+ * de Club.vatLiable (club pro assujetti vs loi 1901 exonéré) ET du traitement
+ * de la TVA sur la commission Sociuly. Décision comptable OUVERTE (SPEC §11) :
+ * ne pas figer de taux ici. L'acheteur ne voit que le TTC + l'échéancier.
  */
 function BookingSummary() {
   return (
@@ -85,20 +99,20 @@ function BookingSummary() {
           }}
         />
         <div style={{ flex: 1 }}>
-          <div className="sy-mono">USB Volley</div>
-          <div className="sy-h4" style={{ marginTop: 2 }}>Barbecue convivial</div>
+          <div className="sy-mono">SIG Strasbourg</div>
+          <div className="sy-h4" style={{ marginTop: 2 }}>Journée immersion · SIG</div>
           <div className="sy-small sy-muted" style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
             <Stars value={4.9} size={11} /> 4.9 (47)
           </div>
         </div>
       </div>
       <div style={{ padding: 18 }}>
-        <Row label="Date" value="sam. 14 juin · 16h00" />
-        <Row label="Participants" value="24 personnes" />
-        <Row label="Lieu" value="12 rue de Vannes" />
+        <Row label="Date" value="lun. 16 juin · 09h00" />
+        <Row label="Participants" value="40 personnes" />
+        <Row label="Lieu" value="Rhénus Sport, Strasbourg" />
         <hr className="sy-divider" style={{ margin: "14px 0" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <div className="sy-h3">Total</div>
+          <div className="sy-h3">Total TTC</div>
           <div
             className="sy-num"
             style={{
@@ -106,8 +120,12 @@ function BookingSummary() {
               fontVariationSettings: "var(--display-var)",
             }}
           >
-            €280,00
+            {eur(TOTAL_TTC_CENTS)}
           </div>
+        </div>
+        <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "var(--surface-2)" }}>
+          <Row label="Acompte à régler aujourd'hui (30%)" value={eur(DEPOSIT_CENTS)} />
+          <Row label="Solde avant l'événement" value={eur(BALANCE_CENTS)} />
         </div>
       </div>
       <div style={{ padding: 18, background: "var(--accent-soft)" }}>
@@ -145,7 +163,7 @@ export default async function BookingPage({ params }: Props) {
           gap: 24, background: "var(--surface)", flexWrap: "wrap",
         }}
       >
-        <Link href={`/prestations/${prestationSlug}`} style={{ textDecoration: "none", color: "inherit" }}>
+        <Link href={`/experiences/${prestationSlug}`} style={{ textDecoration: "none", color: "inherit" }}>
           <Logo />
         </Link>
         <BookingStepper active={1} />
@@ -157,22 +175,26 @@ export default async function BookingPage({ params }: Props) {
 
       <div className="booking-grid">
         <div>
-          <h1 className="sy-h1" style={{ marginBottom: 6 }}>Finalisez votre réservation</h1>
+          <h1 className="sy-h1" style={{ marginBottom: 6 }}>Finalisez votre commande</h1>
           <p className="sy-small sy-muted" style={{ marginBottom: 22 }}>
-            Plus que quelques étapes — votre soutien ira directement au tournoi U17 d&apos;USB Volley.
+            Plus que quelques étapes — votre commande finance directement l&apos;école de jeunes U17 de la SIG Strasbourg.
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <BookSection
               n={1}
               state="done"
-              title="Détails de la prestation"
-              summary="sam. 14 juin · 16h00 · 24 personnes · 12 rue de Vannes"
+              title="Détails de l'expérience"
+              summary="lun. 16 juin · 09h00 · 40 personnes · Rhénus Sport, Strasbourg"
             />
 
-            <BookSection n={2} state="active" open title="Message à l'association">
-              <Field label="Votre nom">
-                <Input defaultValue="Camille Léger" />
+            <BookSection n={2} state="active" open title="Coordonnées de l'entreprise">
+              <Field label="Entreprise">
+                <Input defaultValue="Klaxoon SAS" />
+              </Field>
+              <div style={{ height: 14 }} />
+              <Field label="Contact référent">
+                <Input defaultValue="Camille Léger · Office Manager" />
               </Field>
               <div style={{ height: 14 }} />
               <Field label="Téléphone (optionnel)" hint="Pour faciliter la coordination le jour J">
@@ -181,9 +203,9 @@ export default async function BookingPage({ params }: Props) {
               <div style={{ height: 14 }} />
               <Field
                 label="Message au club"
-                hint="Précisez vos attentes, allergies, contraintes d'accès…"
+                hint="Précisez vos attentes : effectif définitif, contraintes d'accès, besoins logistiques…"
               >
-                <Textarea defaultValue="Bonjour, c'est pour l'anniversaire de mon père (65 ans). On sera plutôt 22 adultes + 2 enfants. Pas d'allergies particulières, mais on aimerait des merguez et des saucisses végé." />
+                <Textarea defaultValue="Bonjour, c'est pour notre séminaire annuel d'équipe. Nous serons 40 collaborateurs (dont 6 à mobilité réduite). Prévoir une salle au calme pour le débrief de l'après-midi si possible. Merci !" />
               </Field>
 
               <div
@@ -192,7 +214,7 @@ export default async function BookingPage({ params }: Props) {
                   flexWrap: "wrap", gap: 8,
                 }}
               >
-                <Link href={`/prestations/${prestationSlug}`} style={{ textDecoration: "none" }}>
+                <Link href={`/experiences/${prestationSlug}`} style={{ textDecoration: "none" }}>
                   <Btn variant="ghost">← Étape précédente</Btn>
                 </Link>
                 <Link
@@ -200,13 +222,13 @@ export default async function BookingPage({ params }: Props) {
                   style={{ textDecoration: "none" }}
                 >
                   <Btn variant="dark" iconRight={<Icon name="arrow" size={14} color="#fff" />}>
-                    Continuer vers le paiement
+                    Continuer vers l&apos;acompte
                   </Btn>
                 </Link>
               </div>
             </BookSection>
 
-            <BookSection n={3} state="upcoming" title="Paiement" />
+            <BookSection n={3} state="upcoming" title="Acompte (30%)" />
           </div>
         </div>
 

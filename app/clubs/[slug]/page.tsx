@@ -1,41 +1,43 @@
+import Link from "next/link";
 import { Btn, IconBtn, Chip, Card, Progress, Stars } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { TopNav, SiteFooter } from "@/components/ds/patterns";
-import { AssociationTabs } from "./AssociationTabs";
+import { ClubTabs } from "./ClubTabs";
 
 // Placeholder data — will be replaced by Prisma queries in Phase B
-const ASSO = {
-  slug: "usb-volley",
-  initials: "UV",
-  name: "USB Volley",
-  fullName: "Union Sportive de Bréquigny",
-  city: "Rennes (35200)",
+const CLUB = {
+  slug: "sig-strasbourg",
+  initials: "SIG",
+  name: "SIG Strasbourg",
+  fullName: "Strasbourg IG Basket",
+  clubType: "club_pro" as const,
+  city: "Strasbourg (67000)",
   rating: 4.9,
   reviewCount: 47,
-  memberCount: 220,
-  teamCount: 4,
+  memberCount: 180,
+  teamCount: 6,
   verified: true,
   description:
-    "Club de volley-ball amateur fondé en 1978, l'USB regroupe 4 équipes (loisirs, U13, U17, seniors). Nous proposons des prestations conviviales pour financer notre saison sportive et les déplacements de nos jeunes en compétition.",
+    "Club professionnel de basket évoluant en Betclic Élite. La SIG ouvre son Arena et son staff aux entreprises : séminaires de cohésion, initiations encadrées, matchs VIP et masterclass. Chaque expérience finance directement notre école de jeunes et nos déplacements.",
   stats: [
-    { value: "42", label: "prestations", sub: "depuis 2024" },
-    { value: "€18 400", label: "reversés", sub: "à 7 projets" },
+    { value: "12", label: "expériences", sub: "au catalogue" },
+    { value: "€42 800", label: "reversés", sub: "à 6 projets" },
     { value: "4.9 / 5", label: "satisfaction", sub: "47 avis" },
   ],
   featuredProject: {
-    title: "Tournoi national U17 · Espagne",
-    raised: 2480,
-    target: 4000,
+    title: "École de jeunes U17 · saison 2026",
+    raised: 24800,
+    target: 40000,
     goal: 0.62,
     daysLeft: 12,
   },
 };
 
 export async function generateStaticParams() {
-  return [{ slug: "usb-volley" }];
+  return [{ slug: "sig-strasbourg" }];
 }
 
-export default function AssoProfilePage() {
+export default function ClubProfilePage() {
   const logoStyle = {
     width: 120,
     height: 120,
@@ -55,7 +57,7 @@ export default function AssoProfilePage() {
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <TopNav active="associations" />
+      <TopNav active="clubs" />
 
       {/* Cover */}
       <div
@@ -83,14 +85,14 @@ export default function AssoProfilePage() {
 
         {/* Identity row */}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 24, marginBottom: 28 }}>
-          <div style={logoStyle}>{ASSO.initials}</div>
+          <div style={logoStyle}>{CLUB.initials}</div>
 
           <div style={{ flex: 1, paddingBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h1 className="sy-h1" style={{ fontSize: 36 }}>
-                {ASSO.name} · {ASSO.fullName}
+                {CLUB.name} · {CLUB.fullName}
               </h1>
-              {ASSO.verified && (
+              {CLUB.verified && (
                 <span
                   style={{
                     width: 26,
@@ -102,7 +104,7 @@ export default function AssoProfilePage() {
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
-                  aria-label="Association vérifiée"
+                  aria-label="Club vérifié"
                 >
                   <Icon name="check" size={14} color="#fff" />
                 </span>
@@ -121,13 +123,13 @@ export default function AssoProfilePage() {
                 className="sy-small"
                 style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
               >
-                <Icon name="pin" size={13} /> {ASSO.city}
+                <Icon name="pin" size={13} /> {CLUB.city}
               </span>
               <span className="sy-small sy-muted">·</span>
-              <Stars value={ASSO.rating} size={13} mono />
+              <Stars value={CLUB.rating} size={13} mono />
               <span className="sy-small sy-muted">·</span>
               <span className="sy-small">
-                {ASSO.memberCount} adhérents · {ASSO.teamCount} équipes
+                {CLUB.memberCount} adhérents · {CLUB.teamCount} équipes
               </span>
               <Chip variant="primary" size="sm">
                 <Icon name="check" size={10} /> vérifié
@@ -136,8 +138,10 @@ export default function AssoProfilePage() {
           </div>
 
           <div style={{ display: "flex", gap: 10, paddingBottom: 8 }}>
-            <Btn variant="outline">Suivre</Btn>
-            <Btn variant="dark">Contacter</Btn>
+            <Btn variant="outline">Contacter</Btn>
+            <Link href="/experiences" style={{ textDecoration: "none" }}>
+              <Btn variant="dark">Demander un devis</Btn>
+            </Link>
             <IconBtn aria-label="Partager">
               <Icon name="share" size={16} />
             </IconBtn>
@@ -149,7 +153,7 @@ export default function AssoProfilePage() {
           <div>
             <h2 className="sy-h2">À propos</h2>
             <p className="sy-body" style={{ marginTop: 10, fontSize: 16, color: "var(--ink)" }}>
-              {ASSO.description}
+              {CLUB.description}
             </p>
             <div
               style={{
@@ -159,7 +163,7 @@ export default function AssoProfilePage() {
                 marginTop: 18,
               }}
             >
-              {ASSO.stats.map((s) => (
+              {CLUB.stats.map((s) => (
                 <Card key={s.label}>
                   <div
                     className="sy-num"
@@ -186,10 +190,10 @@ export default function AssoProfilePage() {
             >
               <div className="sy-mono">projet phare en cours</div>
               <div className="sy-h2" style={{ marginTop: 6 }}>
-                {ASSO.featuredProject.title}
+                {CLUB.featuredProject.title}
               </div>
               <Progress
-                value={ASSO.featuredProject.goal}
+                value={CLUB.featuredProject.goal}
                 size="tall"
                 style={{ marginTop: 12 }}
               />
@@ -201,16 +205,18 @@ export default function AssoProfilePage() {
                 }}
               >
                 <div className="sy-small sy-num">
-                  €{ASSO.featuredProject.raised.toLocaleString("fr-FR")} / €
-                  {ASSO.featuredProject.target.toLocaleString("fr-FR")}
+                  €{CLUB.featuredProject.raised.toLocaleString("fr-FR")} / €
+                  {CLUB.featuredProject.target.toLocaleString("fr-FR")}
                 </div>
                 <div className="sy-small sy-num">
-                  reste {ASSO.featuredProject.daysLeft}j
+                  reste {CLUB.featuredProject.daysLeft}j
                 </div>
               </div>
-              <Btn variant="primary" block style={{ marginTop: 14 }}>
-                Soutenir le projet
-              </Btn>
+              <Link href="/experiences" style={{ textDecoration: "none", display: "block", marginTop: 14 }}>
+                <Btn variant="primary" block>
+                  Voir les expériences du club
+                </Btn>
+              </Link>
             </Card>
           </div>
         </div>

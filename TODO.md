@@ -22,7 +22,7 @@ Voir `components/console/club-sidebar.tsx` (lignes 19-27) — 6 entrées sans pa
 
 - [x] `/console/[clubId]/prestations` — liste + édition prestations (avec statut `draft/published/paused`)
 - [x] `/console/[clubId]/reservations` — liste filtrable, vue détail booking, actions confirm/cancel
-- [ ] `/console/[clubId]/revenus` — encaissements, versements à venir, historique
+- [x] `/console/[clubId]/revenus` — encaissements, versements à venir, historique
 - [ ] `/console/[clubId]/avis` — modération avis reçus
 - [ ] `/console/[clubId]/equipe` — membres + invitations (rôles `president/treasurer/member`)
 - [ ] `/console/[clubId]/prestations/nouvelle` — formulaire création (cf. `designs/wire-create-service.jsx`)

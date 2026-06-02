@@ -6,9 +6,9 @@ import { Avatar, Btn, Card, Chip, Progress, Stars } from "./components";
 import { Icon } from "./icon";
 import { ImpactMini } from "./impact";
 
-// ─────── PrestationCard ───────
-export type PrestationHue = "green" | "orange" | "yellow" | "sand" | "teal" | "rust";
-const HUES: Record<PrestationHue, { bg: string; accent: string }> = {
+// ─────── ExperienceCard ───────
+export type ExperienceHue = "green" | "orange" | "yellow" | "sand" | "teal" | "rust";
+const HUES: Record<ExperienceHue, { bg: string; accent: string }> = {
   green:  { bg: "#1f4b3f", accent: "#fbe082" },
   orange: { bg: "#c0451f", accent: "#fce3d8" },
   yellow: { bg: "#b8861a", accent: "#fff2c5" },
@@ -17,38 +17,40 @@ const HUES: Record<PrestationHue, { bg: string; accent: string }> = {
   rust:   { bg: "#8c4a25", accent: "#fbd6b9" },
 };
 
-export type PrestationCardProps = {
+export type ExperienceCardProps = {
   title?: string;
   price?: number;
   loc?: string;
   rating?: number;
   reviews?: number;
+  /** Libellé format · capacité, ex. « Demi-journée · 10–40 pers. ». */
   category?: string;
-  asso?: string;
+  club?: string;
+  /** Projet du club financé par l'expérience (Experience.projectId). */
   funds?: string;
   goal?: number;
-  hue?: PrestationHue;
+  hue?: ExperienceHue;
   saved?: boolean;
   compact?: boolean;
   href?: string;
   style?: CSSProperties;
 };
 
-export function PrestationCard({
-  title = "Barbecue convivial du club",
-  price = 280,
+export function ExperienceCard({
+  title = "Séminaire cohésion · demi-journée",
+  price = 1_200,
   loc = "Strasbourg · 2 km",
   rating = 4.8,
   reviews = 47,
-  category = "BBQ · 10–60 pers.",
-  funds = "Tournoi U17",
+  category = "Cohésion · 10–40 pers.",
+  funds = "École de jeunes U17",
   goal = 0.62,
   hue = "green",
   saved,
   compact,
-  href = "/prestations/barbecue-convivial-usb-volley",
+  href = "/experiences/seminaire-cohesion-sig",
   style,
-}: PrestationCardProps) {
+}: ExperienceCardProps) {
   const h = HUES[hue];
   return (
     <Link href={href} style={{ textDecoration: "none", color: "inherit" }}>
@@ -138,10 +140,10 @@ export function PrestationCard({
 
 // ─────── ReviewCard ───────
 export function ReviewCard({
-  name = "Camille L.",
+  name = "Élodie M. · DRH",
   date = "avril 2026",
   rating = 5,
-  body = "Super journée pour le BBQ de mon entreprise, équipe ultra réactive et on a fait avancer un projet local !",
+  body = "Séminaire de cohésion impeccable pour nos 32 collaborateurs. Le club a tout organisé, et notre budget a directement soutenu leur école de jeunes.",
   tone = "orange" as const,
   initials,
   style,
@@ -164,20 +166,21 @@ export function ReviewCard({
   );
 }
 
-// ─────── BookingCard (sticky right rail on detail page) ───────
-export function BookingCard({
-  price = 280,
-  date = "sam. 14 juin",
-  time = "16h00",
-  participants = "24 personnes",
+// ─────── QuoteCard (sticky right rail on experience detail) ───────
+// Flux B2B : pas d'achat instantané. L'entreprise demande un devis ; le prix
+// affiché est indicatif (« à partir de ») et le montant ferme arrive dans le
+// devis (Quote). Voir SPEC §6 — CTA « Demander un devis ».
+export function QuoteCard({
+  price = 1_200,
+  format = "Demi-journée",
+  capacity = "10–40 personnes",
   withImpact = true,
-  ctaHref = "/reserver/barbecue-convivial-usb-volley",
+  ctaHref = "/experiences/seminaire-cohesion-sig",
   style,
 }: {
   price?: number;
-  date?: string;
-  time?: string;
-  participants?: string;
+  format?: string;
+  capacity?: string;
   withImpact?: boolean;
   ctaHref?: string;
   style?: CSSProperties;
@@ -197,27 +200,23 @@ export function BookingCard({
         >
           €{price}
         </div>
-        <div className="sy-mono">/ prestation</div>
+        <div className="sy-mono">à partir de · HT</div>
       </div>
       <div style={{ marginTop: 14, border: "1.5px solid var(--ink)", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ display: "flex", borderBottom: "1px solid var(--line)" }}>
           <div style={{ flex: 1, padding: "10px 14px", borderRight: "1px solid var(--line)" }}>
-            <div className="sy-mono">Date</div>
-            <div className="sy-h4" style={{ marginTop: 2 }}>{date}</div>
+            <div className="sy-mono">Format</div>
+            <div className="sy-h4" style={{ marginTop: 2 }}>{format}</div>
           </div>
           <div style={{ flex: 1, padding: "10px 14px" }}>
-            <div className="sy-mono">Heure</div>
-            <div className="sy-h4" style={{ marginTop: 2 }}>{time}</div>
+            <div className="sy-mono">Capacité</div>
+            <div className="sy-h4" style={{ marginTop: 2 }}>{capacity}</div>
           </div>
-        </div>
-        <div style={{ padding: "10px 14px" }}>
-          <div className="sy-mono">Participants</div>
-          <div className="sy-h4" style={{ marginTop: 2 }}>{participants}</div>
         </div>
       </div>
       <Link href={ctaHref} style={{ textDecoration: "none", display: "block", marginTop: 14 }}>
         <Btn variant="primary" size="lg" block iconRight={<Icon name="arrow" size={16} color="#fff" />}>
-          Réserver
+          Demander un devis
         </Btn>
       </Link>
       <div
@@ -228,11 +227,11 @@ export function BookingCard({
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <Icon name="check" size={12} color="var(--success)" /> Annulation gratuite J-7
+          <Icon name="check" size={12} color="var(--success)" /> Devis sous 48h
         </span>
         <span>·</span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <Icon name="lock" size={12} color="var(--ink-3)" /> Stripe
+          <Icon name="lock" size={12} color="var(--ink-3)" /> Sans engagement
         </span>
       </div>
       {withImpact && (
@@ -266,14 +265,14 @@ export function Logo({ size = 22, color = "var(--ink)" }: { size?: number; color
 }
 
 const TOPNAV_ITEMS = [
-  { id: "prestations",  label: "Prestations",  href: "/prestations" },
-  { id: "associations", label: "Associations", href: "/associations" },
-  { id: "carte",        label: "Carte",        href: "/prestations?vue=carte" },
-  { id: "projets",      label: "Projets",      href: "/projets" },
+  { id: "experiences", label: "Expériences", href: "/experiences" },
+  { id: "clubs",       label: "Clubs",       href: "/clubs" },
+  { id: "carte",       label: "Carte",       href: "/experiences?vue=carte" },
+  { id: "projets",     label: "Projets",     href: "/projets" },
 ];
 
 export function TopNav({
-  active = "prestations",
+  active = "experiences",
   variant = "default",
 }: { active?: string; variant?: "default" | "transparent" }) {
   return (
@@ -301,7 +300,7 @@ export function TopNav({
       </div>
       <div className="sy-topnav-actions">
         <Link href="/inscription-club" style={{ textDecoration: "none" }} className="sy-topnav-ghost-hide">
-          <Btn variant="ghost" size="sm">Inscrire mon asso</Btn>
+          <Btn variant="ghost" size="sm">Inscrire mon club</Btn>
         </Link>
         <Link href="/connexion" style={{ textDecoration: "none" }}>
           <Btn variant="dark" size="sm">Se connecter</Btn>
@@ -336,14 +335,14 @@ const FOOTER_COLS: Array<{ title: string; links: Array<[string, string]> }> = [
   {
     title: "Sociuly",
     links: [
-      ["Comment ça marche", "/"],
-      ["Marketplace",       "/prestations"],
-      ["Projets financés",  "/prestations"],
-      ["Notre impact",      "/"],
+      ["Comment ça marche",      "/"],
+      ["Catalogue d'expériences", "/experiences"],
+      ["Clubs partenaires",      "/clubs"],
+      ["Notre impact",           "/"],
     ],
   },
   {
-    title: "Clubs & assos",
+    title: "Clubs",
     links: [
       ["Inscrire mon club",  "/inscription-club"],
       ["Console club",       CONSOLE_PUBLIC_LINK],
@@ -354,9 +353,9 @@ const FOOTER_COLS: Array<{ title: string; links: Array<[string, string]> }> = [
   {
     title: "Entreprises",
     links: [
-      ["Séminaires d'équipe", "/prestations"],
-      ["Mécénat sportif",     "/"],
-      ["Devis sur mesure",    "/"],
+      ["Séminaires d'équipe", "/experiences"],
+      ["Cohésion d'équipe",   "/experiences"],
+      ["Devis sur mesure",    "/experiences"],
       ["Études de cas",       "/"],
     ],
   },
@@ -392,7 +391,7 @@ export function SiteFooter() {
             </span>
           </div>
           <p className="sy-body" style={{ marginTop: 14, maxWidth: 320, color: "var(--ink-2)" }}>
-            La plateforme qui finance le sport amateur local, une réservation à la fois.
+            Des expériences sportives premium pour vos équipes, conçues et animées par les clubs locaux.
           </p>
           <div style={{ marginTop: 22 }}>
             <div className="sy-mono" style={{ color: "var(--ink-3)" }}>Restez au courant</div>
@@ -412,7 +411,7 @@ export function SiteFooter() {
                   type="email"
                   name="email"
                   required
-                  placeholder="vous@asso.fr"
+                  placeholder="vous@entreprise.fr"
                   autoComplete="email"
                   style={{
                     flex: 1, border: "none", background: "transparent", outline: "none",

@@ -1,37 +1,37 @@
 import Link from "next/link";
 import { Avatar, Btn, Card, Chip, Stars } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { BookingCard, ReviewCard, SiteFooter, TopNav } from "@/components/ds/patterns";
+import { QuoteCard, ReviewCard, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactHero } from "@/components/ds/impact";
 
 type Props = { params: Promise<{ slug: string }> };
 
 const FACTS: Array<[string, string, "users" | "calendar" | "pin" | "check"]> = [
-  ["Capacité", "10–60 pers.",          "users"],
-  ["Durée",    "≈ 3 heures",            "calendar"],
-  ["Lieu",     "Chez vous",             "pin"],
-  ["Inclus",   "Matériel + 6 bénévoles", "check"],
+  ["Capacité", "20–60 pers.",            "users"],
+  ["Format",   "Journée (≈ 6h)",         "calendar"],
+  ["Lieu",     "Rhénus Sport, Strasbourg", "pin"],
+  ["Inclus",   "Coach + joueur pro",     "check"],
 ];
 
 const INCLUDED = [
-  "Matériel de cuisson", "Tables et nappes",
-  "6 bénévoles",         "Service de A à Z",
-  "Vaisselle compostable", "Boissons sur option",
+  "Présentation par le coach",       "Initiation encadrée sur parquet",
+  "Atelier cohésion d'équipe",       "Masterclass d'un joueur pro",
+  "Cocktail & visite des coulisses", "Photos & vidéo de la journée",
 ];
 
-export default async function PrestationDetailPage({ params }: Props) {
+export default async function ExperienceDetailPage({ params }: Props) {
   const { slug } = await params;
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <TopNav active="prestations" />
+      <TopNav active="experiences" />
 
       <div style={{ padding: "20px var(--page-pad) 40px", maxWidth: 1440, margin: "0 auto" }}>
         {/* breadcrumb */}
         <div className="sy-mono" style={{ marginBottom: 8 }}>
-          <Link href="/prestations" style={{ color: "inherit", textDecoration: "none" }}>Marketplace</Link>
-          {" › BBQ › "}
-          <span style={{ color: "var(--ink)" }}>Barbecue convivial USB Volley</span>
+          <Link href="/experiences" style={{ color: "inherit", textDecoration: "none" }}>Expériences</Link>
+          {" › Cohésion › "}
+          <span style={{ color: "var(--ink)" }}>Journée immersion SIG Strasbourg</span>
         </div>
 
         <div
@@ -41,7 +41,7 @@ export default async function PrestationDetailPage({ params }: Props) {
           }}
         >
           <div>
-            <h1 className="sy-h1" style={{ fontSize: 36 }}>Barbecue convivial du club USB Volley</h1>
+            <h1 className="sy-h1" style={{ fontSize: 36 }}>Journée immersion · SIG Strasbourg</h1>
             <div style={{ display: "flex", gap: 14, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
               <Stars value={4.9} />
               <span className="sy-small" style={{ color: "var(--ink)" }}>4.9 · 47 avis</span>
@@ -49,7 +49,7 @@ export default async function PrestationDetailPage({ params }: Props) {
               <span className="sy-small" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                 <Icon name="pin" size={13} /> Strasbourg (67)
               </span>
-              <Chip variant="primary"><Icon name="check" size={11} /> Asso vérifiée</Chip>
+              <Chip variant="primary"><Icon name="check" size={11} /> Club vérifié</Chip>
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -70,7 +70,7 @@ export default async function PrestationDetailPage({ params }: Props) {
               <path d="M0 200 Q 80 175 130 195 T 220 185 L 220 220 L 0 220 Z" fill="#14332b" />
             </svg>
             <span className="sy-img-label" style={{ position: "absolute", bottom: 16, left: 16 }}>
-              Photo principale · scène BBQ
+              Photo principale · parquet Rhénus Sport
             </span>
           </div>
           <div className="sy-img" style={{ borderRadius: 0, background: "linear-gradient(135deg, #e8623d 0%, #c0451f 100%)" }} />
@@ -101,14 +101,14 @@ export default async function PrestationDetailPage({ params }: Props) {
                 borderBottom: "1px solid var(--line)",
               }}
             >
-              <Avatar initials="UV" size="lg" tone="green" />
+              <Avatar initials="SIG" size="lg" tone="green" />
               <div style={{ flex: 1 }}>
-                <div className="sy-h3">Proposé par USB Volley</div>
-                <div className="sy-small sy-muted">42 prestations · membre depuis 2024 · répond en 2h</div>
+                <div className="sy-h3">Proposé par SIG Strasbourg</div>
+                <div className="sy-small sy-muted">12 expériences · club pro · répond en 2h</div>
               </div>
-              <Link href="/associations/usb-volley" style={{ textDecoration: "none" }}>
+              <Link href="/clubs/sig-strasbourg" style={{ textDecoration: "none" }}>
                 <Btn variant="outline" size="sm" iconRight={<Icon name="arrow" size={13} />}>
-                  Voir l&apos;asso
+                  Voir le club
                 </Btn>
               </Link>
             </div>
@@ -127,14 +127,13 @@ export default async function PrestationDetailPage({ params }: Props) {
             {/* description */}
             <h2 className="sy-h2" style={{ marginTop: 28 }}>L&apos;expérience</h2>
             <p className="sy-body" style={{ marginTop: 10, fontSize: 16, color: "var(--ink)" }}>
-              Notre équipe de bénévoles vient cuisiner chez vous : grillades préparées sur place,
-              salades de saison, ambiance conviviale assurée. Idéal pour les anniversaires, les
-              événements d&apos;entreprise ou les fêtes de quartier.
+              Une journée immersive au cœur d&apos;un club professionnel. Vos équipes sont accueillies au
+              Rhénus Sport, encadrées par les coachs et un joueur pro : présentation, initiation sur le
+              parquet, ateliers de cohésion, puis cocktail dans les coulisses de l&apos;Arena.
             </p>
             <p className="sy-body" style={{ marginTop: 8 }}>
-              Tout le matériel est fourni, les bénévoles s&apos;occupent du service du début à la fin.
-              Vous profitez, on s&apos;occupe du reste — et chaque réservation finance directement
-              notre projet de saison.
+              Tout est organisé par le club, du coach diplômé à la logistique. Vous vivez une expérience
+              clé en main — et chaque expérience finance directement le projet de saison du club.
             </p>
 
             <div className="included-grid">
@@ -199,10 +198,10 @@ export default async function PrestationDetailPage({ params }: Props) {
             <div className="reviews-grid">
               <ReviewCard />
               <ReviewCard
-                name="Hugo M."
+                name="Hugo M. · CEO"
                 tone="green"
                 rating={5}
-                body="Excellent moment d'équipe, et le club a pu financer ses maillots. Service nickel, ambiance au top."
+                body="Une journée mémorable pour nos 38 collaborateurs. Organisation millimétrée par le club, et notre budget a soutenu leur école de jeunes."
               />
             </div>
           </div>
@@ -210,7 +209,7 @@ export default async function PrestationDetailPage({ params }: Props) {
           {/* RIGHT RAIL */}
           <aside>
             <div style={{ position: "sticky", top: 16 }}>
-              <BookingCard ctaHref={`/reserver/${slug}`} />
+              <QuoteCard price={4_800} format="Journée" capacity="20–60 personnes" ctaHref={`/reserver/${slug}`} />
               <div style={{ marginTop: 16 }}>
                 <ImpactHero />
               </div>

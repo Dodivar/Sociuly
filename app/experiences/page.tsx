@@ -1,10 +1,10 @@
 import { Avatar, IconBtn, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { Logo, PrestationCard, SiteFooter } from "@/components/ds/patterns";
+import { Logo, ExperienceCard, SiteFooter } from "@/components/ds/patterns";
 import { MarketMap } from "@/components/ds/impact";
 import { MarketplaceFilters } from "@/components/marketplace/filters";
 
-export default function MarketplacePage() {
+export default function ExperiencesPage() {
   return (
     <main
       style={{
@@ -42,35 +42,40 @@ export default function MarketplacePage() {
               marginBottom: 16, flexWrap: "wrap", gap: 8,
             }}
           >
-            <h2 className="sy-h1" style={{ fontSize: 26 }}>128 prestations près de Strasbourg</h2>
-            <div className="sy-mono">★ 4.7 moyenne · €184 reversés cette semaine</div>
+            <h2 className="sy-h1" style={{ fontSize: 26 }}>128 expériences près de Strasbourg</h2>
+            <div className="sy-mono">★ 4.7 moyenne · €2 480 reversés aux clubs cette semaine</div>
           </div>
-          <div className="prestation-grid">
-            <PrestationCard hue="green" />
-            <PrestationCard
-              title="Olympiades en entreprise" price={720} hue="orange"
+          <div className="experience-grid">
+            <ExperienceCard hue="green" />
+            <ExperienceCard
+              title="Initiation rugby encadrée" price={900} hue="orange"
               goal={0.78} funds="Mini-bus du club" rating={4.9} reviews={62}
-              href="/prestations/olympiades-en-entreprise"
+              category="Initiation · 15–30 pers."
+              href="/experiences/initiation-rugby-encadree"
             />
-            <PrestationCard
-              title="Anniversaire sportif" price={180} hue="yellow"
-              goal={0.25} funds="Maillots saison" rating={4.6} reviews={28}
-              href="/prestations/anniversaire-sportif"
-            />
-            <PrestationCard
-              title="Buvette événement" price={350} hue="teal"
+            <ExperienceCard
+              title="Mini-tournoi inter-équipes" price={1_500} hue="teal"
               goal={0.55} funds="Vestiaires neufs" rating={4.7} reviews={41}
-              href="/prestations/buvette-evenement"
+              category="Tournoi · 20–80 pers."
+              href="/experiences/mini-tournoi-inter-equipes"
             />
-            <PrestationCard
-              title="Initiation rugby U10" price={420} hue="rust"
-              goal={0.85} funds="Stage été" rating={5.0} reviews={19}
-              href="/prestations/initiation-rugby-u10"
+            <ExperienceCard
+              title="Match VIP & hospitalités" price={2_400} hue="yellow"
+              goal={0.25} funds="Maillots saison" rating={4.6} reviews={28}
+              category="Match VIP · 20–60 pers."
+              href="/experiences/match-vip-hospitalites"
             />
-            <PrestationCard
-              title="Tournoi pétanque inter-entreprises" price={220} hue="sand"
-              goal={0.15} funds="Boules de compétition" rating={4.5} reviews={12}
-              href="/prestations/tournoi-petanque-inter-entreprises"
+            <ExperienceCard
+              title="Masterclass joueur pro" price={1_800} hue="rust"
+              goal={0.85} funds="Stage été U13" rating={5.0} reviews={19}
+              category="Masterclass · 10–40 pers."
+              href="/experiences/masterclass-joueur-pro"
+            />
+            <ExperienceCard
+              title="Cocktail & visite des coulisses" price={1_100} hue="sand"
+              goal={0.15} funds="École de jeunes" rating={4.5} reviews={12}
+              category="Coulisses · 15–50 pers."
+              href="/experiences/cocktail-coulisses"
             />
           </div>
         </div>
@@ -91,7 +96,7 @@ export default function MarketplacePage() {
           min-height: 0;
         }
         .marketplace-map { position: relative; min-height: 600px; }
-        .prestation-grid {
+        .experience-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 16px;
@@ -101,7 +106,7 @@ export default function MarketplacePage() {
           .marketplace-map { height: 420px; min-height: 420px; }
         }
         @media (max-width: 768px) {
-          .prestation-grid { grid-template-columns: 1fr; }
+          .experience-grid { grid-template-columns: 1fr; }
           .marketplace-map { display: none; }
         }
       `}</style>

@@ -5,19 +5,21 @@ import { Btn, Tabs } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import type { Booking, BookingStatus } from "@/lib/console/mock-dashboard";
 
-const TABS = ["Toutes", "À valider", "Confirmées"] as const;
+const TABS = ["Toutes", "En attente", "Confirmées"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_FILTER: Record<Tab, (s: BookingStatus) => boolean> = {
-  "Toutes":     () => true,
-  "À valider":  (s) => s === "pending",
-  "Confirmées": (s) => s === "confirmed",
+  "Toutes":      () => true,
+  "En attente":  (s) => s === "quote_accepted" || s === "deposit_paid",
+  "Confirmées":  (s) => s === "confirmed" || s === "in_progress",
 };
 
 const STATUS_STYLE: Record<BookingStatus, { bg: string; fg: string; label: string }> = {
-  pending:   { bg: "var(--highlight-soft)", fg: "#6e5111",            label: "À valider" },
-  confirmed: { bg: "var(--primary-soft)",   fg: "var(--primary-deep)", label: "Confirmée" },
-  done:      { bg: "var(--surface-2)",      fg: "var(--ink-2)",        label: "Terminée" },
+  quote_accepted: { bg: "var(--highlight-soft)", fg: "#6e5111",             label: "Devis accepté" },
+  deposit_paid:   { bg: "var(--accent-soft)",    fg: "var(--accent-deep)",  label: "Acompte versé" },
+  confirmed:      { bg: "var(--primary-soft)",   fg: "var(--primary-deep)", label: "Confirmée" },
+  in_progress:    { bg: "var(--primary-soft)",   fg: "var(--primary-deep)", label: "En cours" },
+  completed:      { bg: "var(--surface-2)",      fg: "var(--ink-2)",        label: "Terminée" },
 };
 
 type Props = {
@@ -40,8 +42,8 @@ export function BookingsPanel({ bookings, totalCount }: Props) {
     >
       <div className="bp-header">
         <div>
-          <div className="sy-mono">Réservations à venir</div>
-          <h3 className="sy-h2" style={{ marginTop: 4 }}>Prochaines prestations</h3>
+          <div className="sy-mono">Commandes à venir</div>
+          <h3 className="sy-h2" style={{ marginTop: 4 }}>Prochaines expériences</h3>
         </div>
         <Tabs
           variant="pill"
@@ -138,13 +140,13 @@ function BookingRow({ booking }: { booking: Booking }) {
       </div>
 
       <div className="bp-who">
-        <div className="sy-h4">{booking.customer}</div>
+        <div className="sy-h4">{booking.organization}</div>
         <div className="sy-mono" style={{ marginTop: 2 }}>{booking.time}</div>
       </div>
 
       <div className="bp-presta">
         <div className="sy-small" style={{ color: "var(--ink)", fontWeight: 500 }}>
-          {booking.presta}
+          {booking.experience}
         </div>
         <div className="sy-mono" style={{ marginTop: 2 }}>{booking.guests} pers.</div>
       </div>

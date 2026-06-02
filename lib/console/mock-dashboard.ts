@@ -1,14 +1,21 @@
 import type { IconName } from "@/components/ds/icon";
 
-export type BookingStatus = "pending" | "confirmed" | "done";
+// Cf. SPEC.md §3 — Booking.status. Sous-ensemble pertinent pour le tableau de
+// bord club (commandes déjà contractualisées, après acceptation du devis).
+export type BookingStatus =
+  | "quote_accepted"
+  | "deposit_paid"
+  | "confirmed"
+  | "in_progress"
+  | "completed";
 
 export type Booking = {
   id: string;
   date: string;
   dayLabel: string;
   time: string;
-  customer: string;
-  presta: string;
+  organization: string;
+  experience: string;
   guests: number;
   status: BookingStatus;
   amount: number;
@@ -55,7 +62,7 @@ export type Club = {
   };
 };
 
-export type NavBadges = Partial<Record<"presta" | "resa" | "projets" | "avis", number>>;
+export type NavBadges = Partial<Record<"experiences" | "devis" | "resa" | "projets" | "avis", number>>;
 
 export type DashboardData = {
   greeting: string;
@@ -72,13 +79,13 @@ export type DashboardData = {
 export async function getClubSummary(clubId: string): Promise<Club> {
   return {
     id: clubId,
-    name: "USB Volley",
-    city: "Rennes",
-    initials: "UV",
+    name: "SIG Strasbourg",
+    city: "Strasbourg",
+    initials: "SIG",
     season: {
       label: "Saison 2026",
-      raised: 18400,
-      goal: 30000,
+      raised: 24800,
+      goal: 40000,
       progress: 0.62,
     },
   };
@@ -87,35 +94,35 @@ export async function getClubSummary(clubId: string): Promise<Club> {
 // TODO(api): remplacer par un fetch DB / RPC.
 export async function getDashboardData(_clubId: string): Promise<DashboardData> {
   return {
-    greeting: "Bonjour Margaux 👋",
+    greeting: "Bonjour Laure 👋",
     summary:
-      "3 réservations à valider · €1 240 collectés cette semaine pour le tournoi U17.",
+      "2 devis à envoyer · €12 480 contractualisés cette semaine pour l'école de jeunes U17.",
     stats: [
-      { id: "rev",   label: "Revenus · 30j",   value: "€4 280", delta: "+18%",  deltaPositive: true, icon: "euro" },
-      { id: "resa",  label: "Réservations",    value: "22",     delta: "+5",    deltaPositive: true, icon: "calendar" },
-      { id: "note",  label: "Note moyenne",    value: "4.9",    delta: "+0.1",  deltaPositive: true, icon: "star" },
-      { id: "proj",  label: "Projet U17",      value: "62%",    delta: "+8 pt", deltaPositive: true, icon: "trophy" },
+      { id: "rev",   label: "Revenus · 30j",      value: "€38 200", delta: "+22%",  deltaPositive: true, icon: "euro" },
+      { id: "resa",  label: "Commandes",          value: "9",       delta: "+3",    deltaPositive: true, icon: "calendar" },
+      { id: "note",  label: "Note moyenne",       value: "4.9",     delta: "+0.1",  deltaPositive: true, icon: "star" },
+      { id: "proj",  label: "École de jeunes U17", value: "62%",    delta: "+8 pt", deltaPositive: true, icon: "trophy" },
     ],
     bookings: [
-      { id: "b1", date: "14", dayLabel: "SAM JUIN", time: "16h00–19h00", customer: "Camille Léger",   presta: "Barbecue convivial",       guests: 24, status: "pending",   amount: 280, project: "Tournoi U17" },
-      { id: "b2", date: "21", dayLabel: "SAM JUIN", time: "14h00–17h00", customer: "Lycée Bréquigny", presta: "Olympiades inter-classes", guests: 80, status: "confirmed", amount: 720, project: "Tournoi U17" },
-      { id: "b3", date: "28", dayLabel: "SAM JUIN", time: "11h00–14h00", customer: "Famille Dupuy",   presta: "Anniversaire enfant",      guests: 18, status: "confirmed", amount: 180, project: "Maillots"    },
-      { id: "b4", date: "05", dayLabel: "SAM JUIL", time: "18h00–22h00", customer: "Mairie de Rennes", presta: "Buvette fête de quartier", guests: 120, status: "confirmed", amount: 350, project: "Vestiaires"  },
+      { id: "b1", date: "16", dayLabel: "LUN JUIN", time: "09h00–17h00", organization: "Klaxoon SAS",      experience: "Journée immersion · SIG",      guests: 40, status: "deposit_paid",  amount: 4800, project: "École de jeunes U17" },
+      { id: "b2", date: "23", dayLabel: "MAR JUIN", time: "18h00–22h00", organization: "Lohr Group",       experience: "Match VIP & hospitalités",     guests: 30, status: "confirmed",    amount: 2400, project: "Mini-bus du club" },
+      { id: "b3", date: "27", dayLabel: "SAM JUIN", time: "14h00–17h00", organization: "Caisse d'Épargne",  experience: "Atelier cohésion d'équipe",    guests: 24, status: "confirmed",    amount: 1200, project: "Maillots saison" },
+      { id: "b4", date: "04", dayLabel: "SAM JUIL", time: "10h00–13h00", organization: "Decathlon Campus",  experience: "Initiation basket encadrée",   guests: 36, status: "quote_accepted", amount: 900, project: "Tournoi U17"   },
     ],
-    bookingsTotal: 22,
+    bookingsTotal: 9,
     project: {
-      name: "Tournoi U17",
-      raised: 2480,
-      goal: 4000,
+      name: "École de jeunes U17",
+      raised: 24800,
+      goal: 40000,
       daysLeft: 12,
-      weeklyDelta: 420,
+      weeklyDelta: 2480,
       spark: [12, 18, 8, 22, 30, 14, 26, 38, 24, 42, 50, 36, 48, 56],
     },
     tasks: [
-      { id: "t1", label: "Valider la résa du 14 juin", hint: "urgent", tone: "urgent" },
-      { id: "t2", label: "Répondre à 2 messages",                       tone: "warn"   },
-      { id: "t3", label: "Mettre à jour le projet U17",                 tone: "info"   },
+      { id: "t1", label: "Envoyer le devis Klaxoon (40 pers.)", hint: "urgent", tone: "urgent" },
+      { id: "t2", label: "Répondre à 2 demandes de devis",                       tone: "warn"   },
+      { id: "t3", label: "Mettre à jour le projet école de jeunes U17",          tone: "info"   },
     ],
-    navBadges: { resa: 3 },
+    navBadges: { devis: 2 },
   };
 }

@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { Btn, Card, Chip, Avatar, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { Logo, PrestationCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
+import { Logo, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/ds/impact";
 
 const CATEGORIES = [
-  { id: "bbq",     label: "BBQ & buvettes",        count: 84,  hue: "orange" },
-  { id: "anim",    label: "Animation enfants",     count: 121, hue: "yellow" },
-  { id: "olym",    label: "Olympiades entreprise", count: 47,  hue: "green" },
-  { id: "event",   label: "Événements & soirées",  count: 62,  hue: "teal" },
-  { id: "coach",   label: "Coaching sportif",      count: 38,  hue: "green" },
-  { id: "tournoi", label: "Tournois & cup",        count: 19,  hue: "orange" },
+  { id: "cohesion",   label: "Cohésion d'équipe",      count: 84,  hue: "green" },
+  { id: "initiation", label: "Initiation sportive",    count: 121, hue: "yellow" },
+  { id: "tournoi",    label: "Mini-tournois d'équipe", count: 47,  hue: "orange" },
+  { id: "match-vip",  label: "Match VIP & hospitalités", count: 62, hue: "teal" },
+  { id: "masterclass", label: "Masterclass joueur pro", count: 38, hue: "green" },
+  { id: "coulisses",  label: "Cocktail & coulisses",   count: 19,  hue: "orange" },
 ] as const;
 
 const HUE_BG: Record<string, string> = {
@@ -23,40 +23,40 @@ const HUE_BG: Record<string, string> = {
 const REVIEWS = [
   {
     who: "Camille R.",
-    role: "Présidente · US Cesson Handball",
+    role: "Présidente · SIG Strasbourg",
     quote:
-      "En six mois on a financé les maillots U13 + un tournoi régional. Le tunnel de réservation est tellement clair que mes bénévoles n'ont rien à gérer.",
+      "On accueille trois séminaires d'entreprise par mois. Sociuly gère les devis et les paiements, mes équipes se concentrent sur l'accueil et l'animation.",
   },
   {
     who: "Thomas M.",
     role: "Office Manager · Klaxoon",
     quote:
-      "On a remplacé notre traiteur séminaire par un BBQ d'un club du quartier. Coût identique, impact local visible, équipe ravie.",
+      "On a remplacé notre séminaire de cohésion classique par une demi-journée dans un club du quartier. Budget maîtrisé, impact local visible, équipe conquise.",
   },
   {
     who: "Sophie L.",
-    role: "Trésorière · RC Strasbourg XV",
+    role: "DRH · Lohr Group",
     quote:
-      "Le suivi des projets par prestation change tout : on voit exactement combien il reste à financer pour le mini-bus.",
+      "Un match VIP avec initiation encadrée pour 40 collaborateurs. Devis clair sous 48h, facture conforme, et notre budget a financé leur école de jeunes.",
   },
 ];
 
 const FAQ = [
   {
     q: "Comment Sociuly se rémunère ?",
-    a: "Une commission de 6% sur chaque réservation, prélevée sur les frais Stripe. Le club reçoit 94% du montant. Aucun coût d'inscription.",
+    a: "Une commission de 6% du montant TTC de chaque expérience facturée, prélevée via Stripe. Le club perçoit le net. Aucun coût d'inscription pour le club ni pour l'entreprise.",
   },
   {
-    q: "Qui propose les prestations ?",
-    a: "Uniquement des associations sportives loi 1901 vérifiées. Nous validons leur SIRET, leur affiliation fédérale et leur identité bancaire avant publication.",
+    q: "Qui conçoit les expériences ?",
+    a: "Des clubs sportifs locaux vérifiés — associations loi 1901 comme clubs professionnels. Nous validons leur SIRET, leur statut (affiliation fédérale ou statut pro), leur identité bancaire, et leur capacité à accueillir une entreprise (assurance RC pro, encadrant diplômé) avant toute mise en ligne.",
   },
   {
-    q: "Et si la prestation est annulée ?",
-    a: "Annulation gratuite jusqu'à 7 jours avant. Au-delà, le montant reste acquis au club pour le projet financé. Vous recevez un avoir d'un an.",
+    q: "Comment se passe le devis et le paiement ?",
+    a: "Vous demandez un devis depuis une expérience. Le club l'ajuste et vous l'envoie sous 48h. À l'acceptation, un acompte sécurise la date ; le solde est réglé avant l'événement. Vous recevez une facture conforme.",
   },
   {
-    q: "Comment le club lie une prestation à un projet ?",
-    a: "Depuis la console club, chaque prestation est rattachée à un projet de saison (équipement, déplacement, formation). Le compteur se met à jour à chaque réservation encaissée.",
+    q: "Comment le club lie une expérience à un projet ?",
+    a: "Depuis la console club, chaque expérience est rattachée à un projet de saison (équipement, déplacement, école de jeunes). Le compteur se met à jour à chaque expérience encaissée.",
   },
   {
     q: "Couvrez-vous toute la France ?",
@@ -67,7 +67,7 @@ const FAQ = [
 export default function LandingPage() {
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <TopNav active="prestations" />
+      <TopNav active="experiences" />
 
       {/* HERO */}
       <section style={{ padding: "36px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
@@ -75,24 +75,24 @@ export default function LandingPage() {
           <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
               <Chip variant="primary" leadingDot>en direct</Chip>
-              <span className="sy-mono sy-num">€184 230 reversés · 238 clubs · 1 612 projets</span>
+              <span className="sy-mono sy-num">€184 230 reversés aux clubs · 64 clubs partenaires</span>
             </div>
             <h1 className="sy-display hero-h1" style={{ fontSize: 84, letterSpacing: "-0.038em", lineHeight: 0.93 }}>
-              Réservez<br />près de chez vous.<br />
-              <span style={{ color: "var(--accent)" }}>Financez le club d&apos;à côté.</span>
+              Des expériences<br />sportives premium<br />
+              <span style={{ color: "var(--accent)" }}>pour vos équipes.</span>
             </h1>
             <p className="sy-body-l" style={{ maxWidth: 480, marginTop: 18 }}>
-              Barbecues, animations, événements proposés par les associations sportives locales.
-              Chaque réservation finance un projet réel d&apos;un club près de chez vous.
+              Séminaires de cohésion, initiations encadrées, matchs VIP — conçus sur mesure et animés
+              par des clubs sportifs locaux. Chaque expérience finance un projet réel du club.
             </p>
             <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <Link href="/prestations" style={{ textDecoration: "none" }}>
+              <Link href="/experiences" style={{ textDecoration: "none" }}>
                 <Btn variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} color="#fff" />}>
-                  Découvrir les prestations
+                  Découvrir les expériences
                 </Btn>
               </Link>
               <Link href="/inscription-club" style={{ textDecoration: "none" }}>
-                <Btn variant="outline" size="lg">Inscrire mon association</Btn>
+                <Btn variant="outline" size="lg">Inscrire mon club</Btn>
               </Link>
             </div>
           </div>
@@ -116,7 +116,7 @@ export default function LandingPage() {
                 className="sy-img-label"
                 style={{ position: "absolute", bottom: 16, left: 16, background: "rgba(252,249,241,.95)" }}
               >
-                Scène lifestyle · BBQ équipe sportive
+                Séminaire cohésion · club pro
               </span>
             </div>
             <div
@@ -135,7 +135,7 @@ export default function LandingPage() {
                 className="sy-img-label"
                 style={{ position: "absolute", bottom: 12, left: 12, background: "rgba(252,249,241,.95)" }}
               >
-                Animation sportive
+                Initiation encadrée
               </span>
             </div>
             <div
@@ -153,7 +153,7 @@ export default function LandingPage() {
                 className="sy-img-label"
                 style={{ position: "absolute", bottom: 12, left: 12, background: "rgba(252,249,241,.95)" }}
               >
-                Événement
+                Match VIP &amp; hospitalités
               </span>
             </div>
           </div>
@@ -176,14 +176,14 @@ export default function LandingPage() {
           <div>
             <div className="sy-mono" style={{ color: "var(--highlight)" }}>Comment ça marche</div>
             <h2 className="sy-h1" style={{ color: "var(--surface)", marginTop: 6, fontSize: 32 }}>
-              Réserver, c&apos;est<br />financer un projet local.
+              Une expérience sur mesure,<br />un projet de club financé.
             </h2>
           </div>
           <div className="howitworks-steps" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, alignItems: "flex-start" }}>
             {[
-              ["01", "Choisissez une prestation", "BBQ, animation, événement — proposés par les clubs proches."],
-              ["02", "Réservez en ligne", "Paiement sécurisé Stripe. Annulation J-7 gratuite."],
-              ["03", "Le club encaisse", "Un projet réel avance — vous voyez l'impact concret."],
+              ["01", "Choisissez une expérience", "Cohésion, initiation, match VIP — conçus par les clubs proches."],
+              ["02", "Demandez un devis", "Le club ajuste et vous l'envoie sous 48h. Acompte sécurisé Stripe."],
+              ["03", "Le club encaisse", "Un projet réel avance — vous mesurez l'impact local concret."],
             ].map(([n, t, d]) => (
               <div key={n}>
                 <div
@@ -202,22 +202,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FEATURED PRESTATIONS */}
+      {/* FEATURED EXPERIENCES */}
       <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
           <div>
-            <div className="sy-mono">Prestations populaires · Strasbourg</div>
-            <h2 className="sy-h1" style={{ marginTop: 6 }}>Près de chez vous, cette semaine.</h2>
+            <div className="sy-mono">Expériences populaires · Strasbourg</div>
+            <h2 className="sy-h1" style={{ marginTop: 6 }}>Plébiscitées par les entreprises locales.</h2>
           </div>
-          <Link href="/prestations" style={{ textDecoration: "none" }}>
+          <Link href="/experiences" style={{ textDecoration: "none" }}>
             <Btn variant="ghost" iconRight={<Icon name="arrow" size={14} />}>Voir tout</Btn>
           </Link>
         </div>
         <div className="sy-grid-4">
-          <PrestationCard hue="green" />
-          <PrestationCard title="Olympiades en entreprise" price={720} hue="orange" goal={0.78} funds="Mini-bus du club" />
-          <PrestationCard title="Anniversaire sportif" price={180} hue="yellow" goal={0.25} funds="Maillots saison" rating={4.6} />
-          <PrestationCard title="Buvette événement" price={350} hue="teal" goal={0.55} funds="Vestiaires neufs" />
+          <ExperienceCard hue="green" />
+          <ExperienceCard title="Initiation rugby encadrée" price={900} hue="orange" goal={0.78} funds="Mini-bus du club" category="Initiation · 15–30 pers." />
+          <ExperienceCard title="Match VIP & hospitalités" price={2_400} hue="yellow" goal={0.25} funds="École de jeunes" rating={4.6} category="Match VIP · 20–60 pers." />
+          <ExperienceCard title="Mini-tournoi inter-équipes" price={1_500} hue="teal" goal={0.55} funds="Vestiaires neufs" category="Tournoi · 20–80 pers." />
         </div>
       </section>
 
@@ -230,8 +230,8 @@ export default function LandingPage() {
               €184k<br />pour <span style={{ color: "var(--accent)" }}>238 clubs</span> en 12 mois.
             </h2>
             <p className="sy-body-l" style={{ marginTop: 14, maxWidth: 400 }}>
-              Sociuly relie particuliers et entreprises aux associations sportives qui proposent des services
-              locaux. Chaque euro reversé reste sur le territoire.
+              Sociuly relie les entreprises aux clubs sportifs locaux — amateurs et professionnels — qui
+              conçoivent des expériences sur mesure. Chaque euro reversé reste sur le territoire.
             </p>
             <div
               style={{
@@ -272,11 +272,12 @@ export default function LandingPage() {
               <span style={{ color: "var(--accent-deep)" }}>Inscrivez-le en 5 minutes.</span>
             </h2>
             <p className="sy-body-l" style={{ marginTop: 10, maxWidth: 480 }}>
-              Proposez vos prestations, liez-les à vos projets de saison. Sociuly s&apos;occupe de tout le reste.
+              Proposez vos expériences, liez-les à vos projets de saison. Sociuly s&apos;occupe des devis,
+              des paiements et de la facturation.
             </p>
           </div>
           <Link href="/inscription-club" style={{ textDecoration: "none" }}>
-            <Btn variant="primary" size="xl">Inscrire mon association →</Btn>
+            <Btn variant="primary" size="xl">Inscrire mon club →</Btn>
           </Link>
         </Card>
       </section>
@@ -287,14 +288,14 @@ export default function LandingPage() {
           kicker="Par type d'expérience"
           title="Quel moment cherchez-vous ?"
           action={
-            <Link href="/prestations" style={{ textDecoration: "none" }}>
+            <Link href="/experiences" style={{ textDecoration: "none" }}>
               <Btn variant="ghost" iconRight={<Icon name="arrow" size={14} />}>Toutes les catégories</Btn>
             </Link>
           }
         />
         <div className="sy-grid-3">
           {CATEGORIES.map((c) => (
-            <Link key={c.id} href="/prestations" style={{ textDecoration: "none" }}>
+            <Link key={c.id} href="/experiences" style={{ textDecoration: "none" }}>
               <div
                 className="sy-card category-tile"
                 style={{
@@ -318,7 +319,7 @@ export default function LandingPage() {
                   <div>
                     <div className="sy-h3" style={{ color: "var(--ink)" }}>{c.label}</div>
                     <div className="sy-mono" style={{ marginTop: 4 }}>
-                      <span className="sy-num">{c.count}</span> prestations
+                      <span className="sy-num">{c.count}</span> expériences
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -391,7 +392,7 @@ export default function LandingPage() {
           <div className="faq-sticky" style={{ position: "sticky", top: 24 }}>
             <div className="sy-mono">Questions fréquentes</div>
             <h2 className="sy-h1" style={{ marginTop: 6 }}>
-              Tout ce qu&apos;il faut<br />savoir avant de réserver.
+              Tout ce qu&apos;il faut<br />savoir avant de vous lancer.
             </h2>
             <p className="sy-body" style={{ marginTop: 14, maxWidth: 320 }}>
               Vous ne trouvez pas votre réponse ?

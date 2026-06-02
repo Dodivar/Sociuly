@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Btn, Chip, Tabs } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 
-const CATEGORIES = ["Toutes", "BBQ", "Animation", "Buvette", "Événement", "Initiation", "Tournoi", "Stage"] as const;
+const CATEGORIES = ["Toutes", "Cohésion", "Initiation", "Tournoi", "Match VIP", "Masterclass", "Coulisses"] as const;
 const SORTS = ["Pertinence", "Prix ↑", "Note ★", "Distance"] as const;
 
 type Category = (typeof CATEGORIES)[number];

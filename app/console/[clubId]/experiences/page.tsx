@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { Icon } from "@/components/ds/icon";
-import { PrestationsList } from "@/components/console/prestations-list";
-import { getPrestations } from "@/lib/console/mock-prestations";
+import { ExperiencesList } from "@/components/console/experiences-list";
+import { getExperiences } from "@/lib/console/mock-experiences";
 
 type Props = { params: Promise<{ clubId: string }> };
 
-export default async function PrestationsAdminPage({ params }: Props) {
+export default async function ExperiencesAdminPage({ params }: Props) {
   const { clubId } = await params;
-  // TODO(api): remplacer par un fetch DB scope sur l'asso du club_admin (cf. SPEC §4).
-  const prestations = await getPrestations(clubId);
+  // TODO(api): remplacer par un fetch DB scopé sur le club du club_admin (cf. SPEC §4).
+  const experiences = await getExperiences(clubId);
 
-  const total = prestations.length;
-  const published = prestations.filter((p) => p.status === "published").length;
+  const total = experiences.length;
+  const published = experiences.filter((x) => x.status === "published").length;
 
   return (
     <>
@@ -28,24 +28,24 @@ export default async function PrestationsAdminPage({ params }: Props) {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <h1 className="sy-h1" style={{ fontSize: 26 }}>Mes prestations</h1>
+          <h1 className="sy-h1" style={{ fontSize: 26 }}>Mes expériences</h1>
           <p className="sy-small sy-muted" style={{ marginTop: 2 }}>
-            {total} prestation{total > 1 ? "s" : ""} · {published} publiée{published > 1 ? "s" : ""} sur la marketplace.
+            {total} expérience{total > 1 ? "s" : ""} · {published} publiée{published > 1 ? "s" : ""} sur la marketplace.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link
-            href={`/console/${clubId}/prestations/nouvelle`}
+            href={`/console/${clubId}/experiences/nouvelle`}
             className="sy-btn sy-btn-primary"
           >
             <Icon name="plus" size={14} color="#fff" />
-            Nouvelle prestation
+            Nouvelle expérience
           </Link>
         </div>
       </header>
 
       <div style={{ padding: "24px 32px" }}>
-        <PrestationsList clubId={clubId} prestations={prestations} />
+        <ExperiencesList clubId={clubId} experiences={experiences} />
       </div>
     </>
   );

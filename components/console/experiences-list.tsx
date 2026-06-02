@@ -5,16 +5,16 @@ import { useMemo, useState } from "react";
 import { Chip, IconBtn, Input, Tabs } from "@/components/ds/components";
 import { Icon, type IconName } from "@/components/ds/icon";
 import {
-  CATEGORY_LABEL,
+  FORMAT_LABEL,
   LOCATION_LABEL,
   STATUS_LABEL,
-  type PrestationAdmin,
-  type PrestationStatus,
-} from "@/lib/console/mock-prestations";
+  type ExperienceAdmin,
+  type ExperienceStatus,
+} from "@/lib/console/mock-experiences";
 
 type TabId = "all" | "published" | "draft" | "paused" | "archived";
 
-const TAB_DEFS: { id: TabId; label: string; match: (s: PrestationStatus) => boolean }[] = [
+const TAB_DEFS: { id: TabId; label: string; match: (s: ExperienceStatus) => boolean }[] = [
   { id: "all",       label: "Toutes",    match: (s) => s !== "archived" },
   { id: "published", label: "Publiées",  match: (s) => s === "published" },
   { id: "draft",     label: "Brouillons", match: (s) => s === "draft" },
@@ -22,7 +22,7 @@ const TAB_DEFS: { id: TabId; label: string; match: (s: PrestationStatus) => bool
   { id: "archived",  label: "Archivées", match: (s) => s === "archived" },
 ];
 
-const STATUS_CHIP: Record<PrestationStatus, { bg: string; fg: string }> = {
+const STATUS_CHIP: Record<ExperienceStatus, { bg: string; fg: string }> = {
   published: { bg: "var(--primary-soft)",   fg: "var(--primary-deep)" },
   draft:     { bg: "var(--surface-2)",      fg: "var(--ink-2)" },
   paused:    { bg: "var(--highlight-soft)", fg: "#6e5111" },
@@ -31,28 +31,28 @@ const STATUS_CHIP: Record<PrestationStatus, { bg: string; fg: string }> = {
 
 type Props = {
   clubId: string;
-  prestations: PrestationAdmin[];
+  experiences: ExperienceAdmin[];
 };
 
-export function PrestationsList({ clubId, prestations }: Props) {
+export function ExperiencesList({ clubId, experiences }: Props) {
   const [tab, setTab] = useState<TabId>("all");
   const [query, setQuery] = useState("");
 
   const counts = useMemo(() => {
     const c: Record<TabId, number> = { all: 0, published: 0, draft: 0, paused: 0, archived: 0 };
-    for (const p of prestations) {
-      for (const t of TAB_DEFS) if (t.match(p.status)) c[t.id]++;
+    for (const x of experiences) {
+      for (const t of TAB_DEFS) if (t.match(x.status)) c[t.id]++;
     }
     return c;
-  }, [prestations]);
+  }, [experiences]);
 
   const filtered = useMemo(() => {
     const def = TAB_DEFS.find((t) => t.id === tab)!;
     const q = query.trim().toLowerCase();
-    return prestations
-      .filter((p) => def.match(p.status))
-      .filter((p) => (q ? p.title.toLowerCase().includes(q) : true));
-  }, [prestations, tab, query]);
+    return experiences
+      .filter((x) => def.match(x.status))
+      .filter((x) => (q ? x.title.toLowerCase().includes(q) : true));
+  }, [experiences, tab, query]);
 
   return (
     <section className="sy-card pl-card" style={{ padding: 0, overflow: "hidden" }}>
@@ -68,7 +68,7 @@ export function PrestationsList({ clubId, prestations }: Props) {
         />
         <div style={{ flex: 1, minWidth: 220, maxWidth: 360 }}>
           <Input
-            placeholder="Rechercher une prestation"
+            placeholder="Rechercher une expérience"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             icon={<Icon name="search" size={14} />}
@@ -80,8 +80,8 @@ export function PrestationsList({ clubId, prestations }: Props) {
         <EmptyState query={query} tab={tab} clubId={clubId} />
       ) : (
         <ul className="pl-list">
-          {filtered.map((p) => (
-            <PrestationRow key={p.id} clubId={clubId} p={p} />
+          {filtered.map((x) => (
+            <ExperienceRow key={x.id} clubId={clubId} x={x} />
           ))}
         </ul>
       )}
@@ -158,9 +158,9 @@ export function PrestationsList({ clubId, prestations }: Props) {
   );
 }
 
-function PrestationRow({ clubId, p }: { clubId: string; p: PrestationAdmin }) {
-  const s = STATUS_CHIP[p.status];
-  const priceEuros = (p.priceCents / 100).toLocaleString("fr-FR", {
+function ExperienceRow({ clubId, x }: { clubId: string; x: ExperienceAdmin }) {
+  const s = STATUS_CHIP[x.status];
+  const priceEuros = (x.basePriceCents / 100).toLocaleString("fr-FR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
@@ -172,13 +172,13 @@ function PrestationRow({ clubId, p }: { clubId: string; p: PrestationAdmin }) {
       </div>
 
       <div className="pl-main" style={{ minWidth: 0 }}>
-        <div className="pl-title">{p.title}</div>
+        <div className="pl-title">{x.title}</div>
         <div className="pl-meta-line">
-          <Chip variant="outline" size="sm">{CATEGORY_LABEL[p.category]}</Chip>
-          <span className="sy-mono">{formatDuration(p.durationMinutes)}</span>
-          {p.rating !== undefined && p.reviewsCount > 0 && (
+          <Chip variant="outline" size="sm">{FORMAT_LABEL[x.format]}</Chip>
+          <span className="sy-mono">{formatDuration(x.durationMinutes)}</span>
+          {x.rating !== undefined && x.reviewsCount > 0 && (
             <span className="sy-mono" style={{ color: "var(--ink-2)" }}>
-              ★ {p.rating.toFixed(1)} · {p.reviewsCount} avis
+              ★ {x.rating.toFixed(1)} · {x.reviewsCount} avis
             </span>
           )}
         </div>
@@ -186,22 +186,22 @@ function PrestationRow({ clubId, p }: { clubId: string; p: PrestationAdmin }) {
 
       <div className="pl-price">
         <span className="pl-num sy-num">€{priceEuros}</span>
-        <div className="sy-mono" style={{ marginTop: 2 }}>TTC</div>
+        <div className="sy-mono" style={{ marginTop: 2 }}>à partir de · TTC</div>
       </div>
 
       <div className="pl-location">
         <span className="sy-small" style={{ color: "var(--ink)", fontWeight: 500 }}>
-          {LOCATION_LABEL[p.location]}
+          {LOCATION_LABEL[x.location]}
         </span>
       </div>
 
       <div className="pl-bookings">
         <span className="sy-small" style={{ color: "var(--ink)", fontWeight: 500 }}>
-          {p.bookingsCount} réservation{p.bookingsCount > 1 ? "s" : ""}
+          {x.bookingsCount} commande{x.bookingsCount > 1 ? "s" : ""}
         </span>
-        {p.bookingsPending > 0 && (
+        {x.pendingQuotes > 0 && (
           <div className="sy-mono" style={{ marginTop: 2, color: "var(--accent-deep)" }}>
-            {p.bookingsPending} à valider
+            {x.pendingQuotes} devis en attente
           </div>
         )}
       </div>
@@ -211,27 +211,27 @@ function PrestationRow({ clubId, p }: { clubId: string; p: PrestationAdmin }) {
           className="sy-chip"
           style={{ background: s.bg, color: s.fg, fontWeight: 600 }}
         >
-          {STATUS_LABEL[p.status]}
+          {STATUS_LABEL[x.status]}
         </span>
       </div>
 
       <div className="pl-actions">
-        <RowMenu clubId={clubId} prestation={p} />
+        <RowMenu clubId={clubId} experience={x} />
       </div>
     </li>
   );
 }
 
-function RowMenu({ clubId, prestation }: { clubId: string; prestation: PrestationAdmin }) {
+function RowMenu({ clubId, experience }: { clubId: string; experience: ExperienceAdmin }) {
   const [open, setOpen] = useState(false);
-  const editHref = `/console/${clubId}/prestations/${prestation.slug}`;
-  const publicHref = `/prestations/${prestation.slug}`;
+  const editHref = `/console/${clubId}/experiences/${experience.slug}`;
+  const publicHref = `/experiences/${experience.slug}`;
 
   return (
     <>
       <IconBtn
         size="sm"
-        aria-label="Actions sur la prestation"
+        aria-label="Actions sur l'expérience"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
@@ -262,21 +262,21 @@ function RowMenu({ clubId, prestation }: { clubId: string; prestation: Prestatio
               icon="eye"
               label="Voir la page publique"
               href={publicHref}
-              disabled={prestation.status !== "published"}
+              disabled={experience.status !== "published"}
             />
             <MenuItem icon="settings" label="Éditer" href={editHref} />
-            {prestation.status === "published" && (
+            {experience.status === "published" && (
               <MenuItem icon="minus" label="Mettre en pause" />
             )}
-            {prestation.status === "paused" && (
+            {experience.status === "paused" && (
               <MenuItem icon="bolt" label="Reprendre" />
             )}
-            {prestation.status === "draft" && (
+            {experience.status === "draft" && (
               <MenuItem icon="upload" label="Publier" />
             )}
             <MenuItem icon="plus" label="Dupliquer" />
             <div className="sy-divider" style={{ margin: "4px 0" }} />
-            {prestation.status !== "archived" ? (
+            {experience.status !== "archived" ? (
               <MenuItem icon="close" label="Archiver" danger />
             ) : (
               <MenuItem icon="bolt" label="Restaurer en brouillon" />
@@ -362,22 +362,22 @@ function EmptyState({
       <div>
         <div className="sy-h3">
           {filtered
-            ? "Aucune prestation ne correspond à votre recherche"
+            ? "Aucune expérience ne correspond à votre recherche"
             : tab === "all"
-              ? "Aucune prestation pour le moment"
-              : `Aucune prestation ${labelOf(tab).toLowerCase()}`}
+              ? "Aucune expérience pour le moment"
+              : `Aucune expérience ${labelOf(tab).toLowerCase()}`}
         </div>
         <div className="sy-small sy-muted" style={{ marginTop: 4 }}>
-          Créez votre première prestation pour la rendre visible sur la marketplace.
+          Créez votre première expérience pour la rendre visible sur la marketplace.
         </div>
       </div>
       {!filtered && (
         <Link
-          href={`/console/${clubId}/prestations/nouvelle`}
+          href={`/console/${clubId}/experiences/nouvelle`}
           className="sy-btn sy-btn-primary"
         >
           <Icon name="plus" size={14} color="#fff" />
-          Nouvelle prestation
+          Nouvelle expérience
         </Link>
       )}
     </div>

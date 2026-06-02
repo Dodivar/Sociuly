@@ -37,7 +37,7 @@ function StepDot({ n, label, state }: { n: number; label: string; state: StepSta
 }
 
 export function BookingStepper({ active = 1 }: { active?: number }) {
-  const steps = ["Détails", "Message", "Paiement", "Confirmation"];
+  const steps = ["Détails", "Coordonnées", "Acompte", "Confirmation"];
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 22, flex: 1, maxWidth: 720 }}>
       {steps.map((s, i) => {

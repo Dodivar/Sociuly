@@ -16,25 +16,32 @@ type TabId = "all" | "pending" | "confirmed" | "completed" | "cancelled";
 
 const TAB_DEFS: { id: TabId; label: string; match: (s: BookingStatus) => boolean }[] = [
   { id: "all",       label: "Toutes",     match: () => true },
-  { id: "pending",   label: "À valider",  match: (s) => s === "pending_payment" },
-  { id: "confirmed", label: "Confirmées", match: (s) => s === "confirmed" },
+  {
+    id: "pending",
+    label: "À traiter",
+    match: (s) => s === "pending_quote" || s === "quote_accepted" || s === "deposit_paid",
+  },
+  { id: "confirmed", label: "Confirmées", match: (s) => s === "confirmed" || s === "in_progress" },
   { id: "completed", label: "Terminées",  match: (s) => s === "completed" },
   {
     id: "cancelled",
     label: "Annulées",
     match: (s) =>
-      s === "cancelled_by_customer" || s === "cancelled_by_club" || s === "refunded",
+      s === "cancelled_by_org" || s === "cancelled_by_club" || s === "refunded",
   },
 ];
 
 type StatusVisual = { bg: string; fg: string; border?: string };
 const STATUS_VISUAL: Record<BookingStatus, StatusVisual> = {
-  pending_payment:       { bg: "var(--highlight-soft)", fg: "#6e5111" },
-  confirmed:             { bg: "var(--primary-soft)",   fg: "var(--primary-deep)" },
-  completed:             { bg: "var(--surface-2)",      fg: "var(--ink-2)" },
-  cancelled_by_customer: { bg: "var(--surface)",        fg: "var(--danger)", border: "var(--line-2)" },
-  cancelled_by_club:     { bg: "var(--surface)",        fg: "var(--danger)", border: "var(--line-2)" },
-  refunded:              { bg: "var(--surface-2)",      fg: "var(--ink-2)" },
+  pending_quote:     { bg: "var(--surface-2)",      fg: "var(--ink-2)" },
+  quote_accepted:    { bg: "var(--highlight-soft)", fg: "#6e5111" },
+  deposit_paid:      { bg: "var(--accent-soft)",    fg: "var(--accent-deep)" },
+  confirmed:         { bg: "var(--primary-soft)",   fg: "var(--primary-deep)" },
+  in_progress:       { bg: "var(--primary-soft)",   fg: "var(--primary-deep)" },
+  completed:         { bg: "var(--surface-2)",      fg: "var(--ink-2)" },
+  cancelled_by_org:  { bg: "var(--surface)",        fg: "var(--danger)", border: "var(--line-2)" },
+  cancelled_by_club: { bg: "var(--surface)",        fg: "var(--danger)", border: "var(--line-2)" },
+  refunded:          { bg: "var(--surface-2)",      fg: "var(--ink-2)" },
 };
 
 function fmtEur(cents: number): string {
@@ -90,8 +97,8 @@ export function ReservationsView({ bookings }: Props) {
       .filter((b) => def.match(b.status))
       .filter((b) =>
         q
-          ? b.customerName.toLowerCase().includes(q) ||
-            b.prestationTitle.toLowerCase().includes(q) ||
+          ? b.organizationName.toLowerCase().includes(q) ||
+            b.experienceTitle.toLowerCase().includes(q) ||
             b.bookingNumber.toLowerCase().includes(q)
           : true,
       );
@@ -102,11 +109,12 @@ export function ReservationsView({ bookings }: Props) {
 
   // TODO(api): remplacer ces transitions locales par des server actions
   // (capture/refund Stripe + email, cf. SPEC §5). La machine d'état autorisée :
-  // pending_payment → confirmed | cancelled_by_club ; confirmed → cancelled_by_club.
+  // deposit_paid → confirmed | cancelled_by_club ; confirmed → cancelled_by_club.
+  // La gestion des devis (pending_quote → sent → accepted) vit dans /console/[clubId]/devis.
   function confirmBooking(id: string) {
     setRows((prev) =>
       prev.map((b) =>
-        b.id === id && b.status === "pending_payment"
+        b.id === id && b.status === "deposit_paid"
           ? { ...b, status: "confirmed", confirmedAtLabel: "à l'instant" }
           : b,
       ),
@@ -146,7 +154,7 @@ export function ReservationsView({ bookings }: Props) {
             )}
           </div>
           <Input
-            placeholder="Client, prestation, n° SOC…"
+            placeholder="Entreprise, expérience, n° SOC…"
             icon={<Icon name="search" size={14} />}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -292,19 +300,19 @@ function BookingListRow({
       data-active={active ? "1" : "0"}
       onClick={onClick}
       aria-pressed={active}
-      aria-label={`${booking.customerName} — ${STATUS_LABEL[booking.status]}`}
+      aria-label={`${booking.organizationName} — ${STATUS_LABEL[booking.status]}`}
     >
       <div className="rv-row-top">
         <StatusChip status={booking.status} />
         <span className="sy-mono sy-num rv-row-num">{booking.bookingNumber}</span>
       </div>
-      <div className="sy-h4 rv-row-customer">{booking.customerName}</div>
+      <div className="sy-h4 rv-row-customer">{booking.organizationName}</div>
       <div className="sy-small sy-muted rv-row-presta">
-        {booking.prestationTitle} · {booking.participants} pers.
+        {booking.experienceTitle} · {booking.participants} pers.
       </div>
       <div className="rv-row-foot">
         <span className="sy-mono">{booking.dateShort} · {booking.timeRange}</span>
-        <span className="sy-num rv-row-amount">{fmtEurWhole(booking.grossAmountCents)}</span>
+        <span className="sy-num rv-row-amount">{fmtEurWhole(booking.grossAmountTTCCents)}</span>
       </div>
 
       <style>{`
@@ -359,10 +367,10 @@ function BookingDetailPane({
   onCancel: () => void;
 }) {
   const b = booking;
-  const isPending = b.status === "pending_payment";
-  const isConfirmed = b.status === "confirmed";
+  const isPending = b.status === "deposit_paid";
+  const isConfirmed = b.status === "confirmed" || b.status === "in_progress";
   const isClosed =
-    b.status === "cancelled_by_customer" ||
+    b.status === "cancelled_by_org" ||
     b.status === "cancelled_by_club" ||
     b.status === "refunded";
 
@@ -379,10 +387,10 @@ function BookingDetailPane({
             <StatusChip status={b.status} />
             <span className="sy-mono sy-num">{b.bookingNumber}</span>
           </div>
-          <h1 className="sy-h1 rv-title">{b.prestationTitle}</h1>
+          <h1 className="sy-h1 rv-title">{b.experienceTitle}</h1>
           <p className="sy-body rv-sub">
-            Réservé par <strong style={{ color: "var(--ink)" }}>{b.customerName}</strong>
-            {b.projectTitle ? <> · soutient <span style={{ color: "var(--accent-deep)" }}>{b.projectTitle}</span></> : null}
+            Commandé par <strong style={{ color: "var(--ink)" }}>{b.organizationName}</strong>
+            {b.projectTitle ? <> · finance <span style={{ color: "var(--accent-deep)" }}>{b.projectTitle}</span></> : null}
           </p>
         </div>
 
@@ -391,21 +399,21 @@ function BookingDetailPane({
             <>
               <Btn variant="outline" onClick={onRefuse}>Refuser</Btn>
               <Btn variant="primary" icon={<Icon name="check" size={15} color="#fff" />} onClick={onConfirm}>
-                Confirmer
+                Confirmer la date
               </Btn>
             </>
           )}
           {isConfirmed && (
             <>
-              <a className="sy-btn sy-btn-soft" href={`mailto:${b.customerEmail}`}>
+              <a className="sy-btn sy-btn-soft" href={`mailto:${b.organizationEmail}`}>
                 <Icon name="chat" size={14} /> Contacter
               </a>
               <Btn variant="outline" onClick={onCancel}>Annuler</Btn>
             </>
           )}
           {!isPending && !isConfirmed && (
-            <a className="sy-btn sy-btn-soft" href={`mailto:${b.customerEmail}`}>
-              <Icon name="chat" size={14} /> Contacter le client
+            <a className="sy-btn sy-btn-soft" href={`mailto:${b.organizationEmail}`}>
+              <Icon name="chat" size={14} /> Contacter l'entreprise
             </a>
           )}
         </div>
@@ -415,8 +423,8 @@ function BookingDetailPane({
         <div className="rv-hint">
           <Icon name="info" size={15} color="var(--accent-deep)" />
           <span>
-            En confirmant, le paiement du client est capturé et la date est bloquée.
-            Annulation gratuite possible jusqu'au {b.cancellationDeadlineLabel}.
+            L'acompte est versé : en confirmant, vous bloquez la date pour l'entreprise.
+            Le solde sera réglé avant l'événement. Annulation possible jusqu'au {b.cancellationDeadlineLabel}.
           </span>
         </div>
       )}
@@ -430,7 +438,7 @@ function BookingDetailPane({
       <div className="rv-cols">
         <div className="rv-col">
           <section className="sy-card">
-            <div className="sy-mono">Détails de la prestation</div>
+            <div className="sy-mono">Détails de l'expérience</div>
             <dl className="rv-facts">
               <Fact label="Date">{b.dateLong}</Fact>
               <Fact label="Créneau">{b.timeRange} · {formatDuration(b.durationMinutes)}</Fact>
@@ -446,11 +454,11 @@ function BookingDetailPane({
             </dl>
           </section>
 
-          {b.customerNotes && (
+          {b.organizationNotes && (
             <section className="sy-card">
-              <div className="sy-mono">Message du client</div>
+              <div className="sy-mono">Message de l'entreprise</div>
               <p className="sy-body" style={{ marginTop: 8, color: "var(--ink)" }}>
-                « {b.customerNotes} »
+                « {b.organizationNotes} »
               </p>
             </section>
           )}
@@ -460,11 +468,12 @@ function BookingDetailPane({
           <AmountCard booking={b} />
 
           <section className="sy-card">
-            <div className="sy-mono">Client</div>
+            <div className="sy-mono">Entreprise</div>
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-              <ContactLine label="Nom" value={b.customerName} />
-              <ContactLine label="Email" value={b.customerEmail} href={`mailto:${b.customerEmail}`} />
-              {b.customerPhone && <ContactLine label="Téléphone" value={b.customerPhone} />}
+              <ContactLine label="Société" value={b.organizationName} />
+              <ContactLine label="Contact" value={b.contactName} />
+              <ContactLine label="Email" value={b.organizationEmail} href={`mailto:${b.organizationEmail}`} />
+              {b.contactPhone && <ContactLine label="Téléphone" value={b.contactPhone} />}
             </div>
           </section>
 
@@ -578,20 +587,26 @@ function ContactLine({ label, value, href }: { label: string; value: string; hre
 
 function AmountCard({ booking }: { booking: BookingAdmin }) {
   const b = booking;
+  const balanceCents = b.grossAmountTTCCents - b.depositCents;
   const versementNote =
     b.status === "completed"
-      ? (b.resolutionLabel ?? "Versement automatique J+1 après la prestation.")
-      : b.status === "confirmed"
-        ? "Versement automatique le lendemain de la prestation (J+1)."
-        : b.status === "pending_payment"
-          ? "Le versement intervient après réalisation de la prestation."
-          : "Réservation close — aucun versement au club.";
+      ? (b.resolutionLabel ?? "Versement automatique J+1 après l'événement.")
+      : b.status === "confirmed" || b.status === "in_progress"
+        ? "Versement automatique le lendemain de l'événement (J+1)."
+        : b.status === "deposit_paid" || b.status === "quote_accepted"
+          ? "Le versement intervient après réalisation de l'expérience."
+          : "Commande close — aucun versement au club.";
 
   return (
     <section className="sy-card" style={{ padding: 0, overflow: "hidden" }}>
+      {/* SPEC §5 — la commission Sociuly (6 % du TTC) est visible côté club (payout net),
+          jamais surfacée à l'acheteur. TODO(§11) — ventilation HT/TVA : base liée à
+          Club.vatLiable + TVA sur commission, décision comptable OUVERTE. */}
       <div style={{ padding: 18 }}>
         <div className="sy-mono">Montant</div>
-        <Line label="Payé par le client" value={fmtEur(b.grossAmountCents)} />
+        <Line label="Total TTC (entreprise)" value={fmtEur(b.grossAmountTTCCents)} />
+        <Line label="Acompte versé (30 %)" value={fmtEur(b.depositCents)} muted />
+        <Line label="Solde avant l'événement" value={fmtEur(balanceCents)} muted />
         <Line label="Commission Sociuly (6 %)" value={`−${fmtEur(b.feeAmountCents)}`} muted />
       </div>
       <div style={{ padding: 18, background: "var(--accent-soft)" }}>

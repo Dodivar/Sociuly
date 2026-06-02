@@ -1,155 +1,151 @@
-// Cf. SPEC.md §3 — Prestation
+// Cf. SPEC.md §3 — Experience (produit vendu via devis B2B).
 // TODO(api): remplacer par fetch DB (Prisma). Garder la signature async + les enums alignés sur le schéma.
 
-export type PrestationCategory =
-  | "bbq" | "animation_kids" | "olympiades" | "event"
-  | "coaching" | "tournoi" | "buvette";
+export type ExperienceFormat = "demi_journee" | "journee" | "soiree" | "sur_mesure";
 
-export type PrestationStatus = "draft" | "published" | "paused" | "archived";
+export type ExperienceStatus = "draft" | "published" | "paused" | "archived";
 
-export type PrestationLocation = "at_client" | "at_club" | "flexible";
+export type ExperienceLocation = "at_client" | "at_club" | "at_venue" | "flexible";
 
-export type PrestationAdmin = {
+export type ExperienceAdmin = {
   id: string;
   slug: string;
   title: string;
-  category: PrestationCategory;
-  priceCents: number;        // TTC, EUR
+  format: ExperienceFormat;
+  basePriceCents: number;    // TTC, EUR — prix de départ du devis
   durationMinutes: number;
-  location: PrestationLocation;
-  status: PrestationStatus;
-  bookingsCount: number;     // total tous statuts (hors annulé)
-  bookingsPending: number;   // à valider (pending_payment)
+  location: ExperienceLocation;
+  status: ExperienceStatus;
+  bookingsCount: number;     // commandes confirmées (tous statuts hors annulé)
+  pendingQuotes: number;     // demandes de devis en attente de réponse
   rating?: number;
   reviewsCount: number;
   updatedAt: string;         // ISO
 };
 
-export const CATEGORY_LABEL: Record<PrestationCategory, string> = {
-  bbq: "Barbecue",
-  animation_kids: "Animation enfants",
-  olympiades: "Olympiades",
-  event: "Événement",
-  coaching: "Coaching",
-  tournoi: "Tournoi",
-  buvette: "Buvette",
+export const FORMAT_LABEL: Record<ExperienceFormat, string> = {
+  demi_journee: "Demi-journée",
+  journee: "Journée",
+  soiree: "Soirée",
+  sur_mesure: "Sur mesure",
 };
 
-export const STATUS_LABEL: Record<PrestationStatus, string> = {
+export const STATUS_LABEL: Record<ExperienceStatus, string> = {
   draft: "Brouillon",
   published: "Publiée",
   paused: "En pause",
   archived: "Archivée",
 };
 
-export const LOCATION_LABEL: Record<PrestationLocation, string> = {
-  at_client: "Chez le client",
+export const LOCATION_LABEL: Record<ExperienceLocation, string> = {
+  at_client: "Dans l'entreprise",
   at_club: "Au club",
+  at_venue: "Sur le site (Arena)",
   flexible: "Flexible",
 };
 
-export async function getPrestations(_clubId: string): Promise<PrestationAdmin[]> {
+export async function getExperiences(_clubId: string): Promise<ExperienceAdmin[]> {
   return [
     {
-      id: "p1",
-      slug: "barbecue-convivial",
-      title: "Barbecue convivial",
-      category: "bbq",
-      priceCents: 28000,
-      durationMinutes: 180,
-      location: "at_client",
+      id: "x1",
+      slug: "journee-immersion-sig",
+      title: "Journée immersion · SIG",
+      format: "journee",
+      basePriceCents: 480000,
+      durationMinutes: 360,
+      location: "at_venue",
       status: "published",
       bookingsCount: 14,
-      bookingsPending: 1,
+      pendingQuotes: 1,
       rating: 4.9,
       reviewsCount: 12,
       updatedAt: "2026-05-22T10:14:00Z",
     },
     {
-      id: "p2",
-      slug: "olympiades-inter-classes",
-      title: "Olympiades inter-classes",
-      category: "olympiades",
-      priceCents: 72000,
-      durationMinutes: 180,
-      location: "flexible",
+      id: "x2",
+      slug: "match-vip-hospitalites",
+      title: "Match VIP & hospitalités",
+      format: "soiree",
+      basePriceCents: 240000,
+      durationMinutes: 240,
+      location: "at_venue",
       status: "published",
       bookingsCount: 6,
-      bookingsPending: 2,
-      rating: 4.8,
+      pendingQuotes: 2,
+      rating: 4.9,
       reviewsCount: 5,
       updatedAt: "2026-05-18T08:02:00Z",
     },
     {
-      id: "p3",
-      slug: "anniversaire-enfant",
-      title: "Anniversaire enfant",
-      category: "animation_kids",
-      priceCents: 18000,
+      id: "x3",
+      slug: "atelier-cohesion-equipe",
+      title: "Atelier cohésion d'équipe",
+      format: "demi_journee",
+      basePriceCents: 120000,
       durationMinutes: 180,
-      location: "at_client",
+      location: "flexible",
       status: "published",
       bookingsCount: 9,
-      bookingsPending: 0,
-      rating: 5.0,
+      pendingQuotes: 0,
+      rating: 4.9,
       reviewsCount: 7,
       updatedAt: "2026-05-12T16:40:00Z",
     },
     {
-      id: "p4",
-      slug: "buvette-fete-de-quartier",
-      title: "Buvette fête de quartier",
-      category: "buvette",
-      priceCents: 35000,
-      durationMinutes: 240,
-      location: "at_client",
+      id: "x4",
+      slug: "initiation-basket-encadree",
+      title: "Initiation basket encadrée",
+      format: "demi_journee",
+      basePriceCents: 90000,
+      durationMinutes: 150,
+      location: "at_club",
       status: "paused",
       bookingsCount: 4,
-      bookingsPending: 0,
-      rating: 4.7,
+      pendingQuotes: 0,
+      rating: 4.6,
       reviewsCount: 4,
       updatedAt: "2026-04-30T11:00:00Z",
     },
     {
-      id: "p5",
-      slug: "tournoi-3v3-jeunes",
-      title: "Tournoi 3v3 jeunes",
-      category: "tournoi",
-      priceCents: 95000,
-      durationMinutes: 360,
-      location: "at_club",
+      id: "x5",
+      slug: "masterclass-joueur-pro",
+      title: "Masterclass joueur pro",
+      format: "demi_journee",
+      basePriceCents: 180000,
+      durationMinutes: 120,
+      location: "at_venue",
       status: "draft",
       bookingsCount: 0,
-      bookingsPending: 0,
+      pendingQuotes: 0,
       reviewsCount: 0,
       updatedAt: "2026-05-28T09:20:00Z",
     },
     {
-      id: "p6",
-      slug: "coaching-prepa-physique",
-      title: "Coaching prépa physique",
-      category: "coaching",
-      priceCents: 6000,
-      durationMinutes: 60,
-      location: "at_club",
+      id: "x6",
+      slug: "seminaire-sur-mesure",
+      title: "Séminaire sur mesure",
+      format: "sur_mesure",
+      basePriceCents: 350000,
+      durationMinutes: 480,
+      location: "flexible",
       status: "draft",
       bookingsCount: 0,
-      bookingsPending: 0,
+      pendingQuotes: 0,
       reviewsCount: 0,
       updatedAt: "2026-05-26T14:50:00Z",
     },
     {
-      id: "p7",
-      slug: "soiree-club-house",
-      title: "Soirée club-house",
-      category: "event",
-      priceCents: 48000,
-      durationMinutes: 240,
-      location: "at_club",
+      id: "x7",
+      slug: "cocktail-visite-coulisses",
+      title: "Cocktail & visite des coulisses",
+      format: "soiree",
+      basePriceCents: 110000,
+      durationMinutes: 180,
+      location: "at_venue",
       status: "archived",
       bookingsCount: 11,
-      bookingsPending: 0,
-      rating: 4.6,
+      pendingQuotes: 0,
+      rating: 4.8,
       reviewsCount: 9,
       updatedAt: "2026-02-10T19:00:00Z",
     },

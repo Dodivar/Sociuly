@@ -2,48 +2,48 @@
 
 import { useState } from "react";
 import { Tabs } from "@/components/ds/components";
-import { PrestationCard, ReviewCard } from "@/components/ds/patterns";
+import { ExperienceCard, ReviewCard } from "@/components/ds/patterns";
 import { Icon } from "@/components/ds/icon";
-import type { PrestationHue } from "@/components/ds/patterns";
+import type { ExperienceHue } from "@/components/ds/patterns";
 
-type TabId = "prestations" | "projets" | "avis" | "team";
+type TabId = "experiences" | "projets" | "avis" | "team";
 
-const PRESTATIONS = [
-  { title: "Barbecue convivial du club", price: 280, hue: "green" as PrestationHue, goal: 0.62, funds: "Tournoi U17", rating: 4.8, reviews: 47 },
-  { title: "Olympiades en entreprise", price: 720, hue: "orange" as PrestationHue, goal: 0.78, funds: "Mini-bus du club", rating: 4.9, reviews: 62 },
-  { title: "Anniversaire sportif", price: 180, hue: "yellow" as PrestationHue, goal: 0.25, funds: "Maillots saison", rating: 4.6, reviews: 28 },
-  { title: "Initiation volley", price: 150, hue: "teal" as PrestationHue, goal: 0.5, funds: "Tournoi Espagne", rating: 4.9, reviews: 34 },
-  { title: "Team building sportif", price: 480, hue: "rust" as PrestationHue, goal: 0.45, funds: "Équipement U13", rating: 4.7, reviews: 19 },
-  { title: "Stage d'initiation", price: 95, hue: "sand" as PrestationHue, goal: 0.3, funds: "Formation bénévoles", rating: 4.8, reviews: 12 },
+const EXPERIENCES = [
+  { title: "Journée immersion · SIG", price: 4800, hue: "green" as ExperienceHue, goal: 0.62, funds: "École de jeunes U17", rating: 4.9, reviews: 47, category: "Cohésion · 20–60 pers." },
+  { title: "Match VIP & hospitalités", price: 2400, hue: "orange" as ExperienceHue, goal: 0.78, funds: "Mini-bus du club", rating: 4.9, reviews: 62, category: "Match VIP · 20–60 pers." },
+  { title: "Initiation basket encadrée", price: 900, hue: "yellow" as ExperienceHue, goal: 0.25, funds: "Maillots saison", rating: 4.6, reviews: 28, category: "Initiation · 15–30 pers." },
+  { title: "Atelier cohésion d'équipe", price: 1200, hue: "teal" as ExperienceHue, goal: 0.5, funds: "Tournoi U17", rating: 4.9, reviews: 34, category: "Cohésion · 10–40 pers." },
+  { title: "Masterclass joueur pro", price: 1800, hue: "rust" as ExperienceHue, goal: 0.45, funds: "Équipement U13", rating: 4.7, reviews: 19, category: "Masterclass · 10–40 pers." },
+  { title: "Cocktail & visite des coulisses", price: 1100, hue: "sand" as ExperienceHue, goal: 0.3, funds: "École de jeunes", rating: 4.8, reviews: 12, category: "Coulisses · 15–50 pers." },
 ];
 
 const PROJETS = [
-  { title: "Tournoi national U17 · Espagne", goal: 0.62, raised: 2480, target: 4000, days: 12, category: "Déplacement", active: true },
-  { title: "Mini-bus du club", goal: 1, raised: 6200, target: 6200, days: 0, category: "Équipement", active: false },
-  { title: "Maillots saison 2025–26", goal: 0.25, raised: 750, target: 3000, days: 34, category: "Équipement", active: true },
-  { title: "Formation arbitres régionaux", goal: 0.88, raised: 2200, target: 2500, days: 8, category: "Formation", active: true },
+  { title: "École de jeunes U17 · saison 2026", goal: 0.62, raised: 24800, target: 40000, days: 12, category: "Formation", active: true },
+  { title: "Mini-bus du club", goal: 1, raised: 62000, target: 62000, days: 0, category: "Équipement", active: false },
+  { title: "Maillots saison 2025–26", goal: 0.25, raised: 7500, target: 30000, days: 34, category: "Équipement", active: true },
+  { title: "Stage été U13", goal: 0.88, raised: 22000, target: 25000, days: 8, category: "Formation", active: true },
 ];
 
 const AVIS = [
-  { name: "Camille L.", date: "avril 2026", rating: 5, body: "Super journée pour le BBQ de mon entreprise, équipe ultra réactive et on a fait avancer un projet local !", tone: "orange" as const },
-  { name: "Thomas B.", date: "mars 2026", rating: 5, body: "Les olympiades étaient parfaites pour notre séminaire. L'équipe USB Volley est pro et enthousiaste.", tone: "green" as const },
-  { name: "Sophie M.", date: "mars 2026", rating: 4, body: "Très bonne expérience, les animateurs sont passionnés. Parfait pour l'anniversaire de notre fils.", tone: "yellow" as const },
-  { name: "Adrien K.", date: "février 2026", rating: 5, body: "On a adoré l'initiation volley, même pour des débutants complets. Bravo au club !", tone: "ink" as const },
+  { name: "Élodie M. · DRH", date: "avril 2026", rating: 5, body: "Séminaire de cohésion impeccable pour nos 32 collaborateurs. Le club a tout organisé, et notre budget a directement soutenu leur école de jeunes.", tone: "orange" as const },
+  { name: "Thomas B. · Office Manager", date: "mars 2026", rating: 5, body: "Un match VIP parfait pour notre séminaire annuel. L'équipe SIG est pro et accueillante du début à la fin.", tone: "green" as const },
+  { name: "Sophie M. · CEO", date: "mars 2026", rating: 4, body: "Très bonne expérience d'équipe, encadrants passionnés. Initiation accessible même pour les non-sportifs.", tone: "yellow" as const },
+  { name: "Adrien K. · Head of People", date: "février 2026", rating: 5, body: "La masterclass avec un joueur pro a marqué les esprits. Organisation millimétrée, on reviendra l'an prochain.", tone: "ink" as const },
 ];
 
 const TEAM = [
   { name: "Marc Dubois", role: "Président", since: "2019", initials: "MD" },
-  { name: "Laure Martin", role: "Responsable prestations", since: "2021", initials: "LM" },
-  { name: "Julien Rosa", role: "Entraîneur seniors", since: "2017", initials: "JR" },
-  { name: "Amina Bel", role: "Responsable U17", since: "2022", initials: "AB" },
+  { name: "Laure Martin", role: "Responsable expériences entreprises", since: "2021", initials: "LM" },
+  { name: "Julien Rosa", role: "Coach principal", since: "2017", initials: "JR" },
+  { name: "Amina Bel", role: "Responsable école de jeunes", since: "2022", initials: "AB" },
   { name: "Pierre Vidal", role: "Trésorier", since: "2020", initials: "PV" },
-  { name: "Céline Faure", role: "Responsable U13", since: "2023", initials: "CF" },
+  { name: "Céline Faure", role: "Responsable hospitalités", since: "2023", initials: "CF" },
 ];
 
 const AVATAR_TONES = ["green", "orange", "yellow", "ink"] as const;
 
-export function AssociationTabs() {
-  const [active, setActive] = useState<TabId>("prestations");
+export function ClubTabs() {
+  const [active, setActive] = useState<TabId>("experiences");
 
   return (
     <>
@@ -53,7 +53,7 @@ export function AssociationTabs() {
           active={active}
           onChange={(id) => setActive(id as TabId)}
           items={[
-            { id: "prestations", label: "Prestations · 12" },
+            { id: "experiences", label: "Expériences · 12" },
             { id: "projets", label: "Projets · 4" },
             { id: "avis", label: "Avis · 47" },
             { id: "team", label: "Équipe" },
@@ -62,7 +62,7 @@ export function AssociationTabs() {
       </div>
 
       <div style={{ marginTop: 20, paddingBottom: 48 }}>
-        {active === "prestations" && (
+        {active === "experiences" && (
           <div
             style={{
               display: "grid",
@@ -70,8 +70,8 @@ export function AssociationTabs() {
               gap: 18,
             }}
           >
-            {PRESTATIONS.map((p) => (
-              <PrestationCard
+            {EXPERIENCES.map((p) => (
+              <ExperienceCard
                 key={p.title}
                 title={p.title}
                 price={p.price}
@@ -80,6 +80,7 @@ export function AssociationTabs() {
                 funds={p.funds}
                 rating={p.rating}
                 reviews={p.reviews}
+                category={p.category}
               />
             ))}
           </div>
