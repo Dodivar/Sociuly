@@ -31,6 +31,8 @@ export type ExperienceCardProps = {
   goal?: number;
   hue?: ExperienceHue;
   saved?: boolean;
+  /** Si fourni, le cœur devient un bouton de favori (sans déclencher la navigation). */
+  onToggleSave?: () => void;
   compact?: boolean;
   href?: string;
   style?: CSSProperties;
@@ -47,6 +49,7 @@ export function ExperienceCard({
   goal = 0.62,
   hue = "green",
   saved,
+  onToggleSave,
   compact,
   href = "/experiences/seminaire-cohesion-sig",
   style,
@@ -85,18 +88,23 @@ export function ExperienceCard({
               {category}
             </span>
           </div>
-          <span
-            aria-label="Sauvegarder"
+          <button
+            type="button"
+            aria-label={saved ? "Retirer des favoris" : "Ajouter aux favoris"}
+            aria-pressed={saved}
+            onClick={onToggleSave ? (e) => { e.preventDefault(); e.stopPropagation(); onToggleSave(); } : undefined}
             style={{
               position: "absolute", top: 12, right: 12,
-              width: 32, height: 32, borderRadius: "50%",
-              background: "rgba(252,249,241,.95)", display: "flex",
+              width: 32, height: 32, borderRadius: "50%", border: "none", padding: 0,
+              background: "rgba(255,255,255,.95)", display: "flex",
               alignItems: "center", justifyContent: "center",
               backdropFilter: "blur(8px)",
+              cursor: onToggleSave ? "pointer" : "default",
+              boxShadow: "var(--shadow-sm)",
             }}
           >
             <Icon name="heart" size={15} color={saved ? "var(--accent)" : "var(--ink)"} />
-          </span>
+          </button>
         </div>
 
         <div style={{ padding: compact ? 14 : 16 }}>
