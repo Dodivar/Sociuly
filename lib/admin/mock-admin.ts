@@ -382,17 +382,17 @@ const CHARTS: AdminCharts = {
       points: [9212, 10528, 11656, 13254, 15792, 17296],
     },
   ],
-  // Réparti sur les 7 catégories (SPEC §3 — Prestation.category).
-  topCategories: (
+  // Réparti sur les formats d'expérience (SPEC §3 — Experience.format).
+  topFormats: (
     [
       ["journee", 9200],
       ["demi_journee", 6400],
       ["soiree", 4800],
       ["sur_mesure", 2100],
     ] as [ExperienceFormat, number][]
-  ).map(([format, valueEuros]) => ({
-    format,
-    label: FORMAT_LABEL[format],
+  ).map(([category, valueEuros]) => ({
+    category,
+    label: FORMAT_LABEL[category],
     valueEuros,
   })),
 };

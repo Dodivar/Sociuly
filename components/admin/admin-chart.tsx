@@ -139,7 +139,7 @@ export function BarsChart({ items, height = 150 }: BarsChartProps) {
       >
         {items.map((it, i) => (
           <div
-            key={it.format}
+            key={it.category}
             title={`${it.label} · €${it.valueEuros.toLocaleString("fr-FR")}`}
             style={{
               flex: 1,
@@ -155,7 +155,7 @@ export function BarsChart({ items, height = 150 }: BarsChartProps) {
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
         {items.map((it) => (
           <div
-            key={it.format}
+            key={it.category}
             className="sy-mono"
             style={{
               flex: 1,
