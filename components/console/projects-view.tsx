@@ -6,7 +6,7 @@ import {
 } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import type {
-  LinkedPrestation, ProjectDetail, ProjectStatus, ProjectUpdate,
+  LinkedExperience, ProjectDetail, ProjectStatus, ProjectUpdate,
 } from "@/lib/console/mock-projects";
 
 type Props = { projects: ProjectDetail[] };
@@ -392,7 +392,7 @@ function ProjectDetailPane({
 
       {/* Two columns */}
       <div className="pv-cols">
-        <LinkedPrestationsCard items={project.linkedPrestations} />
+        <LinkedExperiencesCard items={project.linkedExperiences} />
         <UpdatesCard updates={project.updates} />
       </div>
 
@@ -502,19 +502,19 @@ function StatBig({
   );
 }
 
-// ─────────────── Linked prestations ───────────────
+// ─────────────── Linked experiences ───────────────
 
-const HUE_COLOR: Record<LinkedPrestation["hue"], string> = {
+const HUE_COLOR: Record<LinkedExperience["hue"], string> = {
   green:  "#1f4b3f",
   orange: "#c0451f",
   yellow: "#b8861a",
   teal:   "#1f5b58",
 };
 
-function LinkedPrestationsCard({ items }: { items: LinkedPrestation[] }) {
+function LinkedExperiencesCard({ items }: { items: LinkedExperience[] }) {
   return (
     <Card>
-      <div className="sy-mono">Prestations liées · {items.length}</div>
+      <div className="sy-mono">Expériences liées · {items.length}</div>
       <h3 className="sy-h2" style={{ marginTop: 4 }}>
         Ce qui finance ce projet
       </h3>
@@ -526,9 +526,9 @@ function LinkedPrestationsCard({ items }: { items: LinkedPrestation[] }) {
             background: "var(--surface-2)", textAlign: "center",
           }}
         >
-          <div className="sy-mono">Aucune prestation liée</div>
+          <div className="sy-mono">Aucune expérience liée</div>
           <p className="sy-small sy-muted" style={{ marginTop: 6 }}>
-            Liez au moins une prestation pour ouvrir le financement.
+            Liez au moins une expérience pour ouvrir le financement.
           </p>
         </div>
       ) : (
@@ -576,7 +576,7 @@ function LinkedPrestationsCard({ items }: { items: LinkedPrestation[] }) {
         style={{ marginTop: 14 }}
         icon={<Icon name="plus" size={13} />}
       >
-        Lier une autre prestation
+        Lier une autre expérience
       </Btn>
     </Card>
   );

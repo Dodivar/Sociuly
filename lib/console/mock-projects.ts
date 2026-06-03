@@ -19,7 +19,7 @@ export type ProjectListItem = {
   remainingLabel: string | null;
 };
 
-export type LinkedPrestation = {
+export type LinkedExperience = {
   id: string;
   title: string;
   priceEuros: number;
@@ -41,7 +41,7 @@ export type ProjectDetail = ProjectListItem & {
   supportersCount: number;
   viewsCount: number;
   viewsWeeklyDeltaPercent: number;
-  linkedPrestations: LinkedPrestation[];
+  linkedExperiences: LinkedExperience[];
   updates: ProjectUpdate[];
 };
 
@@ -59,11 +59,11 @@ const PROJECTS: ProjectDetail[] = [
     supportersCount: 14,
     viewsCount: 1_248,
     viewsWeeklyDeltaPercent: 22,
-    linkedPrestations: [
-      { id: "lp1", title: "Barbecue convivial",     priceEuros: 280, bookingsCount: 8, totalEuros: 2_240, hue: "green"  },
-      { id: "lp2", title: "Olympiades entreprise",  priceEuros: 720, bookingsCount: 1, totalEuros: 720,   hue: "orange" },
-      { id: "lp3", title: "Buvette événement",      priceEuros: 350, bookingsCount: 2, totalEuros: 700,   hue: "teal"   },
-      { id: "lp4", title: "Initiation volley",      priceEuros: 150, bookingsCount: 3, totalEuros: 450,   hue: "yellow" },
+    linkedExperiences: [
+      { id: "lp1", title: "Atelier cohésion d'équipe",       priceEuros: 1200, bookingsCount: 4, totalEuros: 4_800, hue: "green"  },
+      { id: "lp2", title: "Match VIP & hospitalités",        priceEuros: 2400, bookingsCount: 1, totalEuros: 2_400, hue: "orange" },
+      { id: "lp3", title: "Initiation basket encadrée",      priceEuros: 900,  bookingsCount: 2, totalEuros: 1_800, hue: "teal"   },
+      { id: "lp4", title: "Cocktail & visite des coulisses", priceEuros: 1100, bookingsCount: 1, totalEuros: 1_100, hue: "yellow" },
     ],
     updates: [
       {
@@ -81,7 +81,7 @@ const PROJECTS: ProjectDetail[] = [
       {
         id: "u3", date: "02 mai",
         title: "Projet ouvert au financement",
-        body: "4 prestations liées — objectif €4 000 sur 30 jours.",
+        body: "4 expériences liées — objectif €4 000 sur 30 jours.",
       },
     ],
   },
@@ -98,9 +98,9 @@ const PROJECTS: ProjectDetail[] = [
     supportersCount: 9,
     viewsCount: 612,
     viewsWeeklyDeltaPercent: 11,
-    linkedPrestations: [
-      { id: "lp5", title: "Buvette match à domicile", priceEuros: 220, bookingsCount: 3, totalEuros: 660, hue: "teal" },
-      { id: "lp6", title: "Tournoi loisirs adulte",   priceEuros: 390, bookingsCount: 1, totalEuros: 390, hue: "orange" },
+    linkedExperiences: [
+      { id: "lp5", title: "Initiation basket encadrée", priceEuros: 900,  bookingsCount: 3, totalEuros: 2_700, hue: "teal"   },
+      { id: "lp6", title: "Atelier cohésion d'équipe",  priceEuros: 1200, bookingsCount: 1, totalEuros: 1_200, hue: "orange" },
     ],
     updates: [
       {
@@ -112,7 +112,7 @@ const PROJECTS: ProjectDetail[] = [
       {
         id: "m2", date: "28 avr.",
         title: "Projet ouvert au financement",
-        body: "2 prestations liées — objectif €1 500 sur 60 jours.",
+        body: "2 expériences liées — objectif €1 500 sur 60 jours.",
       },
     ],
   },
@@ -129,10 +129,10 @@ const PROJECTS: ProjectDetail[] = [
     supportersCount: 22,
     viewsCount: 1_980,
     viewsWeeklyDeltaPercent: 6,
-    linkedPrestations: [
-      { id: "lp7", title: "Anniversaire enfant",   priceEuros: 180, bookingsCount: 4, totalEuros: 720,   hue: "yellow" },
-      { id: "lp8", title: "Olympiades entreprise", priceEuros: 720, bookingsCount: 1, totalEuros: 720,   hue: "orange" },
-      { id: "lp9", title: "Barbecue convivial",    priceEuros: 280, bookingsCount: 6, totalEuros: 1_680, hue: "green"  },
+    linkedExperiences: [
+      { id: "lp7", title: "Masterclass joueur pro",    priceEuros: 1800, bookingsCount: 2, totalEuros: 3_600, hue: "yellow" },
+      { id: "lp8", title: "Match VIP & hospitalités",  priceEuros: 2400, bookingsCount: 1, totalEuros: 2_400, hue: "orange" },
+      { id: "lp9", title: "Atelier cohésion d'équipe", priceEuros: 1200, bookingsCount: 3, totalEuros: 3_600, hue: "green"  },
     ],
     updates: [
       {
@@ -144,7 +144,7 @@ const PROJECTS: ProjectDetail[] = [
       {
         id: "v2", date: "12 avr.",
         title: "Projet ouvert au financement",
-        body: "3 prestations liées — objectif €10 000 sur 90 jours.",
+        body: "3 expériences liées — objectif €10 000 sur 90 jours.",
       },
     ],
   },
@@ -162,7 +162,7 @@ const PROJECTS: ProjectDetail[] = [
     supportersCount: 1,
     viewsCount: 84,
     viewsWeeklyDeltaPercent: 4,
-    linkedPrestations: [],
+    linkedExperiences: [],
     updates: [
       {
         id: "s1", date: "30 mai",
@@ -184,9 +184,9 @@ const PROJECTS: ProjectDetail[] = [
     supportersCount: 38,
     viewsCount: 3_412,
     viewsWeeklyDeltaPercent: 0,
-    linkedPrestations: [
-      { id: "lp10", title: "Buvette événement", priceEuros: 350, bookingsCount: 12, totalEuros: 4_200, hue: "teal"   },
-      { id: "lp11", title: "Barbecue convivial", priceEuros: 280, bookingsCount: 15, totalEuros: 4_200, hue: "green" },
+    linkedExperiences: [
+      { id: "lp10", title: "Cocktail & visite des coulisses", priceEuros: 1100, bookingsCount: 4, totalEuros: 4_400, hue: "teal"  },
+      { id: "lp11", title: "Atelier cohésion d'équipe",       priceEuros: 1200, bookingsCount: 3, totalEuros: 3_600, hue: "green" },
     ],
     updates: [
       {
@@ -198,7 +198,7 @@ const PROJECTS: ProjectDetail[] = [
       {
         id: "b2", date: "10 jan.",
         title: "Projet ouvert au financement",
-        body: "2 prestations liées — objectif €8 500 sur 60 jours.",
+        body: "2 expériences liées — objectif €8 500 sur 60 jours.",
       },
     ],
   },
@@ -215,7 +215,7 @@ const PROJECTS: ProjectDetail[] = [
     supportersCount: 0,
     viewsCount: 0,
     viewsWeeklyDeltaPercent: 0,
-    linkedPrestations: [],
+    linkedExperiences: [],
     updates: [],
   },
 ];

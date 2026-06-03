@@ -4,18 +4,18 @@ import { Icon } from "./icon";
 
 // ─────── ImpactHero (signature) ───────
 export function ImpactHero({
-  title = "Tournoi national Espagne U17",
-  asso = "USB Volley",
+  title = "École de jeunes U17",
+  club = "SIG Strasbourg",
   value = 0.62,
   delta = 0.06,
-  collected = 2480,
-  target = 4000,
-  bookingPrice = 280,
+  collected = 24800,
+  target = 40000,
+  bookingPrice = 1200,
   bookings = 14,
   days = 12,
   style,
 }: {
-  title?: string; asso?: string; value?: number; delta?: number;
+  title?: string; club?: string; value?: number; delta?: number;
   collected?: number; target?: number; bookingPrice?: number;
   bookings?: number; days?: number; style?: CSSProperties;
 }) {
@@ -40,7 +40,7 @@ export function ImpactHero({
             />
             Projet en cours
           </span>
-          <span className="sy-mono">{asso}</span>
+          <span className="sy-mono">{club}</span>
         </div>
 
         <h2
@@ -112,7 +112,7 @@ export function ImpactHero({
                 {Math.round(newValue * 100)}%
               </div>
               <div className="sy-small" style={{ color: "var(--accent-deep)", fontWeight: 600 }}>
-                avec votre résa
+                avec votre commande
               </div>
             </div>
           </div>
@@ -146,19 +146,19 @@ export function ImpactHero({
 
 // ─────── ImpactMini (used inside cards) ───────
 export function ImpactMini({
-  title = "Tournoi national Espagne U17",
-  asso = "USB Volley",
+  title = "École de jeunes U17",
+  club = "SIG Strasbourg",
   value = 0.62,
-  collected = 2480,
-  target = 4000,
+  collected = 24800,
+  target = 40000,
   style,
 }: {
-  title?: string; asso?: string; value?: number;
+  title?: string; club?: string; value?: number;
   collected?: number; target?: number; style?: CSSProperties;
 }) {
   return (
     <div style={style}>
-      <div className="sy-mono" style={{ color: "var(--accent-deep)" }}>Finance · {asso}</div>
+      <div className="sy-mono" style={{ color: "var(--accent-deep)" }}>Finance · {club}</div>
       <div className="sy-h4" style={{ marginTop: 2 }}>{title}</div>
       <Progress value={value} style={{ marginTop: 6 }} />
       <div className="sy-small sy-muted sy-num" style={{ marginTop: 4 }}>
@@ -171,11 +171,11 @@ export function ImpactMini({
 // ─────── ImpactMap — visualizes contributions across nearby clubs ───────
 export function ImpactMap({ style }: { style?: CSSProperties }) {
   const clubs: Array<{ x: number; y: number; size: "lg" | "md" | "sm"; pct: number; label: string; hot?: boolean }> = [
-    { x: 18, y: 25, size: "lg", pct: 92, label: "USB Volley", hot: true },
-    { x: 38, y: 60, size: "md", pct: 68, label: "AS Saint-Brieuc" },
-    { x: 62, y: 32, size: "sm", pct: 32, label: "JA Strasbourg" },
-    { x: 78, y: 70, size: "md", pct: 55, label: "RC Metz XV" },
-    { x: 50, y: 18, size: "sm", pct: 18, label: "EC Nancy" },
+    { x: 18, y: 25, size: "lg", pct: 92, label: "SIG Strasbourg", hot: true },
+    { x: 38, y: 60, size: "md", pct: 68, label: "SLUC Nancy Basket" },
+    { x: 62, y: 32, size: "sm", pct: 32, label: "Metz Basket Métropole" },
+    { x: 78, y: 70, size: "md", pct: 55, label: "RC Strasbourg" },
+    { x: 50, y: 18, size: "sm", pct: 18, label: "FC Nancy-Sud" },
   ];
   return (
     <div
@@ -253,14 +253,14 @@ export function ImpactMap({ style }: { style?: CSSProperties }) {
 // ─────── Map for the marketplace (price pins on roads) ───────
 export function MarketMap({ style }: { style?: CSSProperties }) {
   const pins: Array<{ x: number; y: number; price: number; hot?: boolean }> = [
-    { x: 22, y: 30, price: 280, hot: true },
-    { x: 42, y: 55, price: 180 },
-    { x: 60, y: 22, price: 720 },
-    { x: 72, y: 60, price: 350 },
-    { x: 34, y: 75, price: 220 },
-    { x: 58, y: 80, price: 420 },
-    { x: 18, y: 60, price: 150 },
-    { x: 82, y: 38, price: 480 },
+    { x: 22, y: 30, price: 4800, hot: true },
+    { x: 42, y: 55, price: 900 },
+    { x: 60, y: 22, price: 2400 },
+    { x: 72, y: 60, price: 1100 },
+    { x: 34, y: 75, price: 1200 },
+    { x: 58, y: 80, price: 1800 },
+    { x: 18, y: 60, price: 1500 },
+    { x: 82, y: 38, price: 3500 },
   ];
   return (
     <div

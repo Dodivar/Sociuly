@@ -39,11 +39,11 @@ export type NextPayout = {
 export type UpcomingPayout = {
   id: string;
   bookingNumber: string; // SOC-YYYY-NNNNN
-  orgName: string; // organisation ayant réservé
+  orgName: string; // organisation ayant commandé
   experienceTitle: string;
-  prestationDateLabel: string; // date de réalisation
+  experienceDateLabel: string; // date de réalisation
   status: UpcomingPayoutStatus;
-  grossAmountCents: number; // payé par l'organisation (TTC)
+  grossAmountTTCCents: number; // payé par l'organisation (TTC)
   feeAmountCents: number; // commission Sociuly (6 %)
   netAmountCents: number; // net versé au club
   payoutDateLabel: string; // date de versement prévue (J+1)
@@ -55,7 +55,7 @@ export type PayoutHistoryRow = {
   orgName: string;
   experienceTitle: string;
   paidAtLabel: string; // date du virement effectué
-  grossAmountCents: number;
+  grossAmountTTCCents: number;
   feeAmountCents: number;
   netAmountCents: number;
 };
@@ -88,12 +88,12 @@ export const UPCOMING_STATUS_LABEL: Record<UpcomingPayoutStatus, string> = {
 };
 
 // SPEC §5 — commission 6 % du TTC, montants en cents.
-function withCommission(grossCents: number) {
-  const feeAmountCents = Math.round(grossCents * 0.06);
+function withCommission(grossTTCCents: number) {
+  const feeAmountCents = Math.round(grossTTCCents * 0.06);
   return {
-    grossAmountCents: grossCents,
+    grossAmountTTCCents: grossTTCCents,
     feeAmountCents,
-    netAmountCents: grossCents - feeAmountCents,
+    netAmountCents: grossTTCCents - feeAmountCents,
   };
 }
 
@@ -101,43 +101,43 @@ function withCommission(grossCents: number) {
 const UPCOMING: UpcomingPayout[] = [
   {
     id: "u1",
-    bookingNumber: "SOC-2026-00037",
-    orgName: "CSE Decathlon Rennes",
-    experienceTitle: "Tournoi 3v3 inter-équipes",
-    prestationDateLabel: "1 juin 2026",
+    bookingNumber: "SOC-2026-00038",
+    orgName: "Saint-Gobain PAM",
+    experienceTitle: "Séminaire sur mesure",
+    experienceDateLabel: "2 juin 2026",
     status: "dispute_window",
-    ...withCommission(95000),
+    ...withCommission(350000),
     payoutDateLabel: "3 juin 2026",
   },
   {
     id: "u2",
     bookingNumber: "SOC-2026-00040",
-    orgName: "Comité d'entreprise Lactalis",
-    experienceTitle: "Initiation multisport encadrée",
-    prestationDateLabel: "27 juin 2026",
+    orgName: "Caisse d'Épargne Grand Est",
+    experienceTitle: "Atelier cohésion d'équipe",
+    experienceDateLabel: "27 juin 2026",
     status: "awaiting_completion",
-    ...withCommission(18000),
+    ...withCommission(120000),
     payoutDateLabel: "28 juin 2026",
   },
   {
     id: "u3",
     bookingNumber: "SOC-2026-00039",
-    orgName: "Ville de Rennes — Événementiel",
-    experienceTitle: "Animation cohésion fête de quartier",
-    prestationDateLabel: "4 juil. 2026",
+    orgName: "Decathlon Campus",
+    experienceTitle: "Initiation basket encadrée",
+    experienceDateLabel: "4 juil. 2026",
     status: "awaiting_completion",
-    ...withCommission(35000),
+    ...withCommission(90000),
     payoutDateLabel: "5 juil. 2026",
   },
   {
     id: "u4",
     bookingNumber: "SOC-2026-00041",
-    orgName: "Lycée Bréquigny",
-    experienceTitle: "Olympiades inter-classes",
-    prestationDateLabel: "20 juin 2026",
+    orgName: "Lohr Group",
+    experienceTitle: "Match VIP & hospitalités",
+    experienceDateLabel: "23 juin 2026",
     status: "awaiting_completion",
-    ...withCommission(72000),
-    payoutDateLabel: "21 juin 2026",
+    ...withCommission(240000),
+    payoutDateLabel: "24 juin 2026",
   },
 ];
 
@@ -146,47 +146,47 @@ const HISTORY: PayoutHistoryRow[] = [
   {
     id: "h1",
     bookingNumber: "SOC-2026-00035",
-    orgName: "CE Orange Grand Ouest",
-    experienceTitle: "Olympiades inter-classes",
+    orgName: "Électricité de Strasbourg",
+    experienceTitle: "Atelier cohésion d'équipe",
     paidAtLabel: "17 mai 2026",
-    ...withCommission(72000),
+    ...withCommission(120000),
   },
   {
     id: "h2",
     bookingNumber: "SOC-2026-00031",
-    orgName: "CSE Bretagne Télécom",
-    experienceTitle: "Atelier cohésion d'équipe",
+    orgName: "Brasseries Kronenbourg",
+    experienceTitle: "Journée immersion · SIG",
     paidAtLabel: "3 mai 2026",
-    ...withCommission(28000),
+    ...withCommission(480000),
   },
   {
     id: "h3",
     bookingNumber: "SOC-2026-00026",
-    orgName: "Mutuelle Armor",
-    experienceTitle: "Soirée club-house privatisée",
+    orgName: "Banque CIC Est",
+    experienceTitle: "Cocktail & visite des coulisses",
     paidAtLabel: "28 avr. 2026",
-    ...withCommission(48000),
+    ...withCommission(110000),
   },
   {
     id: "h4",
     bookingNumber: "SOC-2026-00022",
-    orgName: "Crédit Mutuel Arkéa",
-    experienceTitle: "Masterclass joueur professionnel",
+    orgName: "Crédit Mutuel Grand Est",
+    experienceTitle: "Masterclass joueur pro",
     paidAtLabel: "12 avr. 2026",
-    ...withCommission(120000),
+    ...withCommission(180000),
   },
 ];
 
-// Encaissements (paiements reçus des organisations : acompte puis solde).
+// Encaissements (paiements reçus des organisations : acompte 30 % puis solde 70 %).
 const ENCAISSEMENTS: Encaissement[] = [
-  { id: "e1", bookingNumber: "SOC-2026-00037", orgName: "CSE Decathlon Rennes",        kind: "balance", amountCents: 66500, paidAtLabel: "29 mai 2026" },
-  { id: "e2", bookingNumber: "SOC-2026-00040", orgName: "Comité d'entreprise Lactalis", kind: "deposit", amountCents: 5400,  paidAtLabel: "24 mai 2026" },
-  { id: "e3", bookingNumber: "SOC-2026-00041", orgName: "Lycée Bréquigny",             kind: "deposit", amountCents: 21600, paidAtLabel: "22 mai 2026" },
-  { id: "e4", bookingNumber: "SOC-2026-00039", orgName: "Ville de Rennes — Événementiel", kind: "deposit", amountCents: 10500, paidAtLabel: "20 mai 2026" },
-  { id: "e5", bookingNumber: "SOC-2026-00035", orgName: "CE Orange Grand Ouest",        kind: "balance", amountCents: 50400, paidAtLabel: "14 mai 2026" },
-  { id: "e6", bookingNumber: "SOC-2026-00037", orgName: "CSE Decathlon Rennes",        kind: "deposit", amountCents: 28500, paidAtLabel: "10 mai 2026" },
-  { id: "e7", bookingNumber: "SOC-2026-00031", orgName: "CSE Bretagne Télécom",        kind: "balance", amountCents: 19600, paidAtLabel: "30 avr. 2026" },
-  { id: "e8", bookingNumber: "SOC-2026-00035", orgName: "CE Orange Grand Ouest",        kind: "deposit", amountCents: 21600, paidAtLabel: "28 avr. 2026" },
+  { id: "e1", bookingNumber: "SOC-2026-00038", orgName: "Saint-Gobain PAM",            kind: "balance", amountCents: 245000, paidAtLabel: "29 mai 2026" },
+  { id: "e2", bookingNumber: "SOC-2026-00040", orgName: "Caisse d'Épargne Grand Est",  kind: "deposit", amountCents: 36000,  paidAtLabel: "24 mai 2026" },
+  { id: "e3", bookingNumber: "SOC-2026-00041", orgName: "Lohr Group",                  kind: "deposit", amountCents: 72000,  paidAtLabel: "22 mai 2026" },
+  { id: "e4", bookingNumber: "SOC-2026-00039", orgName: "Decathlon Campus",            kind: "deposit", amountCents: 27000,  paidAtLabel: "20 mai 2026" },
+  { id: "e5", bookingNumber: "SOC-2026-00035", orgName: "Électricité de Strasbourg",   kind: "balance", amountCents: 84000,  paidAtLabel: "14 mai 2026" },
+  { id: "e6", bookingNumber: "SOC-2026-00038", orgName: "Saint-Gobain PAM",            kind: "deposit", amountCents: 105000, paidAtLabel: "10 mai 2026" },
+  { id: "e7", bookingNumber: "SOC-2026-00031", orgName: "Brasseries Kronenbourg",      kind: "balance", amountCents: 336000, paidAtLabel: "30 avr. 2026" },
+  { id: "e8", bookingNumber: "SOC-2026-00035", orgName: "Électricité de Strasbourg",   kind: "deposit", amountCents: 36000,  paidAtLabel: "28 avr. 2026" },
 ];
 
 function sumBy<T>(rows: T[], pick: (row: T) => number): number {

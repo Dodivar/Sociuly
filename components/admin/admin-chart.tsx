@@ -125,7 +125,7 @@ export function BarsChart({ items, height = 150 }: BarsChartProps) {
   return (
     <div
       role="img"
-      aria-label={`Top catégories par chiffre d'affaires : ${items
+      aria-label={`Top formats par chiffre d'affaires : ${items
         .map((it) => `${it.label} ${it.valueEuros}€`)
         .join(", ")}`}
     >
@@ -139,7 +139,7 @@ export function BarsChart({ items, height = 150 }: BarsChartProps) {
       >
         {items.map((it, i) => (
           <div
-            key={it.category}
+            key={it.format}
             title={`${it.label} · €${it.valueEuros.toLocaleString("fr-FR")}`}
             style={{
               flex: 1,
@@ -155,7 +155,7 @@ export function BarsChart({ items, height = 150 }: BarsChartProps) {
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
         {items.map((it) => (
           <div
-            key={it.category}
+            key={it.format}
             className="sy-mono"
             style={{
               flex: 1,

@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <Link href="/" aria-label="Accueil Sociuly" style={{ textDecoration: "none", color: "inherit" }}>
           <Logo />
         </Link>
-        <Link href="/prestations" className="sy-small sy-link" style={{ color: "var(--ink-2)" }}>
+        <Link href="/experiences" className="sy-small sy-link" style={{ color: "var(--ink-2)" }}>
           ← Retour au site public
         </Link>
       </header>

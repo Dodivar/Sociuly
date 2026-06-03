@@ -43,7 +43,7 @@ export async function loginAction(
   // 4. Durée de session :
   //      - remember = true  → cookie persistant (par défaut 30 j)
   //      - remember = false → cookie de session (à régler côté SSR client / middleware)
-  // 5. Lire l'AssociationMember de l'utilisateur connecté pour déterminer le clubId
+  // 5. Lire le ClubMember de l'utilisateur connecté pour déterminer le clubId
   //    de redirection (un user peut être membre de plusieurs clubs — choisir le
   //    premier par ordre `role` puis `joinedAt`, ou afficher un sélecteur si plusieurs).
   //
