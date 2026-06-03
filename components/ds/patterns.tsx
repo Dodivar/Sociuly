@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { cx } from "@/lib/cx";
 import { CONSOLE_PUBLIC_LINK } from "@/lib/console/dev";
-import { Avatar, Btn, Card, Chip, Progress, Stars } from "./components";
+import { Avatar, Btn, Progress, Stars } from "./components";
 import { Icon } from "./icon";
 import { ImpactMini } from "./impact";
 
