@@ -1,26 +1,32 @@
 import Link from "next/link";
-import { Avatar, Btn, Card, Chip, Stars } from "@/components/ds/components";
+import { notFound } from "next/navigation";
+import { Avatar, Btn, Card, Chip, Progress, Stars } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { QuoteCard, ReviewCard, SiteFooter, TopNav } from "@/components/ds/patterns";
+import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactHero } from "@/components/ds/impact";
+import { ExperienceGallery } from "@/components/experiences/gallery";
+import { ExperienceBookingRail } from "@/components/experiences/booking-rail";
+import { ExperienceReviews } from "@/components/experiences/reviews";
+import { ShareButton } from "@/components/experiences/share-button";
+import {
+  eur,
+  getAllExperienceSlugs,
+  getExperienceBySlug,
+} from "@/lib/marketplace/experience-detail";
 
 type Props = { params: Promise<{ slug: string }> };
 
-const FACTS: Array<[string, string, "users" | "calendar" | "pin" | "check"]> = [
-  ["Capacité", "20–60 pers.",            "users"],
-  ["Format",   "Journée (≈ 6h)",         "calendar"],
-  ["Lieu",     "Rhénus Sport, Strasbourg", "pin"],
-  ["Inclus",   "Coach + joueur pro",     "check"],
-];
-
-const INCLUDED = [
-  "Présentation par le coach",       "Initiation encadrée sur parquet",
-  "Atelier cohésion d'équipe",       "Masterclass d'un joueur pro",
-  "Cocktail & visite des coulisses", "Photos & vidéo de la journée",
-];
+export async function generateStaticParams() {
+  const slugs = await getAllExperienceSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 export default async function ExperienceDetailPage({ params }: Props) {
   const { slug } = await params;
+  const exp = await getExperienceBySlug(slug);
+  if (!exp) notFound();
+
+  const { club, project } = exp;
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -30,8 +36,8 @@ export default async function ExperienceDetailPage({ params }: Props) {
         {/* breadcrumb */}
         <div className="sy-mono" style={{ marginBottom: 8 }}>
           <Link href="/experiences" style={{ color: "inherit", textDecoration: "none" }}>Expériences</Link>
-          {" › Cohésion › "}
-          <span style={{ color: "var(--ink)" }}>Journée immersion SIG Strasbourg</span>
+          {" › "}
+          <span style={{ color: "var(--ink)" }}>{exp.title}</span>
         </div>
 
         <div
@@ -41,72 +47,48 @@ export default async function ExperienceDetailPage({ params }: Props) {
           }}
         >
           <div>
-            <h1 className="sy-h1" style={{ fontSize: 36 }}>Journée immersion · SIG Strasbourg</h1>
+            <h1 className="sy-h1" style={{ fontSize: 36 }}>{exp.title}</h1>
             <div style={{ display: "flex", gap: 14, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <Stars value={4.9} />
-              <span className="sy-small" style={{ color: "var(--ink)" }}>4.9 · 47 avis</span>
+              <Stars value={exp.rating} />
+              <span className="sy-small" style={{ color: "var(--ink)" }}>
+                {exp.rating.toFixed(1)} · {exp.reviewCount} avis
+              </span>
               <span className="sy-small sy-muted">·</span>
               <span className="sy-small" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <Icon name="pin" size={13} /> Strasbourg (67)
+                <Icon name="pin" size={13} /> {exp.cityLabel}
               </span>
-              <Chip variant="primary"><Icon name="check" size={11} /> Club vérifié</Chip>
+              {exp.verified && (
+                <Chip variant="primary"><Icon name="check" size={11} /> Club vérifié</Chip>
+              )}
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn variant="ghost" size="sm" icon={<Icon name="heart" size={14} />}>Sauver</Btn>
-            <Btn variant="ghost" size="sm" icon={<Icon name="share" size={14} />}>Partager</Btn>
+            <ShareButton title={exp.title} />
           </div>
         </div>
 
-        {/* gallery */}
-        <div className="detail-gallery">
-          <div
-            className="sy-img gallery-hero"
-            style={{ borderRadius: 0, background: "linear-gradient(165deg, #1f4b3f 0%, #14332b 100%)" }}
-          >
-            <svg viewBox="0 0 220 220" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.4 }}>
-              <circle cx="160" cy="60" r="36" fill="#f1c14a" opacity="0.7" />
-              <path d="M0 170 Q 60 130 110 150 T 220 130 L 220 220 L 0 220 Z" fill="#e8623d" opacity="0.55" />
-              <path d="M0 200 Q 80 175 130 195 T 220 185 L 220 220 L 0 220 Z" fill="#14332b" />
-            </svg>
-            <span className="sy-img-label" style={{ position: "absolute", bottom: 16, left: 16 }}>
-              Photo principale · parquet Rhénus Sport
-            </span>
-          </div>
-          <div className="sy-img" style={{ borderRadius: 0, background: "linear-gradient(135deg, #e8623d 0%, #c0451f 100%)" }} />
-          <div className="sy-img" style={{ borderRadius: 0, background: "linear-gradient(135deg, #f1c14a 0%, #b8861a 100%)" }} />
-          <div className="sy-img" style={{ borderRadius: 0, background: "linear-gradient(135deg, #1f5b58 0%, #14332b 100%)" }} />
-          <div
-            className="sy-img"
-            style={{ borderRadius: 0, position: "relative", background: "linear-gradient(135deg, #8a6b3e 0%, #5a4525 100%)" }}
-          >
-            <Btn
-              variant="dark"
-              size="sm"
-              style={{ position: "absolute", bottom: 12, right: 12 }}
-              icon={<Icon name="grid" size={13} color="#fff" />}
-            >
-              Voir 12 photos
-            </Btn>
-          </div>
-        </div>
+        {/* gallery (mosaïque + viewer) */}
+        <ExperienceGallery photos={exp.photos} />
 
         {/* Main grid: content + right rail */}
         <div className="detail-grid">
           <div>
-            {/* asso strip */}
+            {/* club strip — lien actif vers le profil du club */}
             <div
               style={{
                 display: "flex", alignItems: "center", gap: 14, paddingBottom: 22,
                 borderBottom: "1px solid var(--line)",
               }}
             >
-              <Avatar initials="SIG" size="lg" tone="green" />
+              <Avatar initials={club.initials} size="lg" tone={club.tone} />
               <div style={{ flex: 1 }}>
-                <div className="sy-h3">Proposé par SIG Strasbourg</div>
-                <div className="sy-small sy-muted">12 expériences · club pro · répond en 2h</div>
+                <div className="sy-h3">Proposé par {club.name}</div>
+                <div className="sy-small sy-muted">
+                  {club.experienceCount} expériences · {club.typeLabel} · {club.responseTime}
+                </div>
               </div>
-              <Link href="/clubs/sig-strasbourg" style={{ textDecoration: "none" }}>
+              <Link href={`/clubs/${club.slug}`} style={{ textDecoration: "none" }}>
                 <Btn variant="outline" size="sm" iconRight={<Icon name="arrow" size={13} />}>
                   Voir le club
                 </Btn>
@@ -115,7 +97,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
             {/* facts */}
             <div className="facts-grid">
-              {FACTS.map(([k, v, ic]) => (
+              {exp.facts.map(([k, v, ic]) => (
                 <Card key={k}>
                   <Icon name={ic} size={18} color="var(--primary)" />
                   <div className="sy-mono" style={{ marginTop: 8 }}>{k}</div>
@@ -126,18 +108,18 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
             {/* description */}
             <h2 className="sy-h2" style={{ marginTop: 28 }}>L&apos;expérience</h2>
-            <p className="sy-body" style={{ marginTop: 10, fontSize: 16, color: "var(--ink)" }}>
-              Une journée immersive au cœur d&apos;un club professionnel. Vos équipes sont accueillies au
-              Rhénus Sport, encadrées par les coachs et un joueur pro : présentation, initiation sur le
-              parquet, ateliers de cohésion, puis cocktail dans les coulisses de l&apos;Arena.
-            </p>
-            <p className="sy-body" style={{ marginTop: 8 }}>
-              Tout est organisé par le club, du coach diplômé à la logistique. Vous vivez une expérience
-              clé en main — et chaque expérience finance directement le projet de saison du club.
-            </p>
+            {exp.description.map((p, i) => (
+              <p
+                key={i}
+                className="sy-body"
+                style={{ marginTop: i === 0 ? 10 : 8, fontSize: i === 0 ? 16 : undefined, color: "var(--ink)" }}
+              >
+                {p}
+              </p>
+            ))}
 
             <div className="included-grid">
-              {INCLUDED.map((t) => (
+              {exp.included.map((t) => (
                 <div key={t} style={{ display: "flex", gap: 10, alignItems: "center" }}>
                   <span
                     style={{
@@ -153,6 +135,44 @@ export default async function ExperienceDetailPage({ params }: Props) {
               ))}
             </div>
 
+            {/* projet financé — lien actif vers le projet du club */}
+            <h2 className="sy-h2" style={{ marginTop: 28 }}>Votre devis finance un projet</h2>
+            <Link
+              href={`/clubs/${project.clubSlug}`}
+              style={{ textDecoration: "none", color: "inherit", display: "block", marginTop: 12 }}
+            >
+              <Card
+                style={{
+                  padding: 18, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap",
+                  cursor: "pointer",
+                }}
+              >
+                <span
+                  style={{
+                    width: 48, height: 48, borderRadius: 12, flex: "0 0 auto",
+                    background: "var(--primary-soft)", display: "inline-flex",
+                    alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <Icon name="trophy" size={22} color="var(--primary-deep)" />
+                </span>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div className="sy-mono">Projet financé · {club.name}</div>
+                  <div className="sy-h3" style={{ marginTop: 2 }}>{project.title}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 10 }}>
+                    <span className="sy-small sy-muted">
+                      {eur(project.raisedCents)} collectés sur {eur(project.targetCents)}
+                    </span>
+                    <span className="sy-mono sy-num" style={{ color: "var(--accent-deep)" }}>
+                      {Math.round(project.goal * 100)}%
+                    </span>
+                  </div>
+                  <Progress value={project.goal} style={{ marginTop: 8 }} />
+                </div>
+                <Icon name="arrow" size={16} color="var(--ink-3)" />
+              </Card>
+            </Link>
+
             {/* calendar */}
             <h2 className="sy-h2" style={{ marginTop: 28 }}>Disponibilités</h2>
             <Card style={{ marginTop: 12, padding: 18, display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
@@ -162,7 +182,9 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                 }}
               >
-                <div className="sy-mono" style={{ color: "var(--accent-deep)" }}>SAM</div>
+                <div className="sy-mono" style={{ color: "var(--accent-deep)" }}>
+                  {new Date(`${exp.slots[0].date}T00:00:00`).toLocaleDateString("fr-FR", { weekday: "short" }).slice(0, 3).toUpperCase()}
+                </div>
                 <div
                   className="sy-num"
                   style={{
@@ -170,46 +192,33 @@ export default async function ExperienceDetailPage({ params }: Props) {
                     color: "var(--accent-deep)", fontVariationSettings: "var(--display-var)",
                   }}
                 >
-                  14
+                  {new Date(`${exp.slots[0].date}T00:00:00`).getDate()}
                 </div>
-                <div className="sy-mono" style={{ color: "var(--accent-deep)" }}>JUIN</div>
+                <div className="sy-mono" style={{ color: "var(--accent-deep)" }}>
+                  {new Date(`${exp.slots[0].date}T00:00:00`).toLocaleDateString("fr-FR", { month: "short" }).toUpperCase()}
+                </div>
               </div>
               <div style={{ flex: 1, minWidth: 200 }}>
                 <div className="sy-mono">Prochaine date</div>
-                <div className="sy-h3" style={{ marginTop: 4 }}>Samedi 14 juin · 16h00</div>
-                <div className="sy-small sy-muted" style={{ marginTop: 4 }}>+ 8 autres créneaux ce mois-ci</div>
+                <div className="sy-h3" style={{ marginTop: 4 }}>
+                  {new Date(`${exp.slots[0].date}T00:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+                  {" · "}{exp.slots[0].time.replace(":", "h")}
+                </div>
+                <div className="sy-small sy-muted" style={{ marginTop: 4 }}>
+                  + {exp.slots.length - 1} autres créneaux à venir
+                </div>
               </div>
               <Btn variant="outline" iconRight={<Icon name="chevron" size={14} />}>Voir le calendrier</Btn>
             </Card>
 
-            {/* reviews */}
-            <div
-              style={{
-                marginTop: 28, display: "flex", alignItems: "baseline",
-                justifyContent: "space-between", flexWrap: "wrap", gap: 8,
-              }}
-            >
-              <h2 className="sy-h2">Avis (47)</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Stars value={4.9} size={14} />
-                <span className="sy-h3">4.9</span>
-              </div>
-            </div>
-            <div className="reviews-grid">
-              <ReviewCard />
-              <ReviewCard
-                name="Hugo M. · CEO"
-                tone="green"
-                rating={5}
-                body="Une journée mémorable pour nos 38 collaborateurs. Organisation millimétrée par le club, et notre budget a soutenu leur école de jeunes."
-              />
-            </div>
+            {/* reviews — pagination « voir plus » */}
+            <ExperienceReviews reviews={exp.reviews} rating={exp.rating} count={exp.reviewCount} />
           </div>
 
-          {/* RIGHT RAIL */}
+          {/* RIGHT RAIL — estimateur de devis sticky */}
           <aside>
             <div style={{ position: "sticky", top: 16 }}>
-              <QuoteCard price={4_800} format="Journée" capacity="20–60 personnes" ctaHref={`/reserver/${slug}`} />
+              <ExperienceBookingRail experience={exp} />
               <div style={{ marginTop: 16 }}>
                 <ImpactHero />
               </div>
@@ -232,6 +241,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
           overflow: hidden;
         }
         .detail-gallery > .gallery-hero { grid-row: 1 / 3; }
+        .detail-gallery > .gallery-tile { position: relative; }
         .detail-grid {
           margin-top: 28px;
           display: grid;
@@ -268,7 +278,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
             height: auto;
           }
           .detail-gallery > .gallery-hero { grid-row: 1 / 2; grid-column: 1 / 3; }
-          .detail-gallery > :nth-child(n+4) { display: none; }
+          .detail-gallery > .gallery-tile:nth-child(n+4) { display: none; }
           .reviews-grid { grid-template-columns: 1fr; }
           .included-grid { grid-template-columns: 1fr; }
         }
@@ -276,7 +286,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
           .facts-grid { grid-template-columns: repeat(2, 1fr); }
           .detail-gallery { grid-template-columns: 1fr; grid-template-rows: 220px; }
           .detail-gallery > .gallery-hero { grid-column: 1; }
-          .detail-gallery > :nth-child(n+2) { display: none; }
+          .detail-gallery > .gallery-tile:nth-child(n+2) { display: none; }
         }
       `}</style>
     </main>
