@@ -13,6 +13,11 @@ import { getMarketplaceExperiences, type MarketplaceExperience } from "./experie
 // ─────── Modèle de prix (SPEC §3 — Experience.priceModel) ───────
 export type PriceModel = "per_person" | "fixed";
 
+// ─────── Lieu d'exécution (SPEC §3 — Experience/ExperienceModule.location) ───────
+// `at_client` = chez l'entreprise (adresse à renseigner), `at_club` / `at_venue`
+// = dans les installations du club, `flexible` = au choix de l'acheteur.
+export type ExperienceLocation = "at_client" | "at_club" | "at_venue" | "flexible";
+
 // ─────── Une photo de la galerie (mock : dégradé + calque SVG) ───────
 export type GalleryPhoto = {
   id: string;
@@ -74,6 +79,10 @@ export type ExperienceDetail = {
   hue: ExperienceHue;
   /** Format commercial (SPEC §3 — Experience.format). */
   format: string;
+  /** Lieu d'exécution (SPEC §3) — pilote la collecte d'adresse dans le tunnel. */
+  location: ExperienceLocation;
+  /** Libellé public du lieu côté club (« Rhénus Sport · Strasbourg »). */
+  venueLabel: string;
   capacityMin: number;
   capacityMax: number;
   priceModel: PriceModel;
@@ -201,6 +210,18 @@ const FORMAT_BY_CATEGORY: Record<string, string> = {
   coulisses: "Soirée",
 };
 
+// Lieu d'exécution dérivé de la catégorie (SPEC §3). Les expériences de cohésion
+// se déroulent typiquement chez l'entreprise (adresse à renseigner) ; les matchs
+// VIP / coulisses / masterclass au stade ; les initiations / tournois au club.
+const LOCATION_BY_CATEGORY: Record<string, ExperienceLocation> = {
+  match_vip: "at_venue",
+  coulisses: "at_venue",
+  masterclass: "at_venue",
+  tournoi: "at_club",
+  initiation: "at_club",
+  cohesion: "at_client",
+};
+
 function toDetail(x: MarketplaceExperience, reviewCount: number): ExperienceDetail {
   const [capacityMin, capacityMax] = parseCapacity(x.capacityLabel);
   const cslug = clubSlug(x.club);
@@ -213,6 +234,8 @@ function toDetail(x: MarketplaceExperience, reviewCount: number): ExperienceDeta
   const fromPriceCents = priceModel === "per_person" ? perPerson * capacityMin : basePriceCents;
 
   const format = FORMAT_BY_CATEGORY[x.category] ?? "Sur mesure";
+  const location = LOCATION_BY_CATEGORY[x.category] ?? "flexible";
+  const venueLabel = `${x.club} · ${CITY_NICE[x.city] ?? x.city}`;
   const toneByHue: ExperienceClub["tone"] =
     x.hue === "green" || x.hue === "teal" ? "green" : x.hue === "yellow" ? "yellow" : "orange";
 
@@ -226,6 +249,8 @@ function toDetail(x: MarketplaceExperience, reviewCount: number): ExperienceDeta
     verified: true,
     hue: x.hue,
     format,
+    location,
+    venueLabel,
     capacityMin,
     capacityMax,
     priceModel,
