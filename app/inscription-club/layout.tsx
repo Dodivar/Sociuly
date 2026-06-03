@@ -4,9 +4,9 @@ import Link from "next/link";
 import { Logo } from "@/components/ds/patterns";
 
 export const metadata: Metadata = {
-  title: "Inscrire mon association · Sociuly",
+  title: "Inscrire mon club · Sociuly",
   description:
-    "Rejoignez Sociuly : inscrivez votre association sportive loi 1901 et commencez à financer vos projets de saison.",
+    "Rejoignez Sociuly : inscrivez votre club sportif (association loi 1901 ou club professionnel) et vendez des expériences premium aux entreprises pour financer vos projets de saison.",
 };
 
 export default function InscriptionClubLayout({ children }: { children: ReactNode }) {
@@ -16,7 +16,7 @@ export default function InscriptionClubLayout({ children }: { children: ReactNod
         <Link href="/" aria-label="Accueil Sociuly" style={{ textDecoration: "none", color: "inherit" }}>
           <Logo />
         </Link>
-        <Link href="/prestations" className="sy-small sy-link" style={{ color: "var(--ink-3)" }}>
+        <Link href="/experiences" className="sy-small sy-link" style={{ color: "var(--ink-3)" }}>
           ← Retour au site
         </Link>
       </header>
@@ -24,7 +24,7 @@ export default function InscriptionClubLayout({ children }: { children: ReactNod
       <main className="inscr-body">{children}</main>
 
       <footer className="inscr-footer">
-        <span className="sy-mono" style={{ color: "var(--ink-3)" }}>© Sociuly · Inscription association</span>
+        <span className="sy-mono" style={{ color: "var(--ink-3)" }}>© Sociuly · Inscription club</span>
         <span style={{ display: "inline-flex", gap: 16, flexWrap: "wrap" }}>
           {[
             ["Mentions légales", "/mentions-legales"],

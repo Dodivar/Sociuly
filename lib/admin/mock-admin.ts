@@ -1,18 +1,28 @@
 // Console admin Sociuly — données de démonstration.
-// Cf. SPEC.md §5 (KYC plateforme) + §6 (route /admin) + wire-admin.jsx.
+// Cf. SPEC.md §4 (KYC plateforme + KYC corporate-ready) + §6 (route /admin) + wire-admin.jsx.
 // TODO(api): remplacer chaque fetcher par un appel Prisma / RPC. Garder les
 // signatures async et les enums alignés sur le schéma (SPEC §3/§4).
 
 import {
-  CATEGORY_LABEL,
-  type PrestationCategory,
-} from "@/lib/console/mock-prestations";
+  FORMAT_LABEL,
+  type ExperienceFormat,
+} from "@/lib/console/mock-experiences";
 
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
 
-// Fédérations sportives (SPEC §3 — Association.federation).
+// Type de club (SPEC §3 — Club.clubType : amateur loi 1901 ET professionnel).
+export type ClubType = "association_1901" | "club_pro" | "sasp" | "autre";
+
+export const CLUB_TYPE_LABEL: Record<ClubType, string> = {
+  association_1901: "Association loi 1901",
+  club_pro: "Club professionnel",
+  sasp: "SASP",
+  autre: "Autre structure",
+};
+
+// Fédérations sportives (SPEC §3/§4 — affiliation fédérale des clubs amateurs).
 export type Federation = "FFF" | "FFR" | "FFHB" | "FFBB" | "FFT" | "autre";
 
 export const FEDERATION_LABEL: Record<Federation, string> = {
@@ -32,7 +42,7 @@ export const PENDING_STATUS_LABEL: Record<PendingStatus, string> = {
   docs_incomplete: "docs incomplets",
 };
 
-// Pièce justificative téléversée par l'association.
+// Pièce justificative téléversée par le club.
 export type KycDocStatus = "uploaded" | "missing";
 export type KycDoc = {
   id: string;
@@ -47,18 +57,26 @@ export type KycCheckItem = {
   done: boolean;
 };
 
-// Les 4 conditions d'activation d'une association (SPEC §5 — KYC plateforme).
+// Les 4 conditions d'activation d'un club (SPEC §4 — KYC plateforme).
 export type KycConditions = {
   siretVerified: boolean; // 1. SIRET vérifié API INSEE Sirene
-  federationNumber: string | null; // 2. n° affiliation fédérale (validation manuelle)
+  federationNumber: string | null; // 2. n° affiliation (amateur) / preuve statut pro (club_pro/sasp)
   stripeOnboarded: boolean; // 3. onboarding Stripe Connect complété
   hasPresident: boolean; // 4. au moins un membre role=president
 };
 
-export type PendingAssociation = {
+// Conditions "corporate-ready" (SPEC §4 — gate supplémentaire pour vendre en B2B).
+export type CorporateReadiness = {
+  insuranceRcPro: boolean; // attestation RC pro valide
+  certifiedInstructor: boolean; // ≥ 1 encadrant diplômé (BPJEPS / APA)
+  canInvoice: boolean; // capable d'émettre une facture conforme
+};
+
+export type PendingClub = {
   id: string;
   name: string;
   initials: string;
+  clubType: ClubType;
   federation: Federation;
   sport: string; // libellé affiché (ex. "Handball")
   city: string;
@@ -71,6 +89,8 @@ export type PendingAssociation = {
   docs: KycDoc[];
   checklist: KycCheckItem[];
   conditions: KycConditions;
+  corporate: CorporateReadiness; // gate B2B (SPEC §4)
+  corporateReady: boolean; // dérivé : les 3 conditions corporate sont vraies
   note?: string; // note interne admin
 };
 
@@ -92,7 +112,7 @@ export type ChartSeries = {
 };
 
 export type CategoryBar = {
-  category: PrestationCategory;
+  format: ExperienceFormat;
   label: string;
   valueEuros: number;
 };
@@ -100,7 +120,7 @@ export type CategoryBar = {
 export type AdminCharts = {
   months: string[];
   series: ChartSeries[];
-  topCategories: CategoryBar[];
+  topFormats: CategoryBar[];
 };
 
 export type AdminData = {
@@ -109,18 +129,18 @@ export type AdminData = {
   overviewKpis: AdminKpi[];
   charts: AdminCharts;
   validationKpis: AdminKpi[];
-  pending: PendingAssociation[];
+  pending: PendingClub[];
 };
 
 // ─────────────────────────────────────────────────────────────
 // Données
 // ─────────────────────────────────────────────────────────────
 
-// Pièces justificatives attendues (SPEC §5). L'identifiant est stable pour
+// Pièces justificatives attendues (SPEC §4). L'identifiant est stable pour
 // brancher plus tard l'ouverture du document (Supabase Storage).
 function docs(present: boolean[]): KycDoc[] {
   const defs = [
-    ["statuts", "Statuts asso (PDF)"],
+    ["statuts", "Statuts / K-bis (PDF)"],
     ["rna", "RNA / Récépissé"],
     ["rib", "RIB"],
     ["id", "Pièce identité prés."],
@@ -132,22 +152,23 @@ function docs(present: boolean[]): KycDoc[] {
   }));
 }
 
-// Checklist alignée sur les 4 conditions d'activation (SPEC §5).
+// Checklist alignée sur les conditions d'activation (SPEC §4).
 function checklist(done: boolean[]): KycCheckItem[] {
   const defs = [
     ["statuts", "Statuts conformes"],
-    ["rna", "RNA vérifié"],
+    ["rna", "RNA / K-bis vérifié"],
     ["president", "Identité du président"],
     ["rib", "RIB lisible"],
   ] as const;
   return defs.map(([id, label], i) => ({ id, label, done: done[i] }));
 }
 
-const PENDING: PendingAssociation[] = [
+const PENDING: PendingClub[] = [
   {
     id: "a1",
     name: "Handball Club Strasbourg",
     initials: "HS",
+    clubType: "association_1901",
     federation: "FFHB",
     sport: "Handball",
     city: "Strasbourg",
@@ -165,11 +186,40 @@ const PENDING: PendingAssociation[] = [
       stripeOnboarded: true,
       hasPresident: true,
     },
+    corporate: { insuranceRcPro: true, certifiedInstructor: true, canInvoice: false },
+    corporateReady: false,
+  },
+  {
+    id: "a8",
+    name: "SLUC Nancy Basket",
+    initials: "SL",
+    clubType: "club_pro",
+    federation: "FFBB",
+    sport: "Basket (pro)",
+    city: "Nancy",
+    postalCode: "54000",
+    siret: "38127049600041",
+    submittedLabel: "il y a 1j",
+    submittedDays: 1,
+    status: "to_verify",
+    president: { name: "Olivier Klein", email: "direction@sluc-nancy.fr" },
+    docs: docs([true, true, true, true]),
+    checklist: checklist([true, true, true, true]),
+    conditions: {
+      siretVerified: true,
+      federationNumber: "FFBB-PRO-54-0007", // club_pro : preuve de statut professionnel
+      stripeOnboarded: true,
+      hasPresident: true,
+    },
+    corporate: { insuranceRcPro: true, certifiedInstructor: true, canInvoice: true },
+    corporateReady: true,
+    note: "Club pro Betclic Élite — Arena Jean-Weille. Dossier corporate complet, prioritaire.",
   },
   {
     id: "a2",
     name: "FC Nancy-Sud",
     initials: "FN",
+    clubType: "association_1901",
     federation: "FFF",
     sport: "Football",
     city: "Nancy",
@@ -187,11 +237,14 @@ const PENDING: PendingAssociation[] = [
       stripeOnboarded: true,
       hasPresident: true,
     },
+    corporate: { insuranceRcPro: true, certifiedInstructor: false, canInvoice: false },
+    corporateReady: false,
   },
   {
     id: "a3",
     name: "Volley Club Metz",
     initials: "VM",
+    clubType: "association_1901",
     federation: "autre",
     sport: "Volley",
     city: "Metz",
@@ -209,11 +262,14 @@ const PENDING: PendingAssociation[] = [
       stripeOnboarded: false,
       hasPresident: true,
     },
+    corporate: { insuranceRcPro: false, certifiedInstructor: true, canInvoice: false },
+    corporateReady: false,
   },
   {
     id: "a4",
     name: "Rugby Club Strasbourg",
     initials: "RS",
+    clubType: "association_1901",
     federation: "FFR",
     sport: "Rugby",
     city: "Strasbourg",
@@ -231,33 +287,39 @@ const PENDING: PendingAssociation[] = [
       stripeOnboarded: true,
       hasPresident: true,
     },
+    corporate: { insuranceRcPro: true, certifiedInstructor: true, canInvoice: false },
+    corporateReady: false,
   },
   {
     id: "a5",
-    name: "Basket Nancy Métropole",
-    initials: "BN",
+    name: "Metz Basket Métropole",
+    initials: "MB",
+    clubType: "association_1901",
     federation: "FFBB",
     sport: "Basket",
-    city: "Nancy",
-    postalCode: "54500",
+    city: "Metz",
+    postalCode: "57050",
     siret: "60293817400021",
     submittedLabel: "il y a 1 sem.",
     submittedDays: 8,
     status: "to_verify",
-    president: { name: "Sofiane Roux", email: "contact@basketnancy.fr" },
+    president: { name: "Sofiane Roux", email: "contact@metzbasket.fr" },
     docs: docs([true, true, true, true]),
     checklist: checklist([true, true, false, false]),
     conditions: {
       siretVerified: true,
-      federationNumber: "FFBB-54-0312",
+      federationNumber: "FFBB-57-0312",
       stripeOnboarded: false,
       hasPresident: true,
     },
+    corporate: { insuranceRcPro: true, certifiedInstructor: false, canInvoice: false },
+    corporateReady: false,
   },
   {
     id: "a6",
     name: "Tennis Club Metz-Plantières",
     initials: "TM",
+    clubType: "association_1901",
     federation: "FFT",
     sport: "Tennis",
     city: "Metz",
@@ -275,11 +337,14 @@ const PENDING: PendingAssociation[] = [
       stripeOnboarded: false,
       hasPresident: true,
     },
+    corporate: { insuranceRcPro: false, certifiedInstructor: false, canInvoice: false },
+    corporateReady: false,
   },
   {
     id: "a7",
     name: "Pétanque Strasbourg Krutenau",
     initials: "PS",
+    clubType: "association_1901",
     federation: "autre",
     sport: "Pétanque",
     city: "Strasbourg",
@@ -297,6 +362,8 @@ const PENDING: PendingAssociation[] = [
       stripeOnboarded: true,
       hasPresident: false,
     },
+    corporate: { insuranceRcPro: false, certifiedInstructor: true, canInvoice: false },
+    corporateReady: false,
   },
 ];
 
@@ -315,20 +382,17 @@ const CHARTS: AdminCharts = {
       points: [9212, 10528, 11656, 13254, 15792, 17296],
     },
   ],
-  // Réparti sur les 7 catégories (SPEC §3 — Prestation.category).
-  topCategories: (
+  // Réparti sur les 4 formats d'expérience (SPEC §3 — Experience.format).
+  topFormats: (
     [
-      ["bbq", 5200],
-      ["olympiades", 3900],
-      ["event", 3100],
-      ["animation_kids", 2400],
-      ["buvette", 1800],
-      ["tournoi", 1300],
-      ["coaching", 700],
-    ] as [PrestationCategory, number][]
-  ).map(([category, valueEuros]) => ({
-    category,
-    label: CATEGORY_LABEL[category],
+      ["journee", 9200],
+      ["demi_journee", 6400],
+      ["soiree", 4800],
+      ["sur_mesure", 2100],
+    ] as [ExperienceFormat, number][]
+  ).map(([format, valueEuros]) => ({
+    format,
+    label: FORMAT_LABEL[format],
     valueEuros,
   })),
 };
@@ -344,17 +408,17 @@ export async function getAdminData(): Promise<AdminData> {
     periodLabel: "mai 2026",
     pendingCount: pending.length,
     overviewKpis: [
-      { id: "assos", label: "Assos actives", value: "238", delta: "+12 ce mois", deltaPositive: true },
+      { id: "clubs", label: "Clubs actifs", value: "238", delta: "+12 ce mois", deltaPositive: true },
       { id: "ca", label: "CA plateforme", value: "€18,4k", delta: "+18%", deltaPositive: true, accent: true },
-      { id: "resa", label: "Réservations", value: "1 612", delta: "+246", deltaPositive: true },
+      { id: "resa", label: "Commandes", value: "1 612", delta: "+246", deltaPositive: true },
       { id: "comm", label: "Commissions", value: "€1 240", delta: "+18%", deltaPositive: true },
       { id: "reverse", label: "Reversé aux clubs", value: "€17,2k", accent: true },
     ],
     charts: CHARTS,
     validationKpis: [
-      { id: "validated", label: "Validées ce mois", value: "12" },
+      { id: "validated", label: "Validés ce mois", value: "12" },
       { id: "delay", label: "Délai moyen", value: "2,4j" },
-      { id: "refused", label: "Refusées", value: "1" },
+      { id: "refused", label: "Refusés", value: "1" },
       { id: "reports", label: "Signalements", value: "3", delta: "à traiter", accent: true },
     ],
     pending,

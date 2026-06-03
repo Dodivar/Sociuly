@@ -5,12 +5,13 @@ import { Avatar, Btn, Chip, IconBtn, Textarea } from "@/components/ds/components
 import { Icon } from "@/components/ds/icon";
 import { PENDING_STATUS_CHIP } from "@/components/admin/admin-overview";
 import {
+  CLUB_TYPE_LABEL,
   FEDERATION_LABEL,
   PENDING_STATUS_LABEL,
   type AdminData,
   type AdminKpi,
   type KycCheckItem,
-  type PendingAssociation,
+  type PendingClub,
 } from "@/lib/admin/mock-admin";
 
 type Filter = "all" | "to_verify" | "docs_incomplete";
@@ -49,7 +50,7 @@ export function AdminValidation({ data, selectedId, onSelectId }: Props) {
         <div>
           <div className="sy-mono">Sociuly · Admin · Validation</div>
           <h1 className="sy-h1" style={{ fontSize: 24, marginTop: 4 }}>
-            {data.pendingCount} associations en attente
+            {data.pendingCount} clubs en attente
           </h1>
         </div>
         <div className="va-filters">
@@ -89,7 +90,7 @@ export function AdminValidation({ data, selectedId, onSelectId }: Props) {
               {filtered.map((a) => (
                 <ListRow
                   key={a.id}
-                  asso={a}
+                  club={a}
                   active={a.id === selected?.id}
                   onClick={() => onSelectId(a.id)}
                 />
@@ -99,10 +100,10 @@ export function AdminValidation({ data, selectedId, onSelectId }: Props) {
         </section>
 
         {selected ? (
-          <ReviewPane key={selected.id} asso={selected} />
+          <ReviewPane key={selected.id} club={selected} />
         ) : (
           <section className="sy-card" aria-label="Volet de revue">
-            <div className="sy-mono">Aucune association sélectionnée</div>
+            <div className="sy-mono">Aucun club sélectionné</div>
           </section>
         )}
       </div>
@@ -173,15 +174,15 @@ function FilterChip({
 // ─────── List row ───────
 
 function ListRow({
-  asso,
+  club,
   active,
   onClick,
 }: {
-  asso: PendingAssociation;
+  club: PendingClub;
   active: boolean;
   onClick: () => void;
 }) {
-  const chip = PENDING_STATUS_CHIP[asso.status];
+  const chip = PENDING_STATUS_CHIP[club.status];
   return (
     <li>
       <button
@@ -191,15 +192,15 @@ function ListRow({
         onClick={onClick}
         aria-pressed={active}
       >
-        <Avatar initials={asso.initials} tone="ink" />
+        <Avatar initials={club.initials} tone="ink" />
         <span className="va-row-main">
-          <span className="sy-h4">{asso.name}</span>
+          <span className="sy-h4">{club.name}</span>
           <span className="sy-mono" style={{ marginTop: 2, display: "block" }}>
-            {asso.sport} · {asso.city} ({asso.postalCode.slice(0, 2)}) · {asso.submittedLabel}
+            {club.sport} · {club.city} ({club.postalCode.slice(0, 2)}) · {club.submittedLabel}
           </span>
         </span>
         <span className="sy-chip" style={{ background: chip.bg, color: chip.fg, fontWeight: 600 }}>
-          {PENDING_STATUS_LABEL[asso.status]}
+          {PENDING_STATUS_LABEL[club.status]}
         </span>
       </button>
 
@@ -225,21 +226,29 @@ function ListRow({
 
 // ─────── Review pane ───────
 
-function ReviewPane({ asso }: { asso: PendingAssociation }) {
-  const [checks, setChecks] = useState<KycCheckItem[]>(asso.checklist);
-  const chip = PENDING_STATUS_CHIP[asso.status];
+function ReviewPane({ club }: { club: PendingClub }) {
+  const [checks, setChecks] = useState<KycCheckItem[]>(club.checklist);
+  const chip = PENDING_STATUS_CHIP[club.status];
 
+  const isPro = club.clubType === "club_pro" || club.clubType === "sasp";
   const conditions = [
-    { label: "SIRET vérifié (INSEE Sirene)", ok: asso.conditions.siretVerified, hint: asso.siret },
+    { label: "SIRET vérifié (INSEE Sirene)", ok: club.conditions.siretVerified, hint: club.siret },
     {
-      label: "Affiliation fédérale",
-      ok: asso.conditions.federationNumber !== null,
-      hint: asso.conditions.federationNumber ?? "non renseignée",
+      label: isPro ? "Preuve de statut professionnel" : "Affiliation fédérale",
+      ok: club.conditions.federationNumber !== null,
+      hint: club.conditions.federationNumber ?? "non renseignée",
     },
-    { label: "Onboarding Stripe Connect", ok: asso.conditions.stripeOnboarded, hint: "RIB validé Stripe" },
-    { label: "Président identifié", ok: asso.conditions.hasPresident, hint: asso.president.name },
+    { label: "Onboarding Stripe Connect", ok: club.conditions.stripeOnboarded, hint: "RIB validé Stripe" },
+    { label: "Président identifié", ok: club.conditions.hasPresident, hint: club.president.name },
   ];
   const canActivate = conditions.every((c) => c.ok);
+
+  // Gate corporate-ready (SPEC §4) — requis pour passer une expérience en "published".
+  const corporate = [
+    { label: "Attestation RC pro valide", ok: club.corporate.insuranceRcPro },
+    { label: "Encadrant diplômé (BPJEPS / APA)", ok: club.corporate.certifiedInstructor },
+    { label: "Facturation conforme", ok: club.corporate.canInvoice },
+  ];
 
   function toggle(id: string) {
     setChecks((prev) => prev.map((c) => (c.id === id ? { ...c, done: !c.done } : c)));
@@ -249,18 +258,18 @@ function ReviewPane({ asso }: { asso: PendingAssociation }) {
     <section
       className="sy-card va-pane"
       style={{ background: "var(--accent-soft)", borderColor: "var(--accent)" }}
-      aria-label={`Revue de ${asso.name}`}
+      aria-label={`Revue de ${club.name}`}
     >
       <div className="va-pane-head">
-        <Avatar initials={asso.initials} size="lg" tone="ink" />
+        <Avatar initials={club.initials} size="lg" tone="ink" />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 className="sy-h2">{asso.name}</h2>
+          <h2 className="sy-h2">{club.name}</h2>
           <div className="sy-mono" style={{ marginTop: 2 }}>
-            {FEDERATION_LABEL[asso.federation]} · {asso.city} ({asso.postalCode.slice(0, 2)}) · soumis {asso.submittedLabel}
+            {CLUB_TYPE_LABEL[club.clubType]} · {FEDERATION_LABEL[club.federation]} · {club.city} ({club.postalCode.slice(0, 2)}) · soumis {club.submittedLabel}
           </div>
         </div>
         <span className="sy-chip" style={{ background: chip.bg, color: chip.fg, fontWeight: 600 }}>
-          {PENDING_STATUS_LABEL[asso.status]}
+          {PENDING_STATUS_LABEL[club.status]}
         </span>
       </div>
 
@@ -289,9 +298,41 @@ function ReviewPane({ asso }: { asso: PendingAssociation }) {
 
       <div className="va-dashed" />
 
+      {/* Gate corporate-ready (SPEC §4) — sans ces 3 conditions, pas de publication B2B. */}
+      <div className="sy-mono" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        Prêt corporate (B2B)
+        <span
+          className="sy-chip sy-chip-sm"
+          style={{
+            background: club.corporateReady ? "var(--primary-soft)" : "var(--surface-2)",
+            color: club.corporateReady ? "var(--primary-deep)" : "var(--danger)",
+            fontWeight: 600,
+          }}
+        >
+          {club.corporateReady ? "prêt ✓" : "non prêt"}
+        </span>
+      </div>
+      <ul className="va-cond" style={{ marginTop: 8 }}>
+        {corporate.map((c) => (
+          <li key={c.label} className="va-cond-row">
+            <span className={`va-cond-mark ${c.ok ? "ok" : "ko"}`} aria-hidden>
+              <Icon name={c.ok ? "check" : "close"} size={11} color="#fff" />
+            </span>
+            <span className="sy-small" style={{ flex: 1, color: "var(--ink)", fontWeight: 500 }}>
+              {c.label}
+            </span>
+            <span className="sy-mono" style={{ color: c.ok ? "var(--success)" : "var(--danger)" }}>
+              {c.ok ? "ok" : "à faire"}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="va-dashed" />
+
       <div className="sy-mono">Pièces jointes</div>
       <div className="va-docs">
-        {asso.docs.map((d) => {
+        {club.docs.map((d) => {
           const missing = d.status === "missing";
           return (
             <div key={d.id} className="va-doc" data-missing={missing ? "1" : "0"}>
@@ -333,7 +374,7 @@ function ReviewPane({ asso }: { asso: PendingAssociation }) {
       <div className="sy-mono">Note interne</div>
       <Textarea
         placeholder="Note visible uniquement par l'équipe Sociuly…"
-        defaultValue={asso.note}
+        defaultValue={club.note}
         aria-label="Note interne"
         style={{ marginTop: 6, background: "var(--surface)" }}
       />
@@ -355,7 +396,7 @@ function ReviewPane({ asso }: { asso: PendingAssociation }) {
               : "Les 4 conditions d'activation doivent être remplies (SPEC §5)"
           }
         >
-          Valider l'association
+          Valider le club
         </Btn>
       </div>
       {!canActivate && (

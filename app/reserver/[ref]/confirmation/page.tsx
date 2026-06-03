@@ -42,8 +42,8 @@ export default async function BookingConfirmationPage({ params }: Props) {
           className="sy-display-sm"
           style={{ textAlign: "center", maxWidth: 620, margin: "0 auto", fontSize: 48, lineHeight: 1.05 }}
         >
-          C&apos;est réservé. Et grâce à vous,{" "}
-          <span style={{ color: "var(--accent)" }}>le projet U17 avance.</span>
+          Acompte réglé. Et grâce à vous,{" "}
+          <span style={{ color: "var(--accent)" }}>l&apos;école de jeunes U17 avance.</span>
         </h1>
 
         <p
@@ -51,8 +51,8 @@ export default async function BookingConfirmationPage({ params }: Props) {
           style={{ textAlign: "center", marginTop: 14, color: "var(--ink-2)" }}
         >
           Confirmation envoyée à{" "}
-          <b style={{ color: "var(--ink)" }}>camille.l@example.com</b>.
-          USB Volley vous contactera sous 24h pour caler les détails.
+          <b style={{ color: "var(--ink)" }}>seminaires@klaxoon.example</b>.
+          La SIG Strasbourg vous contactera sous 24h pour finaliser les détails et le solde.
         </p>
 
         <div
@@ -72,7 +72,7 @@ export default async function BookingConfirmationPage({ params }: Props) {
           }}
         >
           <Btn variant="primary" size="lg" icon={<Icon name="download" size={15} color="#fff" />}>
-            Télécharger le reçu
+            Télécharger le récapitulatif
           </Btn>
           <Btn variant="outline" size="lg" icon={<Icon name="share" size={15} />}>
             Partager le projet

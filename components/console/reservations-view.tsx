@@ -662,10 +662,10 @@ function ConfirmDialog({
   }, [onClose]);
 
   const isRefuse = kind === "refuse";
-  const title = isRefuse ? "Refuser cette demande ?" : "Annuler cette réservation ?";
+  const title = isRefuse ? "Refuser cette commande ?" : "Annuler cette réservation ?";
   const body = isRefuse
-    ? "Le client ne sera pas débité et recevra un email l'informant du refus. Cette action est définitive."
-    : "Le client sera intégralement remboursé et recevra un email d'excuse automatique.";
+    ? "L'entreprise sera intégralement remboursée (acompte inclus) et recevra un email l'informant du refus. Cette action est définitive."
+    : "L'entreprise sera intégralement remboursée et recevra un email d'excuse automatique.";
 
   return (
     <div
@@ -684,7 +684,7 @@ function ConfirmDialog({
             <Icon name="flag" size={16} color="var(--danger)" />
             <span>
               <strong>Attention :</strong> 3 annulations par le club en 6 mois entraînent la
-              suspension automatique de votre association (SPEC §5).
+              suspension automatique de votre club (SPEC §4).
             </span>
           </div>
         )}

@@ -151,7 +151,7 @@ export default async function BookingPage({ params }: Props) {
   const { ref } = await params;
   // Pretend booking number generated server-side. In Phase B this lives in DB.
   const fakeBookingNumber = "SOC-2026-00042";
-  const prestationSlug = ref;
+  const experienceSlug = ref;
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -163,7 +163,7 @@ export default async function BookingPage({ params }: Props) {
           gap: 24, background: "var(--surface)", flexWrap: "wrap",
         }}
       >
-        <Link href={`/experiences/${prestationSlug}`} style={{ textDecoration: "none", color: "inherit" }}>
+        <Link href={`/experiences/${experienceSlug}`} style={{ textDecoration: "none", color: "inherit" }}>
           <Logo />
         </Link>
         <BookingStepper active={1} />
@@ -214,7 +214,7 @@ export default async function BookingPage({ params }: Props) {
                   flexWrap: "wrap", gap: 8,
                 }}
               >
-                <Link href={`/experiences/${prestationSlug}`} style={{ textDecoration: "none" }}>
+                <Link href={`/experiences/${experienceSlug}`} style={{ textDecoration: "none" }}>
                   <Btn variant="ghost">← Étape précédente</Btn>
                 </Link>
                 <Link

@@ -81,9 +81,9 @@ export async function submitInscription(data: InscriptionDraft): Promise<{
   // TODO Phase B (dans l'ordre) :
   // 1. Valider step1/step2/step3 avec Zod
   // 2. Supabase Auth: createUser({ email }) + envoi magic-link WelcomeClub via Resend
-  // 3. Prisma: Association.create({ status: "pending_verification", ...step1, ...step2 })
+  // 3. Prisma: Club.create({ status: "pending_verification", ...step1, ...step2 })
   // 4. Supabase Storage: uploader statuts, RIB, assurance, siretScan dans bucket EU
-  // 5. Prisma: AssociationMember.create({ role: "president", userId, associationId })
+  // 5. Prisma: ClubMember.create({ role: "president", userId, clubId })
   // 6. Notifier les admins (email Resend ou webhook)
   if (!data.step1 || !data.step2 || !data.step3) {
     return { success: false, error: "Dossier incomplet" };

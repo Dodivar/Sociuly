@@ -209,8 +209,8 @@ export default function Step3Form() {
       />
 
       <UploadZone
-        label="RIB de l'association"
-        hint="Relevé d'identité bancaire au nom de l'association (pas d'un particulier)"
+        label="RIB du club"
+        hint="Relevé d'identité bancaire au nom du club (pas d'un particulier)"
         required
         slot={slots.rib}
         onChange={setSlot("rib")}

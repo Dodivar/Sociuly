@@ -21,7 +21,7 @@ type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: "overview",   label: "Vue globale",     icon: "grid" },
-  { id: "validation", label: "Validation assos", icon: "check" },
+  { id: "validation", label: "Validation clubs", icon: "check" },
   { id: "moderation", label: "Modération",       icon: "eye" },
   { id: "finances",   label: "Finances",         icon: "euro" },
   { id: "reports",    label: "Signalements",     icon: "flag" },

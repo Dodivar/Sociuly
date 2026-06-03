@@ -210,7 +210,7 @@ function NextPayoutBanner({ data }: { data: RevenueData }) {
       <div className="rev-next-note">
         <Icon name="info" size={15} color="var(--accent-deep)" />
         <span>
-          Versement automatique le lendemain de la prestation (J+1), après une fenêtre de
+          Versement automatique le lendemain de l'expérience (J+1), après une fenêtre de
           contestation de 48 h. Commission Sociuly de 6 % déjà déduite.
         </span>
       </div>
@@ -298,7 +298,7 @@ function UpcomingTable({ rows }: { rows: UpcomingPayout[] }) {
     <div className="rev-table">
       <div className="rev-thead rev-up-head sy-mono">
         <div>Expérience</div>
-        <div>Date prestation</div>
+        <div>Date expérience</div>
         <div>Statut</div>
         <div className="rev-cell-num">Versement prévu</div>
         <div className="rev-cell-num">Net à verser</div>
@@ -311,8 +311,8 @@ function UpcomingTable({ rows }: { rows: UpcomingPayout[] }) {
               {r.orgName} · <span className="sy-num">{r.bookingNumber}</span>
             </div>
           </Cell>
-          <Cell label="Date prestation">
-            <span className="sy-num" style={{ fontSize: 13.5 }}>{r.prestationDateLabel}</span>
+          <Cell label="Date expérience">
+            <span className="sy-num" style={{ fontSize: 13.5 }}>{r.experienceDateLabel}</span>
           </Cell>
           <Cell label="Statut">
             <StatusChip status={r.status} />
@@ -357,7 +357,7 @@ function HistoryTable({ rows }: { rows: PayoutHistoryRow[] }) {
             </div>
           </Cell>
           <Cell label="Brut" className="rev-cell-num sy-num">
-            <span style={{ fontSize: 13.5 }}>{fmtEur(r.grossAmountCents)}</span>
+            <span style={{ fontSize: 13.5 }}>{fmtEur(r.grossAmountTTCCents)}</span>
           </Cell>
           <Cell label="Commission" className="rev-cell-num sy-num">
             <span style={{ fontSize: 13.5, color: "var(--ink-2)" }}>

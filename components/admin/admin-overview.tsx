@@ -9,12 +9,12 @@ import {
   type AdminData,
   type AdminKpi,
   type ChartSeries,
-  type PendingAssociation,
+  type PendingClub,
 } from "@/lib/admin/mock-admin";
 
 // Style des puces de statut — tokens uniquement (CLAUDE.md §6/§7).
 export const PENDING_STATUS_CHIP: Record<
-  PendingAssociation["status"],
+  PendingClub["status"],
   { bg: string; fg: string }
 > = {
   to_verify: { bg: "var(--highlight-soft)", fg: "#6e5111" },
@@ -79,10 +79,10 @@ export function AdminOverview({ data, onOpenValidation, onReview }: Props) {
           </div>
         </section>
 
-        <section className="sy-card" aria-label="Top catégories">
-          <h2 className="sy-h3">Top catégories</h2>
+        <section className="sy-card" aria-label="Top formats">
+          <h2 className="sy-h3">Top formats</h2>
           <div style={{ marginTop: 14 }}>
-            <BarsChart items={data.charts.topCategories} height={160} />
+            <BarsChart items={data.charts.topFormats} height={160} />
           </div>
         </section>
       </div>
@@ -90,11 +90,11 @@ export function AdminOverview({ data, onOpenValidation, onReview }: Props) {
       <section
         className="sy-card ov-table"
         style={{ padding: 0, overflow: "hidden" }}
-        aria-label="Associations en attente de validation"
+        aria-label="Clubs en attente de validation"
       >
         <div className="ov-table-head">
           <div>
-            <h2 className="sy-h3">Associations en attente de validation</h2>
+            <h2 className="sy-h3">Clubs en attente de validation</h2>
             <div className="sy-mono" style={{ marginTop: 4 }}>
               {data.pendingCount} demandes · les plus anciennes en haut
             </div>
@@ -112,7 +112,7 @@ export function AdminOverview({ data, onOpenValidation, onReview }: Props) {
           {previewRows.map((a) => (
             <ValidationRow
               key={a.id}
-              asso={a}
+              club={a}
               onReview={() => onReview(a.id)}
             />
           ))}
@@ -214,31 +214,31 @@ function KpiCard({ kpi }: { kpi: AdminKpi }) {
 }
 
 function ValidationRow({
-  asso,
+  club,
   onReview,
 }: {
-  asso: PendingAssociation;
+  club: PendingClub;
   onReview: () => void;
 }) {
-  const chip = PENDING_STATUS_CHIP[asso.status];
-  const uploaded = asso.docs.filter((d) => d.status === "uploaded").length;
+  const chip = PENDING_STATUS_CHIP[club.status];
+  const uploaded = club.docs.filter((d) => d.status === "uploaded").length;
 
   return (
     <li className="ov-row">
-      <Avatar initials={asso.initials} tone="ink" />
+      <Avatar initials={club.initials} tone="ink" />
       <div className="ov-row-main" style={{ minWidth: 0 }}>
-        <div className="sy-h4">{asso.name}</div>
+        <div className="sy-h4">{club.name}</div>
         <div className="sy-mono" style={{ marginTop: 2 }}>
-          {asso.sport} · {asso.city} ({asso.postalCode.slice(0, 2)})
+          {club.sport} · {club.city} ({club.postalCode.slice(0, 2)})
         </div>
       </div>
       <div className="ov-row-docs sy-mono">{uploaded} pièce(s)</div>
       <div className="ov-row-status">
         <span className="sy-chip" style={{ background: chip.bg, color: chip.fg, fontWeight: 600 }}>
-          {PENDING_STATUS_LABEL[asso.status]}
+          {PENDING_STATUS_LABEL[club.status]}
         </span>
       </div>
-      <div className="ov-row-when sy-mono">{asso.submittedLabel}</div>
+      <div className="ov-row-when sy-mono">{club.submittedLabel}</div>
       <div className="ov-row-actions">
         <Btn variant="ghost" size="sm" onClick={onReview}>
           Examiner

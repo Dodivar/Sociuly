@@ -3,9 +3,9 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sociuly — Réservez près de chez vous. Financez le club d'à côté.",
+  title: "Sociuly — Des expériences sportives premium pour vos équipes.",
   description:
-    "Marketplace de prestations proposées par les associations sportives locales. Chaque réservation finance un projet de saison réel.",
+    "Sociuly conçoit et opère des expériences sportives sur mesure pour les entreprises, délivrées par des clubs sportifs locaux. Demandez un devis ; chaque expérience finance un projet de club.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
