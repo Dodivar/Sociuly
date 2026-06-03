@@ -123,6 +123,7 @@ export async function getDashboardData(_clubId: string): Promise<DashboardData> 
       { id: "t2", label: "Répondre à 2 demandes de devis",                       tone: "warn"   },
       { id: "t3", label: "Mettre à jour le projet école de jeunes U17",          tone: "info"   },
     ],
-    navBadges: { devis: 2 },
+    // `avis` = nombre de nouveaux avis non consultés (cf. mock-reviews.ts).
+    navBadges: { devis: 2, avis: 2 },
   };
 }
