@@ -6,7 +6,7 @@ import { Avatar, Progress } from "@/components/ds/components";
 import { Icon, type IconName } from "@/components/ds/icon";
 import type { Club, NavBadges } from "@/lib/console/mock-dashboard";
 
-type NavId = "home" | "presta" | "resa" | "projets" | "rev" | "avis" | "team";
+type NavId = "home" | "experiences" | "resa" | "projets" | "rev" | "avis" | "team";
 
 type NavItem = {
   id: NavId;
@@ -18,7 +18,7 @@ type NavItem = {
 
 const ITEMS: NavItem[] = [
   { id: "home",    label: "Tableau de bord", icon: "home",     segment: "dashboard" },
-  { id: "presta",  label: "Mes prestations", icon: "grid",     segment: "prestations", badgeKey: "presta" },
+  { id: "experiences", label: "Mes expériences", icon: "grid",  segment: "experiences", badgeKey: "experiences" },
   { id: "resa",    label: "Réservations",    icon: "calendar", segment: "reservations", badgeKey: "resa" },
   { id: "projets", label: "Projets",         icon: "trophy",   segment: "projets",     badgeKey: "projets" },
   { id: "rev",     label: "Revenus",         icon: "euro",     segment: "revenus" },

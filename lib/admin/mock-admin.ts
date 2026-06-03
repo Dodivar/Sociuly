@@ -4,9 +4,9 @@
 // signatures async et les enums alignés sur le schéma (SPEC §3/§4).
 
 import {
-  CATEGORY_LABEL,
-  type PrestationCategory,
-} from "@/lib/console/mock-prestations";
+  FORMAT_LABEL,
+  type ExperienceFormat,
+} from "@/lib/console/mock-experiences";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -92,7 +92,7 @@ export type ChartSeries = {
 };
 
 export type CategoryBar = {
-  category: PrestationCategory;
+  category: ExperienceFormat;
   label: string;
   valueEuros: number;
 };
@@ -315,20 +315,17 @@ const CHARTS: AdminCharts = {
       points: [9212, 10528, 11656, 13254, 15792, 17296],
     },
   ],
-  // Réparti sur les 7 catégories (SPEC §3 — Prestation.category).
+  // Réparti sur les formats d'expérience (SPEC §3 — Experience.format).
   topCategories: (
     [
-      ["bbq", 5200],
-      ["olympiades", 3900],
-      ["event", 3100],
-      ["animation_kids", 2400],
-      ["buvette", 1800],
-      ["tournoi", 1300],
-      ["coaching", 700],
-    ] as [PrestationCategory, number][]
+      ["journee", 5200],
+      ["soiree", 3900],
+      ["demi_journee", 3100],
+      ["sur_mesure", 2400],
+    ] as [ExperienceFormat, number][]
   ).map(([category, valueEuros]) => ({
     category,
-    label: CATEGORY_LABEL[category],
+    label: FORMAT_LABEL[category],
     valueEuros,
   })),
 };

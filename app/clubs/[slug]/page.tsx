@@ -222,7 +222,7 @@ export default function ClubProfilePage() {
         </div>
 
         {/* Tabs + tab content — Client Component */}
-        <AssociationTabs />
+        <ClubTabs />
       </div>
 
       <SiteFooter />
