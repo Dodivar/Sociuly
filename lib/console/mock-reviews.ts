@@ -23,7 +23,7 @@ export type ReviewStatus = "published" | "reported";
 export type ReportReason =
   | "offensive" // propos injurieux, haineux ou discriminatoires
   | "false" // avis mensonger / factuellement inexact
-  | "off_topic" // hors-sujet, ne concerne pas la prestation
+  | "off_topic" // hors-sujet, ne concerne pas l'expérience
   | "personal_data" // données personnelles / diffamation
   | "spam" // spam, concurrence déloyale
   | "other"; // autre (préciser)
@@ -61,7 +61,7 @@ export type ReviewsData = {
 export const REPORT_REASON_LABEL: Record<ReportReason, string> = {
   offensive: "Propos injurieux ou haineux",
   false: "Avis mensonger ou inexact",
-  off_topic: "Hors-sujet / sans rapport avec la prestation",
+  off_topic: "Hors-sujet / sans rapport avec l'expérience",
   personal_data: "Données personnelles ou diffamation",
   spam: "Spam ou concurrence déloyale",
   other: "Autre motif",
@@ -118,9 +118,9 @@ const REVIEWS: Review[] = [
   {
     id: "r4",
     bookingNumber: "SOC-2026-00022",
-    organizationName: "Crédit Mutuel Arkéa",
+    organizationName: "Crédit Mutuel Grand Est",
     organizationInitials: "CM",
-    experienceTitle: "Masterclass joueur professionnel",
+    experienceTitle: "Masterclass joueur pro",
     rating: 5,
     comment:
       "Nos managers ont adoré l'échange avec le joueur pro. Contenu inspirant et très bien " +
@@ -147,7 +147,7 @@ const REVIEWS: Review[] = [
     bookingNumber: "SOC-2026-00014",
     organizationName: "Électricité de Strasbourg",
     organizationInitials: "ÉS",
-    experienceTitle: "Soirée club-house privatisée",
+    experienceTitle: "Cocktail & visite des coulisses",
     rating: 5,
     comment:
       "Privatisation impeccable, traiteur excellent, ambiance unique. Un grand merci pour la " +

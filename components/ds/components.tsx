@@ -258,7 +258,7 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
     return (
       <div className="sy-search" style={{ height: 44, padding: "0 6px 0 18px", ...style }}>
         <Icon name="search" />
-        <input placeholder="BBQ · Strasbourg · ce week-end" />
+        <input placeholder="Cohésion · Strasbourg · journée" />
         <Btn variant="primary" size="sm" style={{ borderRadius: 999 }}>Rechercher</Btn>
       </div>
     );
@@ -267,7 +267,7 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
     <div className="sy-searchbar-full sy-card sy-card-elevated" style={style}>
       <div className="sb-section">
         <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quoi</div>
-        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Toutes prestations</div>
+        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Toutes expériences</div>
       </div>
       <div className="sy-divider-vert" />
       <div className="sb-section">
@@ -281,8 +281,8 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
       </div>
       <div className="sy-divider-vert" />
       <div className="sb-section sb-section-cause">
-        <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Cause</div>
-        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Toutes</div>
+        <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Format</div>
+        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Tous formats</div>
       </div>
       <div className="sb-cta">
         <Btn variant="primary" size="lg" style={{ borderRadius: 999, padding: "0 24px" }}>

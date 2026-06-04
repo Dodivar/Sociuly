@@ -184,7 +184,7 @@ const REVIEW_POOL: ExperienceReview[] = [
   { id: "r6", author: "Thomas R. · Directeur", date: "janvier 2026", rating: 5, tone: "orange",
     body: "Nos équipes ont adoré l'immersion dans les coulisses du club. Un vrai moment fédérateur, et utile pour le club." },
   { id: "r7", author: "Nadia S. · Talent Manager", date: "janvier 2026", rating: 4, tone: "yellow",
-    body: "Belle prestation, bon rapport qualité-prix au vu de l'encadrement. Devis clair et sans surprise." },
+    body: "Belle expérience, bon rapport qualité-prix au vu de l'encadrement. Devis clair et sans surprise." },
   { id: "r8", author: "Antoine D. · CFO", date: "décembre 2025", rating: 5, tone: "ink",
     body: "Tout était fluide, de la demande de devis au paiement. Savoir que ça finance un projet local a beaucoup plu en interne." },
 ];

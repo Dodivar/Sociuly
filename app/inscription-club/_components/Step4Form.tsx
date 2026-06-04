@@ -24,7 +24,7 @@ function readDraft(): InscriptionDraft {
 const BENEFITS: { icon: "bolt" | "euro" | "flag" | "lock"; text: string }[] = [
   { icon: "bolt",  text: "Paiements sécurisés directement sur votre compte bancaire" },
   { icon: "euro",  text: "94 % de chaque réservation vous est reversé (6 % de commission Sociuly)" },
-  { icon: "flag",  text: "Virements automatiques le lendemain de chaque prestation réalisée" },
+  { icon: "flag",  text: "Virements automatiques le lendemain de chaque expérience réalisée" },
   { icon: "lock",  text: "Conformité PCI-DSS — Sociuly ne stocke aucune donnée bancaire" },
 ];
 

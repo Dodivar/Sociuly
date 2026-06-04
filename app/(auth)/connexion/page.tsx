@@ -4,7 +4,7 @@ import { LoginForm } from "./LoginForm";
 export const metadata: Metadata = {
   title: "Connexion gérant · Sociuly",
   description:
-    "Connectez-vous à votre console Sociuly pour gérer les prestations, projets et réservations de votre club.",
+    "Connectez-vous à votre console Sociuly pour gérer les expériences, devis, projets et réservations de votre club.",
 };
 
 // Next.js 15 : searchParams est un Promise dans les Server Components.
@@ -35,8 +35,8 @@ export default async function ConnexionPage({
           className="sy-body-l"
           style={{ color: "rgba(255,255,255,0.78)", marginTop: 16, maxWidth: 380 }}
         >
-          Publication des prestations, suivi des réservations, projets de saison, encaissements
-          Stripe — tout au même endroit.
+          Publication des expériences, devis aux entreprises, suivi des réservations, projets de
+          saison, encaissements Stripe — tout au même endroit.
         </p>
 
         <div
