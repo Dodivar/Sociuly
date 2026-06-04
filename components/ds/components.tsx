@@ -4,6 +4,8 @@ import type {
   ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactNode,
   TextareaHTMLAttributes,
 } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { Icon } from "./icon";
 
@@ -253,22 +255,57 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 }
 
 // ─────── Sticky search bar (Airbnb-style "What/Where/When") ───────
+// Soumission → catalogue marketplace filtré par recherche plein-texte (`?q=…`).
+// Cf. lib/marketplace/experiences (parseFilters lit le param `q`).
 export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSProperties }) {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+
+  function submit() {
+    const term = q.trim();
+    router.push(term ? `/experiences?q=${encodeURIComponent(term)}` : "/experiences");
+  }
+
   if (compact) {
     return (
-      <div className="sy-search" style={{ height: 44, padding: "0 6px 0 18px", ...style }}>
+      <form
+        className="sy-search"
+        style={{ height: 44, padding: "0 6px 0 18px", ...style }}
+        role="search"
+        onSubmit={(e) => { e.preventDefault(); submit(); }}
+      >
         <Icon name="search" />
-        <input placeholder="Cohésion · Strasbourg · journée" />
-        <Btn variant="primary" size="sm" style={{ borderRadius: 999 }}>Rechercher</Btn>
-      </div>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Cohésion · Strasbourg · journée"
+          aria-label="Rechercher une expérience"
+        />
+        <Btn type="submit" variant="primary" size="sm" style={{ borderRadius: 999 }}>Rechercher</Btn>
+      </form>
     );
   }
   return (
-    <div className="sy-searchbar-full sy-card sy-card-elevated" style={style}>
-      <div className="sb-section">
-        <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quoi</div>
-        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Toutes expériences</div>
-      </div>
+    <form
+      className="sy-searchbar-full sy-card sy-card-elevated"
+      style={style}
+      role="search"
+      onSubmit={(e) => { e.preventDefault(); submit(); }}
+    >
+      <label className="sb-section" style={{ cursor: "text" }}>
+        <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quoi</span>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Toutes expériences"
+          aria-label="Rechercher une expérience"
+          style={{
+            border: "none", outline: "none", background: "transparent",
+            fontFamily: "inherit", fontSize: 14, fontWeight: 500, marginTop: 2,
+            color: "var(--ink)", width: "100%", padding: 0,
+          }}
+        />
+      </label>
       <div className="sy-divider-vert" />
       <div className="sb-section">
         <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Où</div>
@@ -285,10 +322,10 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
         <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Tous formats</div>
       </div>
       <div className="sb-cta">
-        <Btn variant="primary" size="lg" style={{ borderRadius: 999, padding: "0 24px" }}>
+        <Btn type="submit" variant="primary" size="lg" style={{ borderRadius: 999, padding: "0 24px" }}>
           <Icon name="search" /> Rechercher
         </Btn>
       </div>
-    </div>
+    </form>
   );
 }

@@ -3,15 +3,17 @@ import { Btn, Card, Chip, Avatar, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/ds/impact";
+import type { Category } from "@/lib/marketplace/experiences";
 
+// `id` aligné sur les Category de la marketplace → lien `/experiences?cat=<id>`.
 const CATEGORIES = [
   { id: "cohesion",   label: "Cohésion d'équipe",      count: 84,  hue: "green" },
   { id: "initiation", label: "Initiation sportive",    count: 121, hue: "yellow" },
   { id: "tournoi",    label: "Mini-tournois d'équipe", count: 47,  hue: "orange" },
-  { id: "match-vip",  label: "Match VIP & hospitalités", count: 62, hue: "teal" },
+  { id: "match_vip",  label: "Match VIP & hospitalités", count: 62, hue: "teal" },
   { id: "masterclass", label: "Masterclass joueur pro", count: 38, hue: "green" },
   { id: "coulisses",  label: "Cocktail & coulisses",   count: 19,  hue: "orange" },
-] as const;
+] satisfies ReadonlyArray<{ id: Category; label: string; count: number; hue: string }>;
 
 const HUE_BG: Record<string, string> = {
   orange: "linear-gradient(160deg, #e8623d 0%, #c0451f 100%)",
@@ -295,7 +297,7 @@ export default function LandingPage() {
         />
         <div className="sy-grid-3">
           {CATEGORIES.map((c) => (
-            <Link key={c.id} href="/experiences" style={{ textDecoration: "none" }}>
+            <Link key={c.id} href={`/experiences?cat=${c.id}`} style={{ textDecoration: "none" }}>
               <div
                 className="sy-card category-tile"
                 style={{
@@ -405,6 +407,7 @@ export default function LandingPage() {
             {FAQ.map((it, i) => (
               <details
                 key={i}
+                className="faq-item"
                 style={{
                   borderTop: i === 0 ? "1px solid var(--line)" : "none",
                   borderBottom: "1px solid var(--line)",
@@ -412,6 +415,7 @@ export default function LandingPage() {
                 }}
               >
                 <summary
+                  className="faq-summary"
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     listStyle: "none", cursor: "pointer",
@@ -421,19 +425,9 @@ export default function LandingPage() {
                   }}
                 >
                   <span style={{ paddingRight: 20 }}>{it.q}</span>
-                  <span
-                    style={{
-                      width: 32, height: 32, borderRadius: "50%",
-                      background: "var(--surface)", border: "1px solid var(--line)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontFamily: "var(--mono)", fontWeight: 600, fontSize: 18, lineHeight: 1,
-                      color: "var(--ink)", flexShrink: 0,
-                    }}
-                  >
-                    +
-                  </span>
+                  <span className="faq-icon" aria-hidden="true">+</span>
                 </summary>
-                <p className="sy-body-l" style={{ marginTop: 14, maxWidth: 640 }}>{it.a}</p>
+                <p className="faq-answer sy-body-l" style={{ marginTop: 14, maxWidth: 640 }}>{it.a}</p>
               </details>
             ))}
           </div>
@@ -498,6 +492,30 @@ export default function LandingPage() {
         .partners-grid { display: grid; grid-template-columns: 1fr 2.2fr; }
         .category-tile { transition: transform .16s ease, box-shadow .16s ease; }
         .category-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+        /* FAQ : <details> natif + indicateur et réponse animés à l'ouverture. */
+        .faq-summary::-webkit-details-marker { display: none; }
+        .faq-icon {
+          width: 32px; height: 32px; border-radius: 50%;
+          background: var(--surface); border: 1px solid var(--line);
+          display: flex; align-items: center; justify-content: center;
+          font-family: var(--mono); font-weight: 600; font-size: 18px; line-height: 1;
+          color: var(--ink); flex-shrink: 0;
+          transition: transform .22s ease, background .22s ease, color .22s ease, border-color .22s ease;
+        }
+        .faq-item[open] .faq-icon {
+          transform: rotate(45deg);
+          background: var(--ink); color: var(--surface); border-color: var(--ink);
+        }
+        .faq-item[open] .faq-answer { animation: sy-faq-reveal .26s ease; }
+        @keyframes sy-faq-reveal {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .faq-icon { transition: none; }
+          .faq-item[open] .faq-answer { animation: none; }
+        }
 
         @media (max-width: 1024px) {
           .hero-grid, .impact-grid, .faq-grid, .partners-grid, .howitworks-grid {
