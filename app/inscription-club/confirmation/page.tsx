@@ -99,7 +99,7 @@ export default async function ConfirmationPage({ searchParams }: { searchParams:
           "Vous recevrez votre lien d'accès à la console club par email",
           stripeIsPending
             ? "Configurez votre compte bancaire Stripe Connect pour recevoir des paiements"
-            : "Publiez votre première prestation depuis la console club",
+            : "Publiez votre première expérience depuis la console club",
           "Commencez à financer vos projets de saison !",
         ].map((step, i) => (
           <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12,

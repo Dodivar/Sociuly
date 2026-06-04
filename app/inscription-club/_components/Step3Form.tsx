@@ -217,8 +217,8 @@ export default function Step3Form() {
       />
 
       <UploadZone
-        label="Attestation d'assurance responsabilité civile"
-        hint="En cours de validité — couvre vos prestations auprès du public"
+        label="Attestation d'assurance responsabilité civile pro (RC pro)"
+        hint="En cours de validité — couvre vos expériences auprès des entreprises"
         required
         slot={slots.assurance}
         onChange={setSlot("assurance")}

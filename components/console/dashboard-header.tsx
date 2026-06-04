@@ -27,7 +27,7 @@ export function DashboardHeader({ greeting, summary }: Props) {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <Btn variant="outline" icon={<Icon name="upload" size={14} />}>Exporter</Btn>
         <Btn variant="primary" icon={<Icon name="plus" size={14} color="#fff" />}>
-          Nouvelle prestation
+          Nouvelle expérience
         </Btn>
       </div>
     </header>

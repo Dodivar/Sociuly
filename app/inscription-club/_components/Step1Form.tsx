@@ -133,7 +133,7 @@ export default function Step1Form() {
           type="text"
           value={form.nomAssociation}
           onChange={(e) => set("nomAssociation", e.target.value)}
-          placeholder="Ex : USB Volley Strasbourg"
+          placeholder="Ex : SIG Strasbourg"
           autoComplete="organization"
         />
       </Field>
