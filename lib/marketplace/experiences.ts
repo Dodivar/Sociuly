@@ -94,6 +94,8 @@ export type MarketplaceFilters = {
   radiusKm: number;
   /** Disponible au plus tard à cette date (ISO yyyy-mm-dd) ou null. */
   date: string | null;
+  /** Recherche plein-texte (titre, club, catégorie). Chaîne vide = pas de filtre. */
+  q: string;
 };
 
 export const PRICE_FLOOR = 0;
@@ -110,6 +112,7 @@ export const DEFAULT_FILTERS: MarketplaceFilters = {
   priceMax: PRICE_CEIL,
   radiusKm: RADIUS_MAX,
   date: null,
+  q: "",
 };
 
 // ─────── Données mock ───────
@@ -204,11 +207,18 @@ export async function getMarketplaceExperiences(): Promise<MarketplaceExperience
   return CATALOG;
 }
 
+// Normalise une chaîne pour la recherche : minuscules + sans accents/diacritiques.
+function normalizeSearch(s: string): string {
+  // Retire les diacritiques combinants (U+0300–U+036F) après décomposition NFD.
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
 // ─────── Filtrage + tri (pur, réutilisable serveur/client) ───────
 export function filterAndSortExperiences(
   items: MarketplaceExperience[],
   filters: MarketplaceFilters,
 ): MarketplaceExperience[] {
+  const needle = filters.q ? normalizeSearch(filters.q) : "";
   const filtered = items.filter((x) => {
     if (filters.category && x.category !== filters.category) return false;
     if (filters.city && x.city !== filters.city) return false;
@@ -216,6 +226,11 @@ export function filterAndSortExperiences(
     if (x.distanceKm > filters.radiusKm) return false;
     // « Disponible au plus tard le … » → on garde les expériences disponibles à cette date.
     if (filters.date && x.availableFrom > filters.date) return false;
+    // Recherche plein-texte sur titre + club + libellé de catégorie.
+    if (needle) {
+      const haystack = normalizeSearch(`${x.title} ${x.club} ${CATEGORY_LABEL[x.category]}`);
+      if (!haystack.includes(needle)) return false;
+    }
     return true;
   });
 
@@ -269,6 +284,10 @@ export function parseFilters(params: RawParams): MarketplaceFilters {
   const rawDate = first(params.date);
   const date = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
 
+  // Recherche plein-texte : on borne la longueur pour éviter les abus.
+  const rawQ = first(params.q);
+  const q = rawQ ? rawQ.trim().slice(0, 80) : "";
+
   return {
     category,
     sort,
@@ -277,12 +296,14 @@ export function parseFilters(params: RawParams): MarketplaceFilters {
     priceMax: Math.max(priceMin, priceMax),
     radiusKm,
     date,
+    q,
   };
 }
 
 /** Sérialise les filtres en query string (omet les valeurs par défaut). */
 export function buildQuery(filters: MarketplaceFilters): string {
   const sp = new URLSearchParams();
+  if (filters.q) sp.set("q", filters.q);
   if (filters.category) sp.set("cat", filters.category);
   if (filters.sort !== "pertinence") sp.set("tri", filters.sort);
   if (filters.city) sp.set("ville", filters.city);
@@ -296,6 +317,7 @@ export function buildQuery(filters: MarketplaceFilters): string {
 /** Nombre de filtres « actifs » (hors tri) — pour le badge « Filtres · N ». */
 export function countActiveFilters(filters: MarketplaceFilters): number {
   let n = 0;
+  if (filters.q) n++;
   if (filters.category) n++;
   if (filters.city) n++;
   if (filters.priceMin !== PRICE_FLOOR || filters.priceMax !== PRICE_CEIL) n++;
