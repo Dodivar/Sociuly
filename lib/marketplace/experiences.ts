@@ -79,9 +79,10 @@ export type MarketplaceExperience = {
   capacityLabel: string;
   /** Date de première disponibilité (ISO yyyy-mm-dd) — filtre « date ». */
   availableFrom: string;
-  /** Position sur la carte mock (pourcentages 0–100). Mock du Club.geo. */
-  x: number;
-  y: number;
+  /** Latitude WGS84 du lieu (mock du Club.geo / PostGIS Point). */
+  lat: number;
+  /** Longitude WGS84 du lieu (mock du Club.geo / PostGIS Point). */
+  lng: number;
 };
 
 // ─────── Filtres normalisés ───────
@@ -121,85 +122,85 @@ const CATALOG: MarketplaceExperience[] = [
     id: "e1", slug: "journee-immersion-sig", title: "Journée immersion · SIG Strasbourg",
     price: 480, category: "match_vip", club: "SIG Strasbourg", city: "strasbourg",
     distanceKm: 2, rating: 4.9, reviews: 62, hue: "green", funds: "École de jeunes U17",
-    goal: 0.62, capacityLabel: "20–60 pers.", availableFrom: "2026-06-15", x: 22, y: 30,
+    goal: 0.62, capacityLabel: "20–60 pers.", availableFrom: "2026-06-15", lat: 48.5839, lng: 7.7455,
   },
   {
     id: "e2", slug: "seminaire-cohesion-rhenus", title: "Séminaire cohésion · demi-journée",
     price: 1200, category: "cohesion", club: "SIG Strasbourg", city: "strasbourg",
     distanceKm: 4, rating: 4.8, reviews: 47, hue: "teal", funds: "Mini-bus du club",
-    goal: 0.55, capacityLabel: "10–40 pers.", availableFrom: "2026-06-20", x: 42, y: 55,
+    goal: 0.55, capacityLabel: "10–40 pers.", availableFrom: "2026-06-20", lat: 48.5601, lng: 7.7330,
   },
   {
     id: "e3", slug: "initiation-rugby-encadree", title: "Initiation rugby encadrée",
     price: 900, category: "initiation", club: "RC Strasbourg", city: "strasbourg",
     distanceKm: 7, rating: 4.9, reviews: 38, hue: "orange", funds: "Vestiaires neufs",
-    goal: 0.78, capacityLabel: "15–30 pers.", availableFrom: "2026-07-01", x: 60, y: 22,
+    goal: 0.78, capacityLabel: "15–30 pers.", availableFrom: "2026-07-01", lat: 48.6012, lng: 7.7905,
   },
   {
     id: "e4", slug: "mini-tournoi-inter-equipes", title: "Mini-tournoi inter-équipes",
     price: 1500, category: "tournoi", club: "ASPTT Strasbourg", city: "strasbourg",
     distanceKm: 11, rating: 4.7, reviews: 41, hue: "yellow", funds: "Maillots saison",
-    goal: 0.45, capacityLabel: "20–80 pers.", availableFrom: "2026-06-28", x: 72, y: 60,
+    goal: 0.45, capacityLabel: "20–80 pers.", availableFrom: "2026-06-28", lat: 48.5448, lng: 7.7108,
   },
   {
     id: "e5", slug: "masterclass-joueur-pro-sig", title: "Masterclass joueur pro",
     price: 1800, category: "masterclass", club: "SIG Strasbourg", city: "strasbourg",
     distanceKm: 3, rating: 5.0, reviews: 19, hue: "rust", funds: "Stage été U13",
-    goal: 0.85, capacityLabel: "10–40 pers.", availableFrom: "2026-09-05", x: 34, y: 75,
+    goal: 0.85, capacityLabel: "10–40 pers.", availableFrom: "2026-09-05", lat: 48.5752, lng: 7.7648,
   },
   {
     id: "e6", slug: "cocktail-visite-coulisses-strasbourg", title: "Cocktail & visite des coulisses",
     price: 1100, category: "coulisses", club: "SIG Strasbourg", city: "strasbourg",
     distanceKm: 5, rating: 4.5, reviews: 12, hue: "sand", funds: "École de jeunes",
-    goal: 0.15, capacityLabel: "15–50 pers.", availableFrom: "2026-07-12", x: 58, y: 80,
+    goal: 0.15, capacityLabel: "15–50 pers.", availableFrom: "2026-07-12", lat: 48.5519, lng: 7.7802,
   },
   {
     id: "e7", slug: "atelier-cohesion-nancy", title: "Atelier cohésion d'équipe",
     price: 750, category: "cohesion", club: "ASNL Nancy", city: "nancy",
     distanceKm: 6, rating: 4.6, reviews: 28, hue: "teal", funds: "Section féminine",
-    goal: 0.40, capacityLabel: "10–35 pers.", availableFrom: "2026-06-18", x: 18, y: 60,
+    goal: 0.40, capacityLabel: "10–35 pers.", availableFrom: "2026-06-18", lat: 48.6952, lng: 6.2112,
   },
   {
     id: "e8", slug: "initiation-handball-nancy", title: "Initiation handball encadrée",
     price: 680, category: "initiation", club: "Grand Nancy ASPTT", city: "nancy",
     distanceKm: 9, rating: 4.7, reviews: 22, hue: "orange", funds: "Matériel d'entraînement",
-    goal: 0.52, capacityLabel: "12–30 pers.", availableFrom: "2026-07-08", x: 82, y: 38,
+    goal: 0.52, capacityLabel: "12–30 pers.", availableFrom: "2026-07-08", lat: 48.6701, lng: 6.1503,
   },
   {
     id: "e9", slug: "match-vip-hospitalites-nancy", title: "Match VIP & hospitalités",
     price: 2200, category: "match_vip", club: "ASNL Nancy", city: "nancy",
     distanceKm: 4, rating: 4.6, reviews: 28, hue: "green", funds: "Centre de formation",
-    goal: 0.30, capacityLabel: "20–60 pers.", availableFrom: "2026-08-22", x: 50, y: 18,
+    goal: 0.30, capacityLabel: "20–60 pers.", availableFrom: "2026-08-22", lat: 48.7005, lng: 6.2008,
   },
   {
     id: "e10", slug: "mini-tournoi-nancy", title: "Mini-tournoi multisports",
     price: 1350, category: "tournoi", club: "Grand Nancy ASPTT", city: "nancy",
     distanceKm: 14, rating: 4.4, reviews: 16, hue: "yellow", funds: "Tournoi national U15",
-    goal: 0.25, capacityLabel: "25–80 pers.", availableFrom: "2026-09-14", x: 30, y: 42,
+    goal: 0.25, capacityLabel: "25–80 pers.", availableFrom: "2026-09-14", lat: 48.6803, lng: 6.2205,
   },
   {
     id: "e11", slug: "masterclass-coach-metz", title: "Masterclass coach professionnel",
     price: 1650, category: "masterclass", club: "Metz Handball", city: "metz",
     distanceKm: 3, rating: 4.9, reviews: 31, hue: "rust", funds: "Académie jeunes",
-    goal: 0.68, capacityLabel: "10–40 pers.", availableFrom: "2026-06-25", x: 65, y: 72,
+    goal: 0.68, capacityLabel: "10–40 pers.", availableFrom: "2026-06-25", lat: 49.0962, lng: 6.2181,
   },
   {
     id: "e12", slug: "cocktail-coulisses-metz", title: "Cocktail & coulisses de l'Arena",
     price: 980, category: "coulisses", club: "Metz Handball", city: "metz",
     distanceKm: 5, rating: 4.7, reviews: 18, hue: "sand", funds: "Rénovation tribune",
-    goal: 0.48, capacityLabel: "15–50 pers.", availableFrom: "2026-07-20", x: 45, y: 28,
+    goal: 0.48, capacityLabel: "15–50 pers.", availableFrom: "2026-07-20", lat: 49.1102, lng: 6.1903,
   },
   {
     id: "e13", slug: "cohesion-aviron-metz", title: "Cohésion sur l'eau · aviron",
     price: 1420, category: "cohesion", club: "Société Nautique Metz", city: "metz",
     distanceKm: 8, rating: 4.8, reviews: 24, hue: "teal", funds: "Flotte de bateaux",
-    goal: 0.60, capacityLabel: "8–24 pers.", availableFrom: "2026-07-03", x: 78, y: 52,
+    goal: 0.60, capacityLabel: "8–24 pers.", availableFrom: "2026-07-03", lat: 49.1251, lng: 6.1604,
   },
   {
     id: "e14", slug: "initiation-escrime-metz", title: "Initiation escrime encadrée",
     price: 820, category: "initiation", club: "Cercle d'Escrime Metz", city: "metz",
     distanceKm: 12, rating: 4.6, reviews: 14, hue: "orange", funds: "Équipements de protection",
-    goal: 0.35, capacityLabel: "10–24 pers.", availableFrom: "2026-08-10", x: 24, y: 20,
+    goal: 0.35, capacityLabel: "10–24 pers.", availableFrom: "2026-08-10", lat: 49.1051, lng: 6.1502,
   },
 ];
 

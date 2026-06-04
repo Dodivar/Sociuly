@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { Btn, Chip } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { ExperienceCard } from "@/components/ds/patterns";
-import { InteractiveMarketMap } from "@/components/marketplace/interactive-map";
 import {
   CATEGORY_LABEL,
   CITY_LABEL,
@@ -12,6 +12,26 @@ import {
   type MarketplaceExperience,
   type MarketplaceFilters,
 } from "@/lib/marketplace/experiences";
+
+// Carte MapLibre lazy-loadée côté client uniquement (besoin de `window`,
+// bundle lourd) — placeholder pendant le chargement.
+const InteractiveMarketMap = dynamic(
+  () => import("@/components/marketplace/interactive-map").then((m) => m.InteractiveMarketMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="sy-mono sy-muted"
+        style={{
+          position: "absolute", inset: 0, display: "flex",
+          alignItems: "center", justifyContent: "center", background: "var(--surface-2)",
+        }}
+      >
+        Chargement de la carte…
+      </div>
+    ),
+  },
+);
 
 const FAV_KEY = "sociuly:favoris";
 
