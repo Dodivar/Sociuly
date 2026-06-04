@@ -40,26 +40,27 @@ Voir `components/console/club-sidebar.tsx` (lignes 19-27) — 6 entrées sans pa
 ## 🖱 Interactions à développer sur les pages existantes
 
 ### Landing `/`
-- [ ] Recherche du hero → submit vers `/prestations?q=…`
-- [ ] Lien réel sur les 6 tuiles catégories (filtrer marketplace par catégorie)
-- [ ] FAQ : interaction `<details>` (déjà natif, vérifier ouverture/fermeture animée)
-- [ ] Carte d'impact (`ImpactMap`) : tooltip ville au hover, lien vers marketplace filtrée par ville
+- [x] Recherche du hero → submit vers `/prestations?q=…`
+- [x] Lien réel sur les 6 tuiles catégories (filtrer marketplace par catégorie)
+- [x] FAQ : interaction `<details>` (déjà natif, vérifier ouverture/fermeture animée)
+- [x] Carte d'impact (`ImpactMap`) : tooltip ville au hover, lien vers marketplace filtrée par ville
 
 ### Marketplace `/prestations`
-- [ ] **Filtres réellement câblés** : aujourd'hui `components/marketplace/filters.tsx` (lignes 23-32) ne fait que du local state — porter vers `searchParams` URL et filtrer la liste
-- [ ] Filtres manquants par rapport au SPEC §6 : prix (slider), rayon km, date
-- [ ] Sélecteur de ville (autocomplete Strasbourg/Nancy/Metz) + bouton géoloc navigateur
-- [ ] Carte interactive : markers cliquables, sync hover liste ↔ carte, popup mini-card
-- [ ] Pagination ou scroll infini (la grille est aujourd'hui figée à 6 cartes statiques)
-- [ ] Favoris : toggle ❤️ avec persistance (localStorage v1)
-- [ ] Tri (Pertinence / Prix / Note / Distance) connecté aux résultats
+- [x] **Filtres réellement câblés** : aujourd'hui `components/marketplace/filters.tsx` (lignes 23-32) ne fait que du local state — porter vers `searchParams` URL et filtrer la liste
+- [x] Filtres manquants par rapport au SPEC §6 : prix (slider), rayon km, date
+- [x] Sélecteur de ville (autocomplete Strasbourg/Nancy/Metz) + bouton géoloc navigateur
+- [x] Carte interactive : markers cliquables, sync hover liste ↔ carte, popup mini-card
+- [x] Pagination ou scroll infini (la grille est aujourd'hui figée à 6 cartes statiques)
+- [x] Favoris : toggle ❤️ avec persistance (localStorage v1)
+- [x] Tri (Pertinence / Prix / Note / Distance) connecté aux résultats
 
 ### Détail prestation `/prestations/[slug]`
-- [ ] Galerie images (thumbnails + viewer)
-- [ ] Booking rail sticky : sélecteur date/heure, nb participants, recalcul prix live → CTA vers `/reserver/[slug]?date=…`
-- [ ] Lien actif vers profil asso + projet financé
-- [ ] Avis : pagination « voir plus »
-- [ ] Partage (lien copié, mailto)
+- [x] Galerie images (thumbnails + viewer)
+- [x] Booking rail sticky : sélecteur date/heure, nb participants, recalcul prix live → CTA vers `/reserver/[slug]?date=…`
+- [x] Lien actif vers profil asso + projet financé
+- [x] Avis : pagination « voir plus »
+- [x] Partage (lien copié, mailto)
+- [ ] Favori depuis détail activité
 
 ### Tunnel `/reserver/[ref]`
 - [x] Navigation entre les 4 étapes du `BookingStepper` (avant/arrière, blocage si étape invalide)
