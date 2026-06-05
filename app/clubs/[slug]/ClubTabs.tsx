@@ -47,7 +47,14 @@ export function ClubTabs() {
 
   return (
     <>
-      <div style={{ marginTop: 32, borderBottom: "1px solid var(--line)" }}>
+      <div
+        style={{
+          marginTop: 32,
+          borderBottom: "1px solid var(--line)",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
         <Tabs
           variant="underline"
           active={active}
