@@ -7,6 +7,10 @@ import type {
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
+import {
+  CATEGORIES, CITIES, DEFAULT_FILTERS, buildQuery,
+  type Category, type City, type MarketplaceFilters,
+} from "@/lib/marketplace/experiences";
 import { Icon } from "./icon";
 
 // ─────── Button ───────
@@ -254,16 +258,29 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className="sy-input sy-textarea" {...props} />;
 }
 
-// ─────── Sticky search bar (Airbnb-style "What/Where/When") ───────
-// Soumission → catalogue marketplace filtré par recherche plein-texte (`?q=…`).
-// Cf. lib/marketplace/experiences (parseFilters lit le param `q`).
+// ─────── Sticky search bar (Airbnb-style "Quoi / Où / Quand / Catégorie") ───────
+// Chaque champ est câblé sur un filtre marketplace réel (q, ville, date, cat).
+// Soumission → /experiences sérialisé via buildQuery (même contrat d'URL que la
+// page catalogue, cf. lib/marketplace/experiences → parseFilters).
+const SB_INPUT_STYLE: CSSProperties = {
+  border: "none", outline: "none", background: "transparent",
+  fontFamily: "inherit", fontSize: 14, fontWeight: 500, marginTop: 2,
+  color: "var(--ink)", width: "100%", padding: 0,
+};
+
 export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSProperties }) {
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [city, setCity] = useState<City | "">("");
+  const [date, setDate] = useState("");
+  const [category, setCategory] = useState<Category | "">("");
 
-  function submit() {
-    const term = q.trim();
-    router.push(term ? `/experiences?q=${encodeURIComponent(term)}` : "/experiences");
+  // Construit l'URL du catalogue à partir des seuls filtres choisis (les valeurs
+  // par défaut sont omises par buildQuery → URL propre, partageable).
+  function pushTo(next: Partial<MarketplaceFilters>) {
+    const filters: MarketplaceFilters = { ...DEFAULT_FILTERS, ...next };
+    const qs = buildQuery(filters);
+    router.push(qs ? `/experiences?${qs}` : "/experiences");
   }
 
   if (compact) {
@@ -272,7 +289,7 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
         className="sy-search"
         style={{ height: 44, padding: "0 6px 0 18px", ...style }}
         role="search"
-        onSubmit={(e) => { e.preventDefault(); submit(); }}
+        onSubmit={(e) => { e.preventDefault(); pushTo({ q: q.trim() }); }}
       >
         <Icon name="search" />
         <input
@@ -290,7 +307,15 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
       className="sy-searchbar-full sy-card sy-card-elevated"
       style={style}
       role="search"
-      onSubmit={(e) => { e.preventDefault(); submit(); }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        pushTo({
+          q: q.trim(),
+          city: city || null,
+          date: date || null,
+          category: category || null,
+        });
+      }}
     >
       <label className="sb-section" style={{ cursor: "text" }}>
         <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quoi</span>
@@ -299,28 +324,50 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
           onChange={(e) => setQ(e.target.value)}
           placeholder="Toutes expériences"
           aria-label="Rechercher une expérience"
-          style={{
-            border: "none", outline: "none", background: "transparent",
-            fontFamily: "inherit", fontSize: 14, fontWeight: 500, marginTop: 2,
-            color: "var(--ink)", width: "100%", padding: 0,
-          }}
+          style={SB_INPUT_STYLE}
         />
       </label>
       <div className="sy-divider-vert" />
-      <div className="sb-section">
-        <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Où</div>
-        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Strasbourg · 10 km</div>
-      </div>
+      <label className="sb-section" style={{ cursor: "pointer" }}>
+        <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Où</span>
+        <select
+          value={city}
+          onChange={(e) => setCity(e.target.value as City | "")}
+          aria-label="Choisir une ville"
+          style={{ ...SB_INPUT_STYLE, cursor: "pointer" }}
+        >
+          <option value="">Toutes les villes</option>
+          {CITIES.map((c) => (
+            <option key={c.id} value={c.id}>{c.label}</option>
+          ))}
+        </select>
+      </label>
       <div className="sy-divider-vert" />
-      <div className="sb-section">
-        <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quand</div>
-        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Ce week-end</div>
-      </div>
+      <label className="sb-section" style={{ cursor: "text" }}>
+        <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quand</span>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          aria-label="Disponible à partir du"
+          style={{ ...SB_INPUT_STYLE, cursor: "text" }}
+        />
+      </label>
       <div className="sy-divider-vert" />
-      <div className="sb-section sb-section-cause">
-        <div className="sy-mono-strong" style={{ fontSize: 10.5 }}>Format</div>
-        <div style={{ fontSize: 14, fontWeight: 500, marginTop: 2 }}>Tous formats</div>
-      </div>
+      <label className="sb-section sb-section-cause" style={{ cursor: "pointer" }}>
+        <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Catégorie</span>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value as Category | "")}
+          aria-label="Choisir une catégorie d'expérience"
+          style={{ ...SB_INPUT_STYLE, cursor: "pointer" }}
+        >
+          <option value="">Toutes les catégories</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>{c.label}</option>
+          ))}
+        </select>
+      </label>
       <div className="sb-cta">
         <Btn type="submit" variant="primary" size="lg" style={{ borderRadius: 999, padding: "0 24px" }}>
           <Icon name="search" /> Rechercher
