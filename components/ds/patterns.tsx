@@ -370,10 +370,10 @@ const FOOTER_COLS: Array<{ title: string; links: Array<[string, string]> }> = [
   {
     title: "Légal",
     links: [
-      ["Conditions générales", "/"],
-      ["Confidentialité",      "/"],
-      ["Mentions légales",     "/"],
-      ["Cookies",              "/"],
+      ["Conditions générales", "/cgu"],
+      ["Confidentialité",      "/confidentialite"],
+      ["Mentions légales",     "/mentions-legales"],
+      ["Cookies",              "/confidentialite#cookies"],
     ],
   },
 ];
