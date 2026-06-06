@@ -85,7 +85,7 @@ export function Chip({ variant, size, children, style, leadingDot, onClick }: Ch
   return (
     <span
       className={cls}
-      style={style}
+      style={interactive ? { cursor: "pointer", ...style } : style}
       onClick={onClick}
       role={interactive ? "button" : undefined}
       tabIndex={interactive ? 0 : undefined}

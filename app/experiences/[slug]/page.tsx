@@ -8,6 +8,7 @@ import { ExperienceGallery } from "@/components/experiences/gallery";
 import { ExperienceBookingRail } from "@/components/experiences/booking-rail";
 import { ExperienceReviews } from "@/components/experiences/reviews";
 import { ShareButton } from "@/components/experiences/share-button";
+import { FavoriteButton } from "@/components/experiences/favorite-button";
 import {
   eur,
   getAllExperienceSlugs,
@@ -63,7 +64,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <Btn variant="ghost" size="sm" icon={<Icon name="heart" size={14} />}>Sauver</Btn>
+            <FavoriteButton experienceId={exp.id} />
             <ShareButton title={exp.title} />
           </div>
         </div>

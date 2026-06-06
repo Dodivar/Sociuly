@@ -69,6 +69,8 @@ export type ExperienceProject = {
 };
 
 export type ExperienceDetail = {
+  /** Id catalogue (MarketplaceExperience.id) — clé des favoris localStorage. */
+  id: string;
   slug: string;
   title: string;
   categoryLabel: string;
@@ -240,6 +242,7 @@ function toDetail(x: MarketplaceExperience, reviewCount: number): ExperienceDeta
     x.hue === "green" || x.hue === "teal" ? "green" : x.hue === "yellow" ? "yellow" : "orange";
 
   return {
+    id: x.id,
     slug: x.slug,
     title: x.title,
     categoryLabel: x.category,

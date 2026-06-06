@@ -1,10 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
-import { cx } from "@/lib/cx";
 import { CONSOLE_PUBLIC_LINK } from "@/lib/console/dev";
 import { Avatar, Btn, Card, Chip, Progress, Stars } from "./components";
 import { Icon } from "./icon";
 import { ImpactMini } from "./impact";
+import { TopNavTabs } from "./topnav-tabs";
 
 // ─────── ExperienceCard ───────
 export type ExperienceHue = "green" | "orange" | "yellow" | "sand" | "teal" | "rust";
@@ -103,7 +104,7 @@ export function ExperienceCard({
               boxShadow: "var(--shadow-sm)",
             }}
           >
-            <Icon name="heart" size={15} color={saved ? "var(--accent)" : "var(--ink)"} />
+            <Icon name="heart" size={15} filled={saved} color={saved ? "var(--danger)" : "var(--ink)"} />
           </button>
         </div>
 
@@ -280,7 +281,7 @@ const TOPNAV_ITEMS = [
 ];
 
 export function TopNav({
-  active = "experiences",
+  active,
   variant = "default",
 }: { active?: string; variant?: "default" | "transparent" }) {
   return (
@@ -293,18 +294,11 @@ export function TopNav({
     >
       <div className="sy-topnav-nav">
         <Link href="/" style={{ textDecoration: "none", color: "inherit" }}><Logo /></Link>
-        <div className="sy-topnav-tabs sy-tab-underline sy-tabs" style={{ padding: 0 }}>
-          {TOPNAV_ITEMS.map((it) => (
-            <Link
-              key={it.id}
-              href={it.href}
-              className={cx("sy-tab", active === it.id && "on")}
-              style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
-            >
-              {it.label}
-            </Link>
-          ))}
-        </div>
+        {/* Onglet actif déduit de l'URL côté client (cf. TopNavTabs). `active`
+            reste un override manuel optionnel. Suspense requis car useSearchParams. */}
+        <Suspense fallback={<TopNavTabsFallback />}>
+          <TopNavTabs items={TOPNAV_ITEMS} active={active} />
+        </Suspense>
       </div>
       <div className="sy-topnav-actions">
         <Link href="/inscription-club" style={{ textDecoration: "none" }} className="sy-topnav-ghost-hide">
@@ -315,6 +309,25 @@ export function TopNav({
         </Link>
       </div>
     </nav>
+  );
+}
+
+// Rendu statique des onglets (sans surlignage) — fallback Suspense pendant le
+// prérendu, avant que TopNavTabs ne déduise l'onglet actif côté client.
+function TopNavTabsFallback() {
+  return (
+    <div className="sy-topnav-tabs sy-tab-underline sy-tabs" style={{ padding: 0 }}>
+      {TOPNAV_ITEMS.map((it) => (
+        <Link
+          key={it.id}
+          href={it.href}
+          className="sy-tab"
+          style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
+        >
+          {it.label}
+        </Link>
+      ))}
+    </div>
   );
 }
 

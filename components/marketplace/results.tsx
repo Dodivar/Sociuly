@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { cx } from "@/lib/cx";
 import { Btn, Chip } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { ExperienceCard } from "@/components/ds/patterns";
+import { useFavorites } from "@/lib/marketplace/favorites";
 import {
   CATEGORY_LABEL,
   CITY_LABEL,
@@ -34,16 +35,14 @@ const InteractiveMarketMap = dynamic(
   },
 );
 
-const FAV_KEY = "sociuly:favoris";
-
 type Props = {
   experiences: MarketplaceExperience[];
   filters: MarketplaceFilters;
 };
 
 export function MarketplaceResults({ experiences, filters }: Props) {
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [favReady, setFavReady] = useState(false);
+  // Favoris partagés (localStorage) — cf. lib/marketplace/favorites.
+  const { favorites, ready: favReady, toggle: toggleFavorite } = useFavorites();
   const [favOnly, setFavOnly] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -51,31 +50,6 @@ export function MarketplaceResults({ experiences, filters }: Props) {
   // Vue active en mobile (≤768px) : la carte est affichée en premier pour
   // « trouver une activité », un bouton flottant bascule vers la liste.
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
-
-  // ─── Favoris : persistance localStorage (v1, SPEC §2 — pas de DB côté favoris) ───
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(FAV_KEY);
-      if (raw) setFavorites(new Set(JSON.parse(raw) as string[]));
-    } catch {
-      /* localStorage indisponible — favoris en mémoire seulement */
-    }
-    setFavReady(true);
-  }, []);
-
-  const toggleFavorite = useCallback((id: string) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      try {
-        localStorage.setItem(FAV_KEY, JSON.stringify([...next]));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  }, []);
 
   // Liste affichée (filtre favoris côté client + pagination « voir plus »).
   const list = useMemo(
@@ -184,6 +158,7 @@ export function MarketplaceResults({ experiences, filters }: Props) {
       <div className="marketplace-map">
         <InteractiveMarketMap
           experiences={list}
+          favorites={favorites}
           hoveredId={hoveredId}
           selectedId={selectedId}
           onHover={setHoveredId}

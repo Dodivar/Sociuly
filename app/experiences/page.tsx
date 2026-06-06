@@ -1,6 +1,4 @@
-import { Avatar, IconBtn, SearchBar } from "@/components/ds/components";
-import { Icon } from "@/components/ds/icon";
-import { Logo, SiteFooter } from "@/components/ds/patterns";
+import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { MarketplaceFilters } from "@/components/marketplace/filters";
 import { MarketplaceResults } from "@/components/marketplace/results";
 import {
@@ -26,21 +24,8 @@ export default async function ExperiencesPage({ searchParams }: Props) {
           l'espace laissé par l'en-tête (s'adapte à l'ouverture des filtres). */}
       <div className="marketplace-viewport">
         <div className="marketplace-header">
-          {/* Top bar */}
-          <div
-            style={{
-              padding: "14px var(--page-pad)", borderBottom: "1px solid var(--line)",
-              background: "var(--surface)", display: "flex", alignItems: "center", gap: 24,
-            }}
-          >
-            <Logo />
-            <SearchBar compact style={{ flex: 1, maxWidth: 720 }} />
-            <div style={{ display: "flex", gap: 10, marginLeft: "auto" }}>
-              <IconBtn aria-label="Favoris"><Icon name="heart" size={16} /></IconBtn>
-              <IconBtn aria-label="Notifications"><Icon name="bell" size={16} /></IconBtn>
-              <Avatar initials="ML" tone="orange" />
-            </div>
-          </div>
+          {/* En-tête standard du site (navigation + connexion) */}
+          <TopNav active="experiences" />
 
           {/* Barre de filtres — câblée sur l'URL (searchParams) */}
           <MarketplaceFilters filters={filters} />

@@ -11,6 +11,8 @@ type Props = {
   name: IconName;
   size?: number;
   color?: string;
+  /** Remplit le glyphe (utile pour un cœur favori plein, par ex.). */
+  filled?: boolean;
   style?: CSSProperties;
 };
 
@@ -53,13 +55,13 @@ const PATHS: Record<IconName, ReactElement> = {
   lock:      <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
 };
 
-export function Icon({ name, size = 16, color = "currentColor", style }: Props) {
+export function Icon({ name, size = 16, color = "currentColor", filled = false, style }: Props) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={filled ? color : "none"}
       stroke={color}
       strokeWidth={1.6}
       strokeLinecap="round"

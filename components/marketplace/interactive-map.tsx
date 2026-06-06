@@ -17,6 +17,8 @@ import type { MarketplaceExperience } from "@/lib/marketplace/experiences";
 
 type Props = {
   experiences: MarketplaceExperience[];
+  /** Ids des expériences favorites : cœur rouge sur la pastille + remontées au-dessus. */
+  favorites: Set<string>;
   hoveredId: string | null;
   selectedId: string | null;
   onHover: (id: string | null) => void;
@@ -53,18 +55,37 @@ const MAP_STYLE: string | maplibregl.StyleSpecification = MAPTILER_KEY
   ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`
   : OSM_FALLBACK_STYLE;
 
+// Cœur rouge plein (token --danger) injecté dans la pastille d'un favori.
+// `var()` passe par l'attribut `style` (les variables CSS ne résolvent pas dans
+// les attributs de présentation SVG).
+const HEART_MARKUP =
+  '<svg width="12" height="12" viewBox="0 0 24 24" stroke-width="1.6" ' +
+  'stroke-linejoin="round" aria-hidden="true" ' +
+  'style="fill:var(--danger);stroke:var(--danger);flex:0 0 auto;">' +
+  '<path d="M12 21s-7-4.3-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.7-7 10-7 10Z"/></svg>';
+
+// Contenu de la pastille : cœur rouge (favori) + prix.
+function renderPillContent(pill: HTMLButtonElement, price: number, isFav: boolean) {
+  pill.innerHTML = isFav ? `${HEART_MARKUP}<span>€${price}</span>` : `€${price}`;
+}
+
 // Applique le style de la pastille prix selon son état (actif = survol/sélection).
-function styleMarkerPill(pill: HTMLButtonElement, active: boolean) {
+// Les favoris sont remontés au-dessus (z-index) et liserés en rouge par défaut.
+function styleMarkerPill(pill: HTMLButtonElement, active: boolean, isFav: boolean) {
   pill.style.transform = `scale(${active ? 1.12 : 1})`;
   pill.style.background = active ? "var(--accent)" : "var(--surface)";
   pill.style.color = active ? "#fff" : "var(--ink)";
-  pill.style.border = `1.5px solid ${active ? "var(--accent-deep)" : "var(--ink)"}`;
+  pill.style.border = `1.5px solid ${
+    active ? "var(--accent-deep)" : isFav ? "var(--danger)" : "var(--ink)"
+  }`;
   pill.style.boxShadow = active ? "var(--shadow-md)" : "0 4px 12px rgba(11,21,48,.18)";
-  pill.style.zIndex = active ? "5" : "2";
+  // Favoris au-dessus des pastilles standard ; l'actif passe encore au-dessus.
+  pill.style.zIndex = active ? "6" : isFav ? "4" : "2";
 }
 
 export function InteractiveMarketMap({
   experiences,
+  favorites,
   hoveredId,
   selectedId,
   onHover,
@@ -159,9 +180,13 @@ export function InteractiveMarketMap({
 
     // Ajoute / met à jour les markers présents.
     for (const x of experiences) {
+      const isFav = favorites.has(x.id);
       const existing = store.get(x.id);
       if (existing) {
-        existing.pill.textContent = `€${x.price}`;
+        // Contenu uniquement ici (prix/cœur) ; le style actif/favori est appliqué
+        // par l'effet hover/select ci-dessous (évite de reconstruire le DOM au survol).
+        renderPillContent(existing.pill, x.price, isFav);
+        existing.pill.setAttribute("aria-label", `${x.title} — €${x.price}`);
         existing.marker.setLngLat([x.lng, x.lat]);
         continue;
       }
@@ -172,8 +197,10 @@ export function InteractiveMarketMap({
       pill.type = "button";
       pill.className = "sy-num";
       pill.setAttribute("aria-label", `${x.title} — €${x.price}`);
-      pill.textContent = `€${x.price}`;
       Object.assign(pill.style, {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "5px",
         padding: "7px 14px",
         borderRadius: "999px",
         fontFamily: "var(--display)",
@@ -184,7 +211,8 @@ export function InteractiveMarketMap({
         cursor: "pointer",
         transition: "transform .15s ease, background .15s ease, color .15s ease",
       } satisfies Partial<CSSStyleDeclaration>);
-      styleMarkerPill(pill, false);
+      renderPillContent(pill, x.price, isFav);
+      styleMarkerPill(pill, false, isFav);
 
       pill.addEventListener("mouseenter", () => onHoverRef.current(x.id));
       pill.addEventListener("mouseleave", () => onHoverRef.current(null));
@@ -199,14 +227,14 @@ export function InteractiveMarketMap({
         .addTo(map);
       store.set(x.id, { marker, pill });
     }
-  }, [experiences, ready]);
+  }, [experiences, favorites, ready]);
 
-  // ─── Reflète l'état hover/select sur les pastilles ───
+  // ─── Reflète l'état hover/select (+ favori) sur les pastilles ───
   useEffect(() => {
     for (const [id, entry] of markersRef.current) {
-      styleMarkerPill(entry.pill, id === hoveredId || id === selectedId);
+      styleMarkerPill(entry.pill, id === hoveredId || id === selectedId, favorites.has(id));
     }
-  }, [hoveredId, selectedId, experiences]);
+  }, [hoveredId, selectedId, experiences, favorites]);
 
   // Recalcule les dimensions quand la carte redevient visible (toggle mobile) :
   // un conteneur masqué (display:none) a une taille nulle au moment de l'init.
