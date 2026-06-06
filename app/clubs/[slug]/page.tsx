@@ -61,6 +61,7 @@ export default function ClubProfilePage() {
 
       {/* Cover */}
       <div
+        className="asso-cover"
         style={{
           position: "relative",
           height: 220,
@@ -81,15 +82,15 @@ export default function ClubProfilePage() {
       </div>
 
       {/* Main content */}
-      <div style={{ padding: "0 48px", position: "relative", marginTop: -60 }}>
+      <div className="asso-content" style={{ padding: "0 48px", position: "relative", marginTop: -60 }}>
 
         {/* Identity row */}
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 24, marginBottom: 28 }}>
-          <div style={logoStyle}>{CLUB.initials}</div>
+        <div className="asso-identity" style={{ display: "flex", alignItems: "flex-end", gap: 24, marginBottom: 28 }}>
+          <div className="asso-logo" style={logoStyle}>{CLUB.initials}</div>
 
-          <div style={{ flex: 1, paddingBottom: 8 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <h1 className="sy-h1" style={{ fontSize: 36 }}>
+              <h1 className="sy-h1 asso-title" style={{ fontSize: 36 }}>
                 {CLUB.name} · {CLUB.fullName}
               </h1>
               {CLUB.verified && (
@@ -137,25 +138,26 @@ export default function ClubProfilePage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, paddingBottom: 8 }}>
-            <Btn variant="outline">Contacter</Btn>
-            <Link href="/experiences" style={{ textDecoration: "none" }}>
+          <div className="asso-actions" style={{ display: "flex", gap: 10, paddingBottom: 8 }}>
+            <Btn className="asso-act-contact" variant="outline">Contacter</Btn>
+            <Link className="asso-act-devis" href="/experiences" style={{ textDecoration: "none" }}>
               <Btn variant="dark">Demander un devis</Btn>
             </Link>
-            <IconBtn aria-label="Partager">
+            <IconBtn className="asso-act-share" aria-label="Partager">
               <Icon name="share" size={16} />
             </IconBtn>
           </div>
         </div>
 
         {/* About + featured project */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 28 }}>
+        <div className="asso-grid" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 28 }}>
           <div>
             <h2 className="sy-h2">À propos</h2>
             <p className="sy-body" style={{ marginTop: 10, fontSize: 16, color: "var(--ink)" }}>
               {CLUB.description}
             </p>
             <div
+              className="asso-stats"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
@@ -228,15 +230,49 @@ export default function ClubProfilePage() {
       <SiteFooter />
 
       <style>{`
-        @media (max-width: 900px) {
-          .asso-identity { flex-direction: column; align-items: flex-start !important; }
-          .asso-identity h1 { font-size: 24px !important; }
-          .asso-grid { grid-template-columns: 1fr !important; }
-          .asso-stats { grid-template-columns: repeat(3, 1fr) !important; }
+        /* Tablette : la grille passe sur une colonne, on garde la rangée d'identité horizontale */
+        @media (max-width: 1024px) {
+          .asso-content { padding: 0 32px; }
+          .asso-grid { grid-template-columns: 1fr; }
+          .asso-title { font-size: 30px; }
         }
-        @media (max-width: 640px) {
-          .asso-stats { grid-template-columns: 1fr 1fr !important; }
-          .asso-actions { display: none !important; }
+
+        /* Mobile : on empile logo → titre → actions, façon profil mobile du mockup */
+        @media (max-width: 768px) {
+          .asso-cover { height: 150px; }
+          .asso-content { padding: 0 16px; margin-top: -44px; }
+          .asso-identity {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 14px;
+            margin-bottom: 22px;
+          }
+          .asso-logo {
+            width: 84px !important;
+            height: 84px !important;
+            border-radius: 20px !important;
+            font-size: 30px !important;
+            border-width: 3px !important;
+          }
+          .asso-identity > div { padding-bottom: 0 !important; }
+          .asso-title { font-size: 24px; line-height: 1.15; }
+
+          /* Actions plein écran : devis (CTA principal) sur sa propre ligne, puis Contacter + partage */
+          .asso-actions {
+            width: 100%;
+            flex-wrap: wrap;
+            padding-bottom: 0 !important;
+          }
+          .asso-act-devis {
+            order: -1;
+            flex: 1 1 100%;
+          }
+          .asso-act-devis > .sy-btn { width: 100%; }
+          .asso-act-contact { flex: 1; }
+        }
+
+        @media (max-width: 480px) {
+          .asso-stats { grid-template-columns: 1fr 1fr; }
         }
       `}</style>
     </div>
