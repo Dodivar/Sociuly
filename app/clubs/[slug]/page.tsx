@@ -38,23 +38,6 @@ export async function generateStaticParams() {
 }
 
 export default function ClubProfilePage() {
-  const logoStyle = {
-    width: 120,
-    height: 120,
-    borderRadius: 24,
-    background: "var(--surface)",
-    border: "4px solid var(--bg)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily: "var(--display)",
-    fontWeight: 700,
-    fontSize: 44,
-    color: "var(--primary)",
-    fontVariationSettings: "var(--display-var)",
-    flexShrink: 0,
-  };
-
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <TopNav active="clubs" />
@@ -64,7 +47,6 @@ export default function ClubProfilePage() {
         className="asso-cover"
         style={{
           position: "relative",
-          height: 220,
           overflow: "hidden",
           background: "linear-gradient(135deg, #1f4b3f 0%, #14332b 100%)",
         }}
@@ -82,15 +64,15 @@ export default function ClubProfilePage() {
       </div>
 
       {/* Main content */}
-      <div className="asso-content" style={{ padding: "0 48px", position: "relative", marginTop: -60 }}>
+      <div className="asso-content" style={{ position: "relative" }}>
 
         {/* Identity row */}
-        <div className="asso-identity" style={{ display: "flex", alignItems: "flex-end", gap: 24, marginBottom: 28 }}>
-          <div className="asso-logo" style={logoStyle}>{CLUB.initials}</div>
+        <div className="asso-identity">
+          <div className="asso-logo">{CLUB.initials}</div>
 
           <div style={{ flex: 1, minWidth: 0, paddingBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <h1 className="sy-h1 asso-title" style={{ fontSize: 36 }}>
+              <h1 className="sy-h1 asso-title">
                 {CLUB.name} · {CLUB.fullName}
               </h1>
               {CLUB.verified && (
@@ -138,7 +120,7 @@ export default function ClubProfilePage() {
             </div>
           </div>
 
-          <div className="asso-actions" style={{ display: "flex", gap: 10, paddingBottom: 8 }}>
+          <div className="asso-actions">
             <Btn className="asso-act-contact" variant="outline">Contacter</Btn>
             <Link className="asso-act-devis" href="/experiences" style={{ textDecoration: "none" }}>
               <Btn variant="dark">Demander un devis</Btn>
@@ -150,21 +132,13 @@ export default function ClubProfilePage() {
         </div>
 
         {/* About + featured project */}
-        <div className="asso-grid" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 28 }}>
+        <div className="asso-grid">
           <div>
             <h2 className="sy-h2">À propos</h2>
             <p className="sy-body" style={{ marginTop: 10, fontSize: 16, color: "var(--ink)" }}>
               {CLUB.description}
             </p>
-            <div
-              className="asso-stats"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 12,
-                marginTop: 18,
-              }}
-            >
+            <div className="asso-stats">
               {CLUB.stats.map((s) => (
                 <Card key={s.label}>
                   <div
@@ -230,6 +204,38 @@ export default function ClubProfilePage() {
       <SiteFooter />
 
       <style>{`
+        /* Styles de base (desktop ≥ 1440). Définis ici plutôt qu'en inline pour que
+           les media queries puissent les surcharger — un style inline gagne toujours
+           sur une règle de classe, ce qui cassait la version responsive. */
+        .asso-cover { height: 220px; }
+        .asso-content { padding: 0 48px; margin-top: -60px; }
+        .asso-identity {
+          display: flex;
+          align-items: flex-end;
+          gap: 24px;
+          margin-bottom: 28px;
+        }
+        .asso-logo {
+          width: 120px;
+          height: 120px;
+          border-radius: 24px;
+          border: 4px solid var(--bg);
+          background: var(--surface);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--display);
+          font-weight: 700;
+          font-size: 44px;
+          color: var(--primary);
+          font-variation-settings: var(--display-var);
+          flex-shrink: 0;
+        }
+        .asso-title { font-size: 36px; }
+        .asso-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; }
+        .asso-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+        .asso-actions { display: flex; gap: 10px; padding-bottom: 8px; }
+
         /* Tablette : la grille passe sur une colonne, on garde la rangée d'identité horizontale */
         @media (max-width: 1024px) {
           .asso-content { padding: 0 32px; }
@@ -237,7 +243,9 @@ export default function ClubProfilePage() {
           .asso-title { font-size: 30px; }
         }
 
-        /* Mobile : on empile logo → titre → actions, façon profil mobile du mockup */
+        /* Mobile : on empile logo → titre → actions, façon profil mobile du mockup.
+           La grille étant déjà en 1 colonne, la carte "projet phare" s'empile sous
+           la section À propos au lieu d'être poussée hors écran. */
         @media (max-width: 768px) {
           .asso-cover { height: 150px; }
           .asso-content { padding: 0 16px; margin-top: -44px; }
@@ -248,11 +256,11 @@ export default function ClubProfilePage() {
             margin-bottom: 22px;
           }
           .asso-logo {
-            width: 84px !important;
-            height: 84px !important;
-            border-radius: 20px !important;
-            font-size: 30px !important;
-            border-width: 3px !important;
+            width: 84px;
+            height: 84px;
+            border-radius: 20px;
+            font-size: 30px;
+            border-width: 3px;
           }
           .asso-identity > div { padding-bottom: 0 !important; }
           .asso-title { font-size: 24px; line-height: 1.15; }
@@ -261,7 +269,7 @@ export default function ClubProfilePage() {
           .asso-actions {
             width: 100%;
             flex-wrap: wrap;
-            padding-bottom: 0 !important;
+            padding-bottom: 0;
           }
           .asso-act-devis {
             order: -1;
