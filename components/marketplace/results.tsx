@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { cx } from "@/lib/cx";
 import { Btn, Chip } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { ExperienceCard } from "@/components/ds/patterns";
@@ -47,6 +48,9 @@ export function MarketplaceResults({ experiences, filters }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Vue active en mobile (≤768px) : la carte est affichée en premier pour
+  // « trouver une activité », un bouton flottant bascule vers la liste.
+  const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
   // ─── Favoris : persistance localStorage (v1, SPEC §2 — pas de DB côté favoris) ───
   useEffect(() => {
@@ -92,9 +96,9 @@ export function MarketplaceResults({ experiences, filters }: Props) {
   const favCount = favorites.size;
 
   return (
-    <div className="marketplace-split">
+    <div className={cx("marketplace-split", `mkt-mobile-${mobileView}`)}>
       {/* Liste */}
-      <div style={{ padding: "20px var(--page-pad)", overflow: "auto" }}>
+      <div className="marketplace-list" style={{ padding: "20px var(--page-pad)", overflow: "auto" }}>
         <div
           style={{
             display: "flex", alignItems: "baseline", justifyContent: "space-between",
@@ -184,29 +188,64 @@ export function MarketplaceResults({ experiences, filters }: Props) {
           selectedId={selectedId}
           onHover={setHoveredId}
           onSelect={setSelectedId}
+          visible={mobileView === "map"}
         />
       </div>
 
+      {/* Bascule carte ↔ liste — mobile uniquement (pilule flottante centrée) */}
+      <Btn
+        variant="dark"
+        className="marketplace-toggle"
+        onClick={() => setMobileView((v) => (v === "map" ? "list" : "map"))}
+        icon={<Icon name={mobileView === "map" ? "menu" : "map"} size={15} color="#fff" />}
+        aria-label={mobileView === "map" ? "Afficher la liste" : "Afficher la carte"}
+      >
+        {mobileView === "map" ? "Liste" : "Carte"}
+      </Btn>
+
       <style>{`
+        /* Conteneur plein écran : en-tête (hauteur naturelle) + zone carte/liste
+           (flex:1 → remplit tout le reste, s'adapte à l'ouverture des filtres). */
+        .marketplace-viewport {
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        .marketplace-header { position: relative; z-index: 20; flex: none; }
+        /* Zone carte/liste : remplit l'écran entre l'en-tête et le footer.
+           La carte occupe 100% de la hauteur, la liste défile indépendamment. */
         .marketplace-split {
           display: grid;
           grid-template-columns: 1.05fr 1fr;
           flex: 1;
           min-height: 0;
         }
-        .marketplace-map { position: relative; min-height: 600px; }
+        .marketplace-list { min-height: 0; }
+        .marketplace-map { position: relative; min-height: 0; }
+        .marketplace-toggle { display: none; }
         .experience-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 16px;
         }
-        @media (max-width: 1024px) {
-          .marketplace-split { grid-template-columns: 1fr; }
-          .marketplace-map { height: 420px; min-height: 420px; }
-        }
         @media (max-width: 768px) {
+          /* Mobile : une seule vue à la fois, carte affichée en premier,
+             bascule via la pilule flottante. */
+          .marketplace-split { grid-template-columns: 1fr; }
           .experience-grid { grid-template-columns: 1fr; }
-          .marketplace-map { display: none; }
+          .mkt-mobile-map .marketplace-list { display: none; }
+          .mkt-mobile-list .marketplace-map { display: none; }
+          .mkt-mobile-list .marketplace-list { padding-bottom: 84px; }
+          .marketplace-toggle {
+            display: inline-flex;
+            position: fixed;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            z-index: 30;
+            border-radius: 999px;
+            box-shadow: var(--shadow-md);
+          }
         }
       `}</style>
     </div>

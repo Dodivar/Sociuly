@@ -21,6 +21,9 @@ type Props = {
   selectedId: string | null;
   onHover: (id: string | null) => void;
   onSelect: (id: string | null) => void;
+  // En mobile la carte est masquée (display:none) quand on bascule sur la liste :
+  // au retour, MapLibre doit recalculer ses dimensions (conteneur ré-affiché).
+  visible?: boolean;
   style?: CSSProperties;
 };
 
@@ -66,6 +69,7 @@ export function InteractiveMarketMap({
   selectedId,
   onHover,
   onSelect,
+  visible = true,
   style,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -203,6 +207,15 @@ export function InteractiveMarketMap({
       styleMarkerPill(entry.pill, id === hoveredId || id === selectedId);
     }
   }, [hoveredId, selectedId, experiences]);
+
+  // Recalcule les dimensions quand la carte redevient visible (toggle mobile) :
+  // un conteneur masqué (display:none) a une taille nulle au moment de l'init.
+  useEffect(() => {
+    if (visible && ready) {
+      // rAF : attendre que le conteneur ait repris ses dimensions après l'affichage.
+      requestAnimationFrame(() => mapRef.current?.resize());
+    }
+  }, [visible, ready]);
 
   // Position en pixels du popup superposé (recalculée à chaque move via `tick`).
   const popupPoint =
