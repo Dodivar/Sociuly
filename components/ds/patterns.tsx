@@ -282,7 +282,13 @@ const TOPNAV_ITEMS = [
 export function TopNav({
   active,
   variant = "default",
-}: { active?: string; variant?: "default" | "transparent" }) {
+  account,
+}: {
+  active?: string;
+  variant?: "default" | "transparent";
+  /** Quand fourni, affiche l'état connecté (org_buyer) au lieu des CTA d'auth. */
+  account?: { name: string; initials?: string };
+}) {
   return (
     <nav
       className="sy-topnav"
@@ -298,12 +304,27 @@ export function TopNav({
         <TopNavTabs items={TOPNAV_ITEMS} active={active} />
       </div>
       <div className="sy-topnav-actions">
-        <Link href="/inscription-club" style={{ textDecoration: "none" }} className="sy-topnav-ghost-hide">
-          <Btn variant="ghost" size="sm">Inscrire mon club</Btn>
-        </Link>
-        <Link href="/connexion" style={{ textDecoration: "none" }}>
-          <Btn variant="dark" size="sm">Se connecter</Btn>
-        </Link>
+        {account ? (
+          <Link
+            href="/compte"
+            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 10 }}
+            aria-label="Mon espace entreprise"
+          >
+            <span className="sy-small sy-topnav-ghost-hide" style={{ color: "var(--ink-2)", fontWeight: 500 }}>
+              {account.name}
+            </span>
+            <Avatar initials={account.initials ?? account.name.slice(0, 2).toUpperCase()} tone="orange" />
+          </Link>
+        ) : (
+          <>
+            <Link href="/inscription-club" style={{ textDecoration: "none" }} className="sy-topnav-ghost-hide">
+              <Btn variant="ghost" size="sm">Inscrire mon club</Btn>
+            </Link>
+            <Link href="/connexion" style={{ textDecoration: "none" }}>
+              <Btn variant="dark" size="sm">Se connecter</Btn>
+            </Link>
+          </>
+        )}
       </div>
     </nav>
   );
@@ -353,8 +374,8 @@ const FOOTER_COLS: Array<{ title: string; links: Array<[string, string]> }> = [
     title: "Entreprises",
     links: [
       ["Séminaires d'équipe", "/experiences"],
-      ["Cohésion d'équipe",   "/experiences"],
       ["Devis sur mesure",    "/experiences"],
+      ["Mon espace",          "/compte"],
       ["Études de cas",       "/"],
     ],
   },
