@@ -408,6 +408,72 @@ const QUOTES: Quote[] = [
         body: "Voici votre devis, valable jusqu'au 15 mai." },
     ],
   },
+
+  // ── sent — Klaxoon (alimente l'espace entreprise /compte) ──
+  {
+    id: "q13",
+    ref: "qr_13kLmN5pQr",
+    quoteNumber: "DEV-2026-00013",
+    status: "sent",
+    organizationName: "Klaxoon SAS",
+    organizationSiret: "81204759300025",
+    contactName: "Camille Léger · Office Manager",
+    contactEmail: "seminaires@klaxoon.example",
+    contactPhone: "06 12 34 56 78",
+    experienceTitle: "Masterclass joueur pro",
+    experienceSlug: "masterclass-joueur-pro-sig",
+    clubName: "SIG Strasbourg",
+    projectTitle: "Mini-bus du club",
+    requestedDateISO: "2026-07-18",
+    requestedTime: "18:00",
+    participants: 50,
+    location: "at_venue",
+    lines: [
+      { id: "l1", label: "Masterclass joueur professionnel", detail: "Intervention + Q&A · 2h", quantity: 1, unitPriceCents: 120_000 },
+      { id: "l2", label: "Cocktail networking", quantity: 50, unitPriceCents: 1_100 },
+    ],
+    validUntilISO: "2026-06-25",
+    createdAtLabel: "3 juin 2026",
+    sentAtLabel: "4 juin 2026",
+    revisionCount: 0,
+    thread: [
+      THREAD_REQUEST("Camille Léger", "3 juin 2026", "Soirée inspiration pour 50 managers. Masterclass + temps d'échange."),
+      { id: "t2", from: "club", author: "Laure (SIG Strasbourg)", atLabel: "4 juin 2026", kind: "sent",
+        body: "Voici notre proposition pour la soirée du 18 juillet." },
+    ],
+  },
+
+  // ── expired — Klaxoon (historique /compte) ──
+  {
+    id: "q14",
+    ref: "qr_14mZ7sT2Wp",
+    quoteNumber: "DEV-2025-00198",
+    status: "expired",
+    organizationName: "Klaxoon SAS",
+    organizationSiret: "81204759300025",
+    contactName: "Camille Léger · Office Manager",
+    contactEmail: "seminaires@klaxoon.example",
+    experienceTitle: "Mini-tournoi inter-équipes",
+    experienceSlug: "mini-tournoi-inter-equipes",
+    clubName: "SIG Strasbourg",
+    projectTitle: "Tournoi U17",
+    requestedDateISO: "2025-11-21",
+    requestedTime: "14:00",
+    participants: 32,
+    location: "at_club",
+    lines: [
+      { id: "l1", label: "Mini-tournoi inter-équipes (3h)", quantity: 32, unitPriceCents: 3_200 },
+    ],
+    validUntilISO: "2025-11-10",
+    createdAtLabel: "20 oct. 2025",
+    sentAtLabel: "22 oct. 2025",
+    revisionCount: 0,
+    thread: [
+      THREAD_REQUEST("Camille Léger", "20 oct. 2025", "Tournoi convivial pour clôturer notre séminaire."),
+      { id: "t2", from: "club", author: "Laure (SIG Strasbourg)", atLabel: "22 oct. 2025", kind: "sent",
+        body: "Devis pour le mini-tournoi." },
+    ],
+  },
 ];
 
 // TODO(api): scoper sur le club du club_admin connecté (Prisma).
@@ -416,8 +482,9 @@ export async function getQuotesForClub(_clubId: string): Promise<Quote[]> {
 }
 
 // TODO(api): scoper sur l'Organization de l'org_buyer connecté (Prisma).
+// Mock : on filtre sur l'organisation de démonstration (cf. mock-org DEMO_ORG_NAME).
 export async function getQuotesForOrg(_orgId?: string): Promise<Quote[]> {
-  return QUOTES;
+  return QUOTES.filter((q) => q.organizationName === "Klaxoon SAS");
 }
 
 /** Récupère un devis par son token opaque d'URL (/devis/[ref]). */
