@@ -355,10 +355,10 @@ const FOOTER_COLS: Array<{ title: string; links: Array<[string, string]> }> = [
   {
     title: "Sociuly",
     links: [
-      ["Comment ça marche",      "/"],
+      ["Comment ça marche",      "/comment-ca-marche"],
       ["Catalogue d'expériences", "/experiences"],
       ["Clubs partenaires",      "/clubs"],
-      ["Notre impact",           "/"],
+      ["Notre impact",           "/notre-impact"],
     ],
   },
   {
