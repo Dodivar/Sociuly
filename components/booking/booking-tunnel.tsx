@@ -41,6 +41,23 @@ import {
 type Props = {
   experience: BookingExperience;
   initial: { slotIdx: number; participants: number };
+  /** Vrai quand on arrive depuis un devis accepté : les détails sont verrouillés. */
+  locked?: boolean;
+  /** Montant TTC ferme issu du devis accepté (centimes) — prime l'estimation locale. */
+  lockedTotalCents?: number;
+  /** N° du devis accepté (bandeau de contexte). */
+  quoteNumber?: string;
+  /** Libellé du lieu verrouillé (adresse du devis ou installations du club). */
+  lockedPlace?: string;
+  /** Libellé date/créneau verrouillé issu du devis (prime le créneau catalogue). */
+  lockedSlotText?: string;
+  /** Coordonnées entreprise pré-remplies depuis le devis accepté. */
+  initialContact?: {
+    companyName: string;
+    contactName: string;
+    contactEmail: string;
+    phone: string;
+  };
 };
 
 const STEP_META: Record<StepNumber, { title: string; desc: string }> = {
@@ -58,7 +75,9 @@ const STEP_META: Record<StepNumber, { title: string; desc: string }> = {
   },
 };
 
-export function BookingTunnel({ experience, initial }: Props) {
+export function BookingTunnel({
+  experience, initial, locked, lockedTotalCents, quoteNumber, lockedPlace, lockedSlotText, initialContact,
+}: Props) {
   const router = useRouter();
   const draftKey = `sociuly_booking_${experience.ref}`;
 
@@ -76,10 +95,10 @@ export function BookingTunnel({ experience, initial }: Props) {
     addressLine: "",
     addressPostal: "",
     addressCity: "",
-    companyName: "",
-    contactName: "",
-    contactEmail: "",
-    phone: "",
+    companyName: initialContact?.companyName ?? "",
+    contactName: initialContact?.contactName ?? "",
+    contactEmail: initialContact?.contactEmail ?? "",
+    phone: initialContact?.phone ?? "",
     message: "",
     cgvAccepted: false,
   });
@@ -107,9 +126,10 @@ export function BookingTunnel({ experience, initial }: Props) {
     setErrors((p) => ({ ...p, [key]: undefined }));
   };
 
+  // Montant : verrouillé sur le devis accepté si fourni, sinon estimation locale.
   const totalCents = useMemo(
-    () => estimateCents(experience, form.participants),
-    [experience, form.participants],
+    () => (locked && lockedTotalCents != null ? lockedTotalCents : estimateCents(experience, form.participants)),
+    [locked, lockedTotalCents, experience, form.participants],
   );
   const deposit = depositCents(totalCents);
   const balance = totalCents - deposit;
@@ -119,7 +139,10 @@ export function BookingTunnel({ experience, initial }: Props) {
 
   // Valide l'étape courante ; si OK, avance (ou déclenche le paiement à l'étape 3).
   const goNext = () => {
-    const errs = validateStep(step, experience, form);
+    // En mode verrouillé, l'étape 1 (détails) provient du devis accepté : déjà
+    // validée à la contractualisation, on ne la re-valide pas (adresse incluse).
+    const skipValidation = locked && step === 1;
+    const errs = skipValidation ? {} : validateStep(step, experience, form);
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
@@ -153,7 +176,13 @@ export function BookingTunnel({ experience, initial }: Props) {
     setStep(target);
   };
 
-  const meta = STEP_META[step];
+  const meta =
+    locked && step === 1
+      ? {
+          title: "Récapitulatif de votre devis",
+          desc: "Ces détails proviennent du devis que vous avez accepté. Vérifiez-les, puis réglez l'acompte.",
+        }
+      : STEP_META[step];
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -183,6 +212,21 @@ export function BookingTunnel({ experience, initial }: Props) {
           <h1 className="sy-h1" style={{ marginBottom: 6 }}>{meta.title}</h1>
           <p className="sy-small sy-muted" style={{ marginBottom: 22 }}>{meta.desc}</p>
 
+          {locked && quoteNumber && (
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
+                padding: "12px 14px", borderRadius: "var(--radius-md)",
+                background: "var(--primary-soft)", color: "var(--primary-deep)",
+              }}
+            >
+              <Icon name="check" size={15} color="var(--primary-deep)" />
+              <span className="sy-small">
+                Devis <strong>{quoteNumber}</strong> accepté — il ne vous reste qu'à régler l'acompte.
+              </span>
+            </div>
+          )}
+
           <Card style={{ padding: "22px 24px" }}>
             {step === 1 && (
               <StepDetails
@@ -191,6 +235,9 @@ export function BookingTunnel({ experience, initial }: Props) {
                 errors={errors}
                 addressRequired={addressRequired}
                 set={set}
+                locked={locked}
+                lockedPlace={lockedPlace}
+                lockedSlotText={lockedSlotText}
               />
             )}
             {step === 2 && <StepCoordonnees form={form} errors={errors} set={set} />}
@@ -241,9 +288,9 @@ export function BookingTunnel({ experience, initial }: Props) {
           <div style={{ position: "sticky", top: 16 }}>
             <BookingSummary
               experience={experience}
-              slotText={slot ? slotLabel(slot) : "—"}
+              slotText={locked && lockedSlotText ? lockedSlotText : slot ? slotLabel(slot) : "—"}
               participants={form.participants}
-              placeText={placeText(experience, form, addressRequired)}
+              placeText={locked && lockedPlace ? lockedPlace : placeText(experience, form, addressRequired)}
               totalLabel={eurDecimal(totalCents)}
               depositLabel={eurDecimal(deposit)}
               balanceLabel={eurDecimal(balance)}
@@ -284,16 +331,31 @@ function placeText(exp: BookingExperience, form: BookingForm, addressRequired: b
 
 // ─────── Étape 1 — Détails ───────
 function StepDetails({
-  experience, form, errors, addressRequired, set,
+  experience, form, errors, addressRequired, set, locked, lockedPlace, lockedSlotText,
 }: {
   experience: BookingExperience;
   form: BookingForm;
   errors: FieldErrors;
   addressRequired: boolean;
   set: <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => void;
+  locked?: boolean;
+  lockedPlace?: string;
+  lockedSlotText?: string;
 }) {
   const { capacityMin, capacityMax, slots } = experience;
   const clamp = (n: number) => Math.min(capacityMax, Math.max(capacityMin, n));
+
+  // Mode verrouillé (post-acceptation) : récap en lecture seule, non modifiable.
+  if (locked) {
+    const slot = slots[form.slotIdx];
+    return (
+      <dl style={{ margin: 0, display: "flex", flexDirection: "column" }}>
+        <LockedRow label="Date & créneau" value={lockedSlotText ?? (slot ? slotLabel(slot) : "—")} />
+        <LockedRow label="Participants" value={`${form.participants} personnes`} />
+        <LockedRow label="Lieu" value={lockedPlace ?? placeText(experience, form, addressRequired)} />
+      </dl>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -648,6 +710,21 @@ function BookingSummary({
         <ImpactMini />
       </div>
     </Card>
+  );
+}
+
+// Ligne de récap en lecture seule (mode verrouillé, post-acceptation du devis).
+function LockedRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: "flex", alignItems: "baseline", justifyContent: "space-between",
+        gap: 16, padding: "12px 0", borderTop: "1px solid var(--line)",
+      }}
+    >
+      <dt className="sy-mono">{label}</dt>
+      <dd style={{ margin: 0, textAlign: "right", color: "var(--ink)", fontWeight: 500, fontSize: 14 }}>{value}</dd>
+    </div>
   );
 }
 
