@@ -183,7 +183,7 @@ export function QuoteCard({
   format = "Demi-journée",
   capacity = "10–40 personnes",
   withImpact = true,
-  ctaHref = "/experiences/seminaire-cohesion-sig",
+  ctaHref = "/experiences/seminaire-cohesion-sig/devis",
   style,
 }: {
   price?: number;

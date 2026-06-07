@@ -119,8 +119,8 @@ export async function getDashboardData(_clubId: string): Promise<DashboardData> 
       spark: [12, 18, 8, 22, 30, 14, 26, 38, 24, 42, 50, 36, 48, 56],
     },
     tasks: [
-      { id: "t1", label: "Envoyer le devis Klaxoon (40 pers.)", hint: "urgent", tone: "urgent" },
-      { id: "t2", label: "Répondre à 2 demandes de devis",                       tone: "warn"   },
+      { id: "t1", label: "Envoyer le devis Caisse d'Épargne (24 pers.)", hint: "urgent", tone: "urgent" },
+      { id: "t2", label: "Renvoyer le devis Decathlon (révision demandée)",            tone: "warn"   },
       { id: "t3", label: "Mettre à jour le projet école de jeunes U17",          tone: "info"   },
     ],
     // `avis` = nombre de nouveaux avis non consultés (cf. mock-reviews.ts).

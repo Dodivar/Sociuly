@@ -70,7 +70,7 @@ export function BookingStepper({
   reachable?: number;
   onStepClick?: (index: number) => void;
 }) {
-  const steps = ["Détails", "Coordonnées", "Acompte", "Confirmation"];
+  const steps = ["Récapitulatif", "Coordonnées", "Acompte", "Confirmation"];
   const maxReachable = reachable ?? active;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 22, flex: 1, maxWidth: 720 }}>

@@ -51,8 +51,10 @@ export function ExperienceBookingRail({ experience }: { experience: ExperienceDe
 
   const clamp = (n: number) => Math.min(capacityMax, Math.max(capacityMin, n));
 
-  // Le CTA transmet les choix à l'étape devis (SPEC §6).
-  const ctaHref = `/reserver/${slug}?date=${slot.date}&heure=${encodeURIComponent(slot.time)}&participants=${participants}`;
+  // Le CTA ouvre la demande de devis (SPEC §4/§6) — PAS le paiement. Le paiement
+  // de l'acompte n'arrive qu'après acceptation du devis (/reserver/[bookingRef]).
+  // On transmet la présélection date / heure / participants au formulaire.
+  const ctaHref = `/experiences/${slug}/devis?date=${slot.date}&heure=${encodeURIComponent(slot.time)}&participants=${participants}`;
 
   return (
     <div
