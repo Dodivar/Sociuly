@@ -8,7 +8,9 @@
 // centimes (Int), jamais de float (SPEC §3).
 
 import type { ExperienceHue } from "@/components/ds/patterns";
-import { getMarketplaceExperiences, type MarketplaceExperience } from "./experiences";
+import { prisma } from "@/lib/prisma";
+import { categoryFromModuleType, CATEGORY_LABEL, HUE_BY_CATEGORY } from "./experiences";
+import { cityFromName } from "./geo";
 
 // ─────── Modèle de prix (SPEC §3 — Experience.priceModel) ───────
 export type PriceModel = "per_person" | "fixed";
@@ -112,24 +114,6 @@ export const eur = (cents: number) =>
 export const eurDecimal = (cents: number) =>
   `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
-/** Slug club dérivé du nom (mock — sera Club.slug en base). */
-function clubSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-/** Parse « 20–60 pers. » → [20, 60]. */
-function parseCapacity(label: string): [number, number] {
-  const nums = label.match(/\d+/g)?.map(Number) ?? [];
-  if (nums.length >= 2) return [nums[0], nums[1]];
-  if (nums.length === 1) return [nums[0], nums[0]];
-  return [10, 40];
-}
-
 const HUE_GRADIENTS: Record<ExperienceHue, string[]> = {
   green:  ["linear-gradient(165deg, #1f4b3f 0%, #14332b 100%)", "linear-gradient(135deg, #1f5b58 0%, #14332b 100%)"],
   orange: ["linear-gradient(165deg, #c0451f 0%, #7d2c12 100%)", "linear-gradient(135deg, #e8623d 0%, #c0451f 100%)"],
@@ -191,27 +175,6 @@ const REVIEW_POOL: ExperienceReview[] = [
     body: "Tout était fluide, de la demande de devis au paiement. Savoir que ça finance un projet local a beaucoup plu en interne." },
 ];
 
-// Tarif au participant (centimes) pour les expériences phares « per_person ».
-const PER_PERSON_RATE: Record<string, number> = {
-  "journee-immersion-sig": 12_000,
-  "seminaire-cohesion-rhenus": 4_500,
-  "atelier-cohesion-nancy": 3_800,
-  "cohesion-aviron-metz": 6_500,
-};
-
-const CLUB_META: Record<string, { responseTime: string; experienceCount: number; typeLabel: string }> = {
-  "sig-strasbourg": { responseTime: "répond en 2h", experienceCount: 12, typeLabel: "club pro" },
-};
-
-const FORMAT_BY_CATEGORY: Record<string, string> = {
-  match_vip: "Journée",
-  cohesion: "Demi-journée",
-  initiation: "Demi-journée",
-  tournoi: "Journée",
-  masterclass: "Soirée",
-  coulisses: "Soirée",
-};
-
 // Lieu d'exécution dérivé de la catégorie (SPEC §3). Les expériences de cohésion
 // se déroulent typiquement chez l'entreprise (adresse à renseigner) ; les matchs
 // VIP / coulisses / masterclass au stade ; les initiations / tournois au club.
@@ -224,95 +187,180 @@ const LOCATION_BY_CATEGORY: Record<string, ExperienceLocation> = {
   cohesion: "at_client",
 };
 
-function toDetail(x: MarketplaceExperience, reviewCount: number): ExperienceDetail {
-  const [capacityMin, capacityMax] = parseCapacity(x.capacityLabel);
-  const cslug = clubSlug(x.club);
-  const meta = CLUB_META[cslug] ?? { responseTime: "répond en 24h", experienceCount: 4, typeLabel: "club partenaire" };
-
-  const perPerson = PER_PERSON_RATE[x.slug];
-  const priceModel: PriceModel = perPerson ? "per_person" : "fixed";
-  const basePriceCents = x.price * 100;
-  const pricePerPersonCents = perPerson ?? 0;
-  const fromPriceCents = priceModel === "per_person" ? perPerson * capacityMin : basePriceCents;
-
-  const format = FORMAT_BY_CATEGORY[x.category] ?? "Sur mesure";
-  const location = LOCATION_BY_CATEGORY[x.category] ?? "flexible";
-  const venueLabel = `${x.club} · ${CITY_NICE[x.city] ?? x.city}`;
-  const toneByHue: ExperienceClub["tone"] =
-    x.hue === "green" || x.hue === "teal" ? "green" : x.hue === "yellow" ? "yellow" : "orange";
-
-  return {
-    id: x.id,
-    slug: x.slug,
-    title: x.title,
-    categoryLabel: x.category,
-    cityLabel: `${CITY_NICE[x.city] ?? x.city}`,
-    rating: x.rating,
-    reviewCount,
-    verified: true,
-    hue: x.hue,
-    format,
-    location,
-    venueLabel,
-    capacityMin,
-    capacityMax,
-    priceModel,
-    pricePerPersonCents,
-    basePriceCents,
-    fromPriceCents,
-    facts: [
-      ["Capacité", x.capacityLabel, "users"],
-      ["Format", format === "Journée" ? "Journée (≈ 6h)" : format, "calendar"],
-      ["Lieu", `${x.club} · ${CITY_NICE[x.city] ?? x.city}`, "pin"],
-      ["Inclus", "Encadrement diplômé", "check"],
-    ],
-    description: [
-      `Une expérience premium conçue et animée par ${x.club}. Vos équipes sont accueillies et encadrées par le staff du club, dans un cadre sportif unique — un format clé en main, du premier échange au jour J.`,
-      "Tout est organisé par le club, de l'encadrement diplômé à la logistique. Et chaque expérience finance directement un projet de saison du club.",
-    ],
-    included: [
-      "Encadrement par le staff du club", "Animation et matériel sur place",
-      "Coordination logistique complète", "Adaptation à vos contraintes",
-      "Photos & vidéo de l'événement", "Devis ferme sous 48h",
-    ],
-    photos: buildGallery(x.title, x.hue),
-    slots: buildSlots(x.availableFrom),
-    club: {
-      slug: cslug,
-      name: x.club,
-      initials: x.club.split(" ").map((w) => w[0]).join("").slice(0, 3).toUpperCase(),
-      typeLabel: meta.typeLabel,
-      experienceCount: meta.experienceCount,
-      responseTime: meta.responseTime,
-      tone: toneByHue,
-    },
-    project: {
-      clubSlug: cslug,
-      title: x.funds,
-      raisedCents: Math.round(x.goal * 40_000 * 100),
-      targetCents: 40_000 * 100,
-      goal: x.goal,
-    },
-    reviews: REVIEW_POOL.slice(0, Math.min(REVIEW_POOL.length, Math.max(2, reviewCount % REVIEW_POOL.length || REVIEW_POOL.length))),
-  };
-}
-
 const CITY_NICE: Record<string, string> = {
   strasbourg: "Strasbourg (67)",
   nancy: "Nancy (54)",
   metz: "Metz (57)",
 };
 
-/** Récupère le détail d'une expérience par slug (ou null si introuvable). */
+const FORMAT_LABEL: Record<string, string> = {
+  demi_journee: "Demi-journée",
+  journee: "Journée",
+  soiree: "Soirée",
+  sur_mesure: "Sur mesure",
+};
+
+const CLUB_TYPE_LABEL: Record<string, string> = {
+  association_1901: "association",
+  club_pro: "club pro",
+  sasp: "club pro",
+  autre: "club partenaire",
+};
+
+// Forme du JSON Experience.availability (SPEC §2 — règles récurrentes indicatives).
+type AvailabilityShape = {
+  weekdays?: number[];
+  timeSlots?: string[];
+  leadTimeDays?: number;
+  blackoutDates?: string[];
+};
+
+/**
+ * Expanse les règles de disponibilité récurrentes (JSON) en ~6 créneaux à venir.
+ * Repli sur `buildSlots(createdAt)` si l'expérience n'a pas encore de règles.
+ */
+function slotsFromAvailability(raw: unknown, createdAt: Date): ExperienceSlot[] {
+  const av = (raw ?? null) as AvailabilityShape | null;
+  if (!av || !av.weekdays?.length) return buildSlots(createdAt.toISOString().slice(0, 10));
+  const times = av.timeSlots?.length ? av.timeSlots : ["09:00"];
+  const blackout = new Set(av.blackoutDates ?? []);
+  const cursor = new Date();
+  cursor.setDate(cursor.getDate() + (av.leadTimeDays ?? 7));
+  const slots: ExperienceSlot[] = [];
+  for (let guard = 0; guard < 180 && slots.length < 6; guard++) {
+    const iso = cursor.toISOString().slice(0, 10);
+    if (av.weekdays.includes(cursor.getDay()) && !blackout.has(iso)) {
+      slots.push({ date: iso, time: times[slots.length % times.length] });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return slots.length ? slots : buildSlots(createdAt.toISOString().slice(0, 10));
+}
+
+/** Récupère le détail d'une expérience publiée par slug (ou null si introuvable). */
 export async function getExperienceBySlug(slug: string): Promise<ExperienceDetail | null> {
-  const all = await getMarketplaceExperiences();
-  const x = all.find((e) => e.slug === slug);
-  if (!x) return null;
-  return toDetail(x, x.reviews);
+  const exp = await prisma.experience.findUnique({
+    where: { slug },
+    include: {
+      club: true,
+      project: true,
+      segments: { orderBy: { order: "asc" }, include: { module: true } },
+      photos: { orderBy: { order: "asc" } },
+    },
+  });
+  if (!exp || exp.status !== "published") return null;
+
+  const category = categoryFromModuleType(exp.segments[0]?.module?.type ?? null);
+  const hue = HUE_BY_CATEGORY[category];
+  const city = cityFromName(exp.club.city);
+  const formatLabel = FORMAT_LABEL[exp.format] ?? "Sur mesure";
+  const location =
+    (exp.segments[0]?.module?.location as ExperienceLocation | undefined) ??
+    LOCATION_BY_CATEGORY[category] ??
+    "flexible";
+  const venueLabel = `${exp.club.name} · ${CITY_NICE[city] ?? exp.club.city}`;
+  const toneByHue: ExperienceClub["tone"] =
+    hue === "green" || hue === "teal" ? "green" : hue === "yellow" ? "yellow" : "orange";
+
+  const priceModel = exp.priceModel as PriceModel;
+  const pricePerPersonCents = priceModel === "per_person" ? exp.basePriceCents : 0;
+  const fromPriceCents =
+    priceModel === "per_person" ? exp.basePriceCents * exp.capacityMin : exp.basePriceCents;
+
+  // Avis réels (Review liés aux Booking de cette expérience). Repli démo si aucun.
+  const dbReviews = await prisma.review.findMany({
+    where: { booking: { experienceId: exp.id } },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    include: { organization: { select: { name: true } } },
+  });
+  const tones = ["orange", "green", "yellow", "ink"] as const;
+  const reviews: ExperienceReview[] = dbReviews.length
+    ? dbReviews.map((r, i) => ({
+        id: r.id,
+        author: r.organization.name,
+        date: r.createdAt.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
+        rating: r.rating,
+        body: r.comment ?? "",
+        tone: tones[i % tones.length],
+      }))
+    : REVIEW_POOL.slice(0, 4);
+
+  const experienceCount = await prisma.experience.count({
+    where: { clubId: exp.clubId, status: "published" },
+  });
+
+  return {
+    id: exp.id,
+    slug: exp.slug,
+    title: exp.title,
+    categoryLabel: CATEGORY_LABEL[category],
+    cityLabel: CITY_NICE[city] ?? exp.club.city,
+    rating: exp.ratingAvg ?? 0,
+    reviewCount: exp.reviewsCount,
+    verified: exp.club.status === "active",
+    hue,
+    format: formatLabel,
+    location,
+    venueLabel,
+    capacityMin: exp.capacityMin,
+    capacityMax: exp.capacityMax,
+    priceModel,
+    pricePerPersonCents,
+    basePriceCents: exp.basePriceCents,
+    fromPriceCents,
+    facts: [
+      ["Capacité", `${exp.capacityMin}–${exp.capacityMax} pers.`, "users"],
+      ["Format", formatLabel === "Journée" ? "Journée (≈ 6h)" : formatLabel, "calendar"],
+      ["Lieu", venueLabel, "pin"],
+      ["Inclus", "Encadrement diplômé", "check"],
+    ],
+    description: exp.description
+      ? [exp.description]
+      : [
+          `Une expérience premium conçue et animée par ${exp.club.name}. Vos équipes sont accueillies et encadrées par le staff du club, dans un cadre sportif unique — un format clé en main, du premier échange au jour J.`,
+          "Tout est organisé par le club, de l'encadrement diplômé à la logistique. Et chaque expérience finance directement un projet de saison du club.",
+        ],
+    included: [
+      "Encadrement par le staff du club", "Animation et matériel sur place",
+      "Coordination logistique complète", "Adaptation à vos contraintes",
+      "Photos & vidéo de l'événement", "Devis ferme sous 48h",
+    ],
+    // TODO(galerie): mapper exp.photos (Supabase Storage) quand des images sont
+    // uploadées ; en attendant, dégradés cohérents avec la teinte.
+    photos: buildGallery(exp.title, hue),
+    slots: slotsFromAvailability(exp.availability, exp.createdAt),
+    club: {
+      slug: exp.club.slug,
+      name: exp.club.name,
+      initials: exp.club.name.split(" ").map((w) => w[0]).join("").slice(0, 3).toUpperCase(),
+      typeLabel: CLUB_TYPE_LABEL[exp.club.clubType] ?? "club partenaire",
+      experienceCount,
+      // TODO(schéma): temps de réponse club non modélisé — valeur par défaut.
+      responseTime: "répond en 24h",
+      tone: toneByHue,
+    },
+    project: exp.project
+      ? {
+          clubSlug: exp.club.slug,
+          title: exp.project.title,
+          raisedCents: exp.project.collectedAmount,
+          targetCents: exp.project.targetAmount,
+          goal:
+            exp.project.targetAmount > 0
+              ? exp.project.collectedAmount / exp.project.targetAmount
+              : 0,
+        }
+      : { clubSlug: exp.club.slug, title: "", raisedCents: 0, targetCents: 0, goal: 0 },
+    reviews,
+  };
 }
 
 /** Tous les slugs publiés (generateStaticParams). */
 export async function getAllExperienceSlugs(): Promise<string[]> {
-  const all = await getMarketplaceExperiences();
-  return all.map((e) => e.slug);
+  const rows = await prisma.experience.findMany({
+    where: { status: "published" },
+    select: { slug: true },
+  });
+  return rows.map((r) => r.slug);
 }

@@ -1,8 +1,11 @@
 node_modules/
 .next/
 out/
+.env
 .env*.local
 *.tsbuildinfo
 .DS_Store
 .codegraph/
 __pycache__/
+
+/lib/generated/prisma

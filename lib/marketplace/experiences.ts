@@ -1,10 +1,13 @@
-// Catalogue marketplace (expériences publiées) — source de vérité côté front v1.
+// Catalogue marketplace (expériences publiées) — données servies par Prisma.
 // Cf. SPEC.md §3 (Experience) et §6 (filtres marketplace : prix, rayon km, date,
-// ville, tri). TODO(api): remplacer par un fetch Prisma filtré côté serveur
-// (Experience.status = 'published' + jointure géo Club.geo). Garder la signature
-// async et les enums alignés sur le schéma.
+// ville, tri). `getMarketplaceExperiences()` lit les Experience.status='published'
+// (jointure Club + Project + géo PostGIS). Le filtrage/tri reste en mémoire via
+// `filterAndSortExperiences` (helper pur conservé). Montants en cents en base,
+// exposés en euros côté carte.
 
 import type { ExperienceHue } from "@/components/ds/patterns";
+import { prisma } from "@/lib/prisma";
+import { CITY_CENTERS, cityFromName, haversineKm } from "./geo";
 
 // ─────── Villes pilotes (SPEC §4 — autocomplete limité à 3 villes en v1) ───────
 export type City = "strasbourg" | "nancy" | "metz";
@@ -116,96 +119,125 @@ export const DEFAULT_FILTERS: MarketplaceFilters = {
   q: "",
 };
 
-// ─────── Données mock ───────
-const CATALOG: MarketplaceExperience[] = [
-  {
-    id: "e1", slug: "journee-immersion-sig", title: "Journée immersion · SIG Strasbourg",
-    price: 480, category: "match_vip", club: "SIG Strasbourg", city: "strasbourg",
-    distanceKm: 2, rating: 4.9, reviews: 62, hue: "green", funds: "École de jeunes U17",
-    goal: 0.62, capacityLabel: "20–60 pers.", availableFrom: "2026-06-15", lat: 48.5839, lng: 7.7455,
-  },
-  {
-    id: "e2", slug: "seminaire-cohesion-rhenus", title: "Séminaire cohésion · demi-journée",
-    price: 1200, category: "cohesion", club: "SIG Strasbourg", city: "strasbourg",
-    distanceKm: 4, rating: 4.8, reviews: 47, hue: "teal", funds: "Mini-bus du club",
-    goal: 0.55, capacityLabel: "10–40 pers.", availableFrom: "2026-06-20", lat: 48.5601, lng: 7.7330,
-  },
-  {
-    id: "e3", slug: "initiation-rugby-encadree", title: "Initiation rugby encadrée",
-    price: 900, category: "initiation", club: "RC Strasbourg", city: "strasbourg",
-    distanceKm: 7, rating: 4.9, reviews: 38, hue: "orange", funds: "Vestiaires neufs",
-    goal: 0.78, capacityLabel: "15–30 pers.", availableFrom: "2026-07-01", lat: 48.6012, lng: 7.7905,
-  },
-  {
-    id: "e4", slug: "mini-tournoi-inter-equipes", title: "Mini-tournoi inter-équipes",
-    price: 1500, category: "tournoi", club: "ASPTT Strasbourg", city: "strasbourg",
-    distanceKm: 11, rating: 4.7, reviews: 41, hue: "yellow", funds: "Maillots saison",
-    goal: 0.45, capacityLabel: "20–80 pers.", availableFrom: "2026-06-28", lat: 48.5448, lng: 7.7108,
-  },
-  {
-    id: "e5", slug: "masterclass-joueur-pro-sig", title: "Masterclass joueur pro",
-    price: 1800, category: "masterclass", club: "SIG Strasbourg", city: "strasbourg",
-    distanceKm: 3, rating: 5.0, reviews: 19, hue: "rust", funds: "Stage été U13",
-    goal: 0.85, capacityLabel: "10–40 pers.", availableFrom: "2026-09-05", lat: 48.5752, lng: 7.7648,
-  },
-  {
-    id: "e6", slug: "cocktail-visite-coulisses-strasbourg", title: "Cocktail & visite des coulisses",
-    price: 1100, category: "coulisses", club: "SIG Strasbourg", city: "strasbourg",
-    distanceKm: 5, rating: 4.5, reviews: 12, hue: "sand", funds: "École de jeunes",
-    goal: 0.15, capacityLabel: "15–50 pers.", availableFrom: "2026-07-12", lat: 48.5519, lng: 7.7802,
-  },
-  {
-    id: "e7", slug: "atelier-cohesion-nancy", title: "Atelier cohésion d'équipe",
-    price: 750, category: "cohesion", club: "ASNL Nancy", city: "nancy",
-    distanceKm: 6, rating: 4.6, reviews: 28, hue: "teal", funds: "Section féminine",
-    goal: 0.40, capacityLabel: "10–35 pers.", availableFrom: "2026-06-18", lat: 48.6952, lng: 6.2112,
-  },
-  {
-    id: "e8", slug: "initiation-handball-nancy", title: "Initiation handball encadrée",
-    price: 680, category: "initiation", club: "Grand Nancy ASPTT", city: "nancy",
-    distanceKm: 9, rating: 4.7, reviews: 22, hue: "orange", funds: "Matériel d'entraînement",
-    goal: 0.52, capacityLabel: "12–30 pers.", availableFrom: "2026-07-08", lat: 48.6701, lng: 6.1503,
-  },
-  {
-    id: "e9", slug: "match-vip-hospitalites-nancy", title: "Match VIP & hospitalités",
-    price: 2200, category: "match_vip", club: "ASNL Nancy", city: "nancy",
-    distanceKm: 4, rating: 4.6, reviews: 28, hue: "green", funds: "Centre de formation",
-    goal: 0.30, capacityLabel: "20–60 pers.", availableFrom: "2026-08-22", lat: 48.7005, lng: 6.2008,
-  },
-  {
-    id: "e10", slug: "mini-tournoi-nancy", title: "Mini-tournoi multisports",
-    price: 1350, category: "tournoi", club: "Grand Nancy ASPTT", city: "nancy",
-    distanceKm: 14, rating: 4.4, reviews: 16, hue: "yellow", funds: "Tournoi national U15",
-    goal: 0.25, capacityLabel: "25–80 pers.", availableFrom: "2026-09-14", lat: 48.6803, lng: 6.2205,
-  },
-  {
-    id: "e11", slug: "masterclass-coach-metz", title: "Masterclass coach professionnel",
-    price: 1650, category: "masterclass", club: "Metz Handball", city: "metz",
-    distanceKm: 3, rating: 4.9, reviews: 31, hue: "rust", funds: "Académie jeunes",
-    goal: 0.68, capacityLabel: "10–40 pers.", availableFrom: "2026-06-25", lat: 49.0962, lng: 6.2181,
-  },
-  {
-    id: "e12", slug: "cocktail-coulisses-metz", title: "Cocktail & coulisses de l'Arena",
-    price: 980, category: "coulisses", club: "Metz Handball", city: "metz",
-    distanceKm: 5, rating: 4.7, reviews: 18, hue: "sand", funds: "Rénovation tribune",
-    goal: 0.48, capacityLabel: "15–50 pers.", availableFrom: "2026-07-20", lat: 49.1102, lng: 6.1903,
-  },
-  {
-    id: "e13", slug: "cohesion-aviron-metz", title: "Cohésion sur l'eau · aviron",
-    price: 1420, category: "cohesion", club: "Société Nautique Metz", city: "metz",
-    distanceKm: 8, rating: 4.8, reviews: 24, hue: "teal", funds: "Flotte de bateaux",
-    goal: 0.60, capacityLabel: "8–24 pers.", availableFrom: "2026-07-03", lat: 49.1251, lng: 6.1604,
-  },
-  {
-    id: "e14", slug: "initiation-escrime-metz", title: "Initiation escrime encadrée",
-    price: 820, category: "initiation", club: "Cercle d'Escrime Metz", city: "metz",
-    distanceKm: 12, rating: 4.6, reviews: 14, hue: "orange", funds: "Équipements de protection",
-    goal: 0.35, capacityLabel: "10–24 pers.", availableFrom: "2026-08-10", lat: 49.1051, lng: 6.1502,
-  },
-];
+// ─────── Dérivation catégorie / teinte (champs présentationnels non stockés) ───────
+// SPEC §3 ne stocke pas `category`/`hue` : on les dérive du type du 1er module
+// de l'expérience (segment.order = 0). Mapping déterministe.
+export function categoryFromModuleType(type: string | null): Category {
+  switch (type) {
+    case "match_vip": return "match_vip";
+    case "initiation": return "initiation";
+    case "mini_tournoi": return "tournoi";
+    case "masterclass_joueur":
+    case "presentation_coach": return "masterclass";
+    case "cocktail":
+    case "visite_coulisses": return "coulisses";
+    case "atelier_cohesion":
+    case "exercice_adapte":
+    default: return "cohesion";
+  }
+}
 
+export const HUE_BY_CATEGORY: Record<Category, ExperienceHue> = {
+  match_vip: "green",
+  cohesion: "teal",
+  initiation: "orange",
+  tournoi: "yellow",
+  masterclass: "rust",
+  coulisses: "sand",
+};
+
+// Ligne brute renvoyée par la requête catalogue (géo via PostGIS, montants en cents).
+type CatalogRow = {
+  id: string;
+  slug: string;
+  title: string;
+  base_price_cents: number;
+  capacity_min: number;
+  capacity_max: number;
+  rating_avg: number | null;
+  reviews_count: number;
+  club_name: string;
+  club_city: string;
+  lat: number | null;
+  lng: number | null;
+  project_title: string | null;
+  project_collected: number | null;
+  project_target: number | null;
+  created_at: Date;
+  primary_type: string | null;
+};
+
+/**
+ * Expériences publiées du catalogue (Experience.status='published'), jointes au
+ * Club (géo PostGIS lat/lng) et au Projet financé. Le filtrage/tri est appliqué
+ * ensuite en mémoire par `filterAndSortExperiences`.
+ */
 export async function getMarketplaceExperiences(): Promise<MarketplaceExperience[]> {
-  return CATALOG;
+  const rows = await prisma.$queryRaw<CatalogRow[]>`
+    SELECT
+      e.id,
+      e.slug,
+      e.title,
+      e."basePriceCents"   AS base_price_cents,
+      e."capacityMin"      AS capacity_min,
+      e."capacityMax"      AS capacity_max,
+      e."ratingAvg"        AS rating_avg,
+      e."reviewsCount"     AS reviews_count,
+      c.name               AS club_name,
+      c.city               AS club_city,
+      ST_Y(c.geo::geometry) AS lat,
+      ST_X(c.geo::geometry) AS lng,
+      p.title              AS project_title,
+      p."collectedAmount"  AS project_collected,
+      p."targetAmount"     AS project_target,
+      e."createdAt"        AS created_at,
+      (
+        SELECT m.type
+        FROM "ExperienceSegment" s
+        JOIN "ExperienceModule" m ON m.id = s."moduleId"
+        WHERE s."experienceId" = e.id
+        ORDER BY s."order" ASC
+        LIMIT 1
+      )                    AS primary_type
+    FROM "Experience" e
+    JOIN "Club" c ON c.id = e."clubId"
+    LEFT JOIN "Project" p ON p.id = e."projectId"
+    WHERE e.status = 'published'
+  `;
+
+  return rows.map((r) => {
+    const category = categoryFromModuleType(r.primary_type);
+    const city = cityFromName(r.club_city);
+    const lat = r.lat ?? CITY_CENTERS[city].lat;
+    const lng = r.lng ?? CITY_CENTERS[city].lng;
+    const distanceKm = Math.round(haversineKm(CITY_CENTERS[city], { lat, lng }) * 10) / 10;
+    const goal =
+      r.project_target && r.project_target > 0
+        ? Math.round(((r.project_collected ?? 0) / r.project_target) * 100) / 100
+        : 0;
+
+    return {
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      price: Math.round(r.base_price_cents / 100),
+      category,
+      club: r.club_name,
+      city,
+      distanceKm,
+      rating: r.rating_avg ?? 0,
+      reviews: r.reviews_count,
+      hue: HUE_BY_CATEGORY[category],
+      funds: r.project_title ?? "",
+      goal,
+      capacityLabel: `${r.capacity_min}–${r.capacity_max} pers.`,
+      // TODO(schéma): la disponibilité n'est pas modélisée (§2 = JSON simple à venir).
+      // En attendant on expose la date de création → le filtre « date » est dégradé.
+      availableFrom: r.created_at.toISOString().slice(0, 10),
+      lat,
+      lng,
+    };
+  });
 }
 
 // Normalise une chaîne pour la recherche : minuscules + sans accents/diacritiques.

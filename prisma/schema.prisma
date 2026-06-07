@@ -1,0 +1,507 @@
+// Schéma Prisma — Sociuly (modèle B2B v2, cf. CLAUDE.md §3 / SPEC.md §4).
+// Source de vérité du modèle de données. Tous les montants en `cents` (Int),
+// devise implicite EUR. Triplet HT / TVA / TTC obligatoire (clubs pros assujettis
+// + TVA 20 % décidée pour Sociuly et les clubs).
+//
+// PostGIS (Club.geo), RLS, index GIN full-text et le trigger de synchro
+// auth.users → public.User sont gérés dans la migration SQL manuelle
+// (voir prisma/manual/0001_extensions_rls_auth.sql) car non exprimables en DSL Prisma.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7 : les URLs de connexion ne vivent plus ici. Elles sont passées :
+  //  - à la CLI (migrate) via prisma.config.ts → DIRECT_URL (port 5432, hors pooler) ;
+  //  - au runtime via le driver adapter @prisma/adapter-pg dans lib/prisma.ts → DATABASE_URL
+  //    (connexion poolée pgBouncer port 6543, requise en serverless Vercel).
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+
+enum UserRole {
+  org_buyer
+  club_admin
+  sociuly_admin
+}
+
+enum OrgSizeBucket {
+  tpe // < 10
+  pme // 10–249
+  eti // 250–4999
+  ge //  5000+
+}
+
+enum ClubType {
+  association_1901
+  club_pro
+  sasp
+  autre
+}
+
+enum ClubStatus {
+  pending_verification
+  active
+  suspended
+}
+
+enum ClubMemberRole {
+  president
+  manager
+  treasurer
+  member
+}
+
+enum ProjectStatus {
+  draft
+  active
+  funded
+  archived
+}
+
+enum ModuleType {
+  presentation_coach
+  atelier_cohesion
+  initiation
+  exercice_adapte
+  mini_tournoi
+  match_vip
+  cocktail
+  visite_coulisses
+  masterclass_joueur
+  autre
+}
+
+enum ModuleLocation {
+  at_client
+  at_club
+  at_venue
+  flexible
+}
+
+enum PriceModel {
+  fixed
+  per_person
+}
+
+enum ModuleStatus {
+  draft
+  active
+  archived
+}
+
+enum ExperienceFormat {
+  demi_journee
+  journee
+  soiree
+  sur_mesure
+}
+
+enum ExperienceStatus {
+  draft
+  published
+  paused
+  archived
+}
+
+enum Daypart {
+  matin
+  apres_midi
+  soir
+}
+
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  refused
+  expired
+}
+
+enum QuoteEventActor {
+  org
+  club
+}
+
+enum QuoteEventKind {
+  request
+  sent
+  revision
+  decision
+  note
+}
+
+enum BookingStatus {
+  pending_quote
+  quote_accepted
+  deposit_paid
+  confirmed
+  in_progress
+  completed
+  cancelled_by_org
+  cancelled_by_club
+  refunded
+}
+
+// ─────────────────────────── Modèles ───────────────────────────
+
+/// Utilisateur applicatif. `id` = UUID de `auth.users` (Supabase Auth) — la ligne
+/// est créée automatiquement par le trigger handle_new_user (cf. migration SQL).
+model User {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  fullName  String?
+  phone     String?
+  role      UserRole @default(org_buyer)
+
+  // org_buyer : rattachement à une organisation acheteuse (nullable sinon).
+  organizationId String?       @db.Uuid
+  organization   Organization? @relation("OrgMembers", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  // Contact principal d'une organisation (relation inverse de Organization.primaryContact).
+  primaryOf    Organization[] @relation("OrgPrimaryContact")
+  clubMembers  ClubMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+/// Entreprise acheteuse (le « buyer » est toujours une Organization — B2B only, §2).
+model Organization {
+  id          String         @id @default(uuid()) @db.Uuid
+  siret       String         @unique @db.VarChar(14)
+  name        String
+  slug        String         @unique
+  tvaIntracom String?
+  sector      String?
+  sizeBucket  OrgSizeBucket?
+
+  // Facturation
+  billingAddress    String?
+  billingPostalCode String?
+  billingCity       String?
+  billingCountry    String  @default("FR")
+
+  primaryContactUserId String? @db.Uuid
+  primaryContact       User?   @relation("OrgPrimaryContact", fields: [primaryContactUserId], references: [id], onDelete: SetNull)
+
+  users    User[]    @relation("OrgMembers")
+  quotes   Quote[]
+  bookings Booking[]
+  reviews  Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Club (ex-Association) — amateur loi 1901 ET professionnel. `geo` est une colonne
+/// PostGIS geography(Point,4326) ajoutée via migration SQL (Unsupported côté Prisma).
+model Club {
+  id       String   @id @default(uuid()) @db.Uuid
+  name     String
+  slug     String   @unique
+  clubType ClubType
+  vatLiable Boolean @default(false)
+  siret    String   @unique @db.VarChar(14)
+
+  // Géolocalisation — gérée hors DSL (PostGIS). Set en raw SQL (seed/onboarding).
+  geo Unsupported("geography(Point, 4326)")?
+
+  city                 String
+  postalCode           String  @db.VarChar(5)
+  interventionRadiusKm Int     @default(30)
+
+  // Lieu / venue
+  hasVenue        Boolean @default(false)
+  venueCapacity   Int?
+  canHostVipMatch Boolean @default(false)
+
+  // KYC / statut (§4)
+  status              ClubStatus @default(pending_verification)
+  corporateReady      Boolean    @default(false)
+  federationNumber    String? // affiliation fédérale (association_1901)
+  stripeAccountId     String?
+  bankDetailsVerified Boolean    @default(false)
+
+  members     ClubMember[]
+  projects    Project[]
+  modules     ExperienceModule[]
+  experiences Experience[]
+  quotes      Quote[]
+  bookings    Booking[]
+  reviews     Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siret])
+}
+
+/// Membre d'un club avec permissions par rôle (§4).
+model ClubMember {
+  id     String         @id @default(uuid()) @db.Uuid
+  clubId String         @db.Uuid
+  club   Club           @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId String         @db.Uuid
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   ClubMemberRole @default(member)
+
+  createdAt DateTime @default(now())
+
+  @@unique([clubId, userId])
+  @@index([userId])
+}
+
+/// Projet du club financé par les expériences.
+model Project {
+  id              String        @id @default(uuid()) @db.Uuid
+  clubId          String        @db.Uuid
+  club            Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  targetAmount    Int // cents
+  collectedAmount Int           @default(0) // cents
+  status          ProjectStatus @default(draft)
+
+  experiences Experience[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clubId, status])
+}
+
+/// Module d'expérience réutilisable (« moment »).
+model ExperienceModule {
+  id             String         @id @default(uuid()) @db.Uuid
+  clubId         String         @db.Uuid
+  club           Club           @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  name           String
+  type           ModuleType
+  assetsIncluded Json           @default("[]")
+  location       ModuleLocation @default(flexible)
+  priceModel     PriceModel     @default(fixed)
+  priceCents     Int? // prix indicatif du module
+  durationMinutes Int?
+  status         ModuleStatus   @default(draft)
+
+  segments ExperienceSegment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clubId, status])
+}
+
+/// Expérience vendue (produit composé de segments).
+model Experience {
+  id           String           @id @default(uuid()) @db.Uuid
+  clubId       String           @db.Uuid
+  club         Club             @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  slug         String           @unique
+  title        String
+  description  String?
+  format       ExperienceFormat
+  capacityMin  Int
+  capacityMax  Int
+  basePriceCents Int // cents — prix de départ TTC affiché
+  priceModel   PriceModel       @default(fixed)
+  isTemplate   Boolean          @default(true)
+  status       ExperienceStatus @default(draft)
+
+  projectId String?  @db.Uuid
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  // Agrégats dénormalisés (recalculés depuis Review).
+  ratingAvg    Float?
+  reviewsCount Int    @default(0)
+
+  // Disponibilités INDICATIVES (SPEC §2 — « JSON simple de jours/créneaux récurrents »).
+  // Forme : { weekdays:number[], timeSlots:string[], leadTimeDays:number, blackoutDates:string[] }.
+  // La date ferme se fixe au devis/booking (Booking.requestedDate), pas ici.
+  availability Json?
+
+  segments ExperienceSegment[]
+  photos   ExperiencePhoto[]
+  quotes   Quote[]
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, format])
+  @@index([clubId, status])
+}
+
+/// Segment d'une expérience (ordonné, daypart, snapshot des assets du module).
+model ExperienceSegment {
+  id             String            @id @default(uuid()) @db.Uuid
+  experienceId   String            @db.Uuid
+  experience     Experience        @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  order          Int
+  daypart        Daypart
+  moduleId       String?           @db.Uuid
+  module         ExperienceModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  durationMinutes Int
+  assetsSnapshot Json              @default("[]")
+
+  @@unique([experienceId, order])
+  @@index([experienceId])
+}
+
+/// Photo de galerie d'une expérience. `storageKey` = objet Supabase Storage (§1).
+model ExperiencePhoto {
+  id           String     @id @default(uuid()) @db.Uuid
+  experienceId String     @db.Uuid
+  experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  storageKey   String // chemin de l'objet dans le bucket Supabase Storage
+  alt          String // texte alternatif (a11y, WCAG AA — §7)
+  order        Int        @default(0)
+  isFeature    Boolean    @default(false) // photo principale
+
+  createdAt DateTime @default(now())
+
+  @@index([experienceId, order])
+}
+
+/// Devis (cœur du flux B2B). Numéro DEV-YYYY-NNNNN généré côté applicatif.
+model Quote {
+  id             String       @id @default(uuid()) @db.Uuid
+  // Token opaque non énumérable pour l'URL /devis/[ref] (décision §11), distinct
+  // du numéro légal lisible quoteNumber.
+  ref            String       @unique @default(cuid())
+  quoteNumber    String       @unique // DEV-YYYY-NNNNN
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clubId         String       @db.Uuid
+  club           Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  experienceId   String?      @db.Uuid
+  experience     Experience?  @relation(fields: [experienceId], references: [id], onDelete: SetNull)
+
+  // Demande initiale (renseignée par l'entreprise).
+  requestedDate  DateTime?
+  requestedTime  String? // HH:mm indicatif
+  participants   Int?
+  location       ModuleLocation? // lieu d'exécution souhaité (réutilise l'enum module)
+  serviceAddress String? // adresse si location = at_client
+
+  // Montants (cents). TVA 20 % (décision produit). Commission Sociuly = feeAmount.
+  amountHTCents  Int
+  vatCents       Int
+  amountTTCCents Int
+  feeAmountCents Int // commission Sociuly (6 % du TTC), calculée server-side (§4)
+  netAmountCents Int // reversé au club = TTC − fee
+
+  status     QuoteStatus @default(draft)
+  validUntil DateTime?
+
+  lines   QuoteLine[]
+  events  QuoteEvent[]
+  booking Booking?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([clubId, status])
+}
+
+/// Ligne chiffrée d'un devis (remplie par le club). Sous-total = quantity × unitPriceCents.
+model QuoteLine {
+  id             String @id @default(uuid()) @db.Uuid
+  quoteId        String @db.Uuid
+  quote          Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  order          Int    @default(0)
+  label          String
+  detail         String?
+  quantity       Int    @default(1)
+  unitPriceCents Int
+
+  @@index([quoteId, order])
+}
+
+/// Événement d'historique d'un devis (demande → envoi → révision → décision → note).
+/// Historique du devis, PAS de la messagerie temps réel (hors-scope §2).
+model QuoteEvent {
+  id      String          @id @default(uuid()) @db.Uuid
+  quoteId String          @db.Uuid
+  quote   Quote           @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  actor   QuoteEventActor
+  author  String
+  body    String
+  kind    QuoteEventKind
+
+  createdAt DateTime @default(now())
+
+  @@index([quoteId, createdAt])
+}
+
+/// Réservation. Numéro SOC-YYYY-NNNNN généré côté applicatif.
+model Booking {
+  id             String       @id @default(uuid()) @db.Uuid
+  bookingNumber  String       @unique // SOC-YYYY-NNNNN
+  quoteId        String       @unique @db.Uuid
+  quote          Quote        @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clubId         String       @db.Uuid
+  club           Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  experienceId   String       @db.Uuid
+  experience     Experience   @relation(fields: [experienceId], references: [id], onDelete: Restrict)
+
+  // Montants (cents)
+  grossAmountTTCCents Int
+  vatCents            Int
+  feeAmountCents      Int
+  netAmountCents      Int
+  depositCents        Int @default(0)
+
+  status        BookingStatus @default(pending_quote)
+  requestedDate DateTime
+  completedAt   DateTime?
+
+  invoice Invoice?
+  review  Review?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([clubId, requestedDate])
+}
+
+/// Facture légale (numérotation séquentielle générée côté applicatif).
+model Invoice {
+  id             String  @id @default(uuid()) @db.Uuid
+  invoiceNumber  String  @unique
+  bookingId      String  @unique @db.Uuid
+  booking        Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  amountHTCents  Int
+  vatCents       Int
+  amountTTCCents Int
+  pdfUrl         String?
+
+  createdAt DateTime @default(now())
+}
+
+/// Avis — 1 max par booking, entre completedAt et D+30 (§4), comment ≤ 600 (validé app).
+model Review {
+  id             String       @id @default(uuid()) @db.Uuid
+  bookingId      String       @unique @db.Uuid
+  booking        Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clubId         String       @db.Uuid
+  club           Club         @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  rating         Int // 1–5
+  comment        String?      @db.VarChar(600)
+
+  createdAt DateTime @default(now())
+
+  @@index([clubId])
+}
