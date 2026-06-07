@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="sy-auth__body">{children}</div>
 
       <footer className="sy-auth__footer">
-        <span className="sy-mono">© Sociuly · Espace gérant</span>
+        <span className="sy-mono">© Sociuly · Connexion sécurisée</span>
         <span className="sy-mono" style={{ display: "inline-flex", gap: 12, flexWrap: "wrap" }}>
           <Link className="sy-link" href="/mentions-legales">Mentions légales</Link>
           <Link className="sy-link" href="/confidentialite">Confidentialité</Link>

@@ -1,39 +1,50 @@
-// Schémas de validation pour les flux d'auth.
-// Pas de dépendance Zod — équivalent typé natif pour rester aligné avec
-// la contrainte "pas de dépendance nouvelle non justifiée".
+// Schémas Zod pour les flux d'auth.
+// Règle projet (.claude/rules/01-tech-stack.md) : Zod est la lib de validation
+// pour toute entrée Server Action / route API / webhook.
 
+import { z } from "zod";
+
+export const magicLinkSchema = z.object({
+  email: z
+    .string({ required_error: "Renseignez votre adresse e-mail." })
+    .trim()
+    .toLowerCase()
+    .min(1, "Renseignez votre adresse e-mail.")
+    .email("Cette adresse e-mail ne semble pas valide."),
+  // Conservé hidden côté form, pour rerouter après authentification.
+  redirect: z.string().optional(),
+});
+
+export type MagicLinkInput = z.infer<typeof magicLinkSchema>;
+export type MagicLinkField = keyof MagicLinkInput;
 export type FieldErrors<T extends string> = Partial<Record<T, string>>;
 
-export type LoginInput = {
-  email: string;
-  password: string;
-  remember: boolean;
-};
-
-export type LoginField = "email" | "password";
-
-const EMAIL_RE =
-  // RFC 5322 light — suffisant pour un front-end ; la vraie vérification reste serveur.
-  /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
-
-export function parseLogin(raw: FormData): {
-  values: LoginInput;
-  errors: FieldErrors<LoginField>;
+export function parseMagicLink(raw: FormData): {
+  values: { email: string; redirect: string };
+  errors: FieldErrors<MagicLinkField>;
 } {
-  const email = String(raw.get("email") ?? "").trim().toLowerCase();
-  const password = String(raw.get("password") ?? "");
-  const remember = raw.get("remember") === "on";
+  const parsed = magicLinkSchema.safeParse({
+    email: raw.get("email") ?? "",
+    redirect: raw.get("redirect") ?? "",
+  });
 
-  const errors: FieldErrors<LoginField> = {};
-  if (!email) errors.email = "Renseignez votre adresse e-mail.";
-  else if (!EMAIL_RE.test(email)) errors.email = "Cette adresse e-mail ne semble pas valide.";
+  if (!parsed.success) {
+    const errors: FieldErrors<MagicLinkField> = {};
+    for (const issue of parsed.error.issues) {
+      const key = issue.path[0] as MagicLinkField | undefined;
+      if (key && !errors[key]) errors[key] = issue.message;
+    }
+    return {
+      values: {
+        email: String(raw.get("email") ?? ""),
+        redirect: String(raw.get("redirect") ?? ""),
+      },
+      errors,
+    };
+  }
 
-  if (!password) errors.password = "Renseignez votre mot de passe.";
-  else if (password.length < 8) errors.password = "Le mot de passe doit faire au moins 8 caractères.";
-
-  return { values: { email, password, remember }, errors };
-}
-
-export function isValid<T extends string>(errors: FieldErrors<T>): boolean {
-  return Object.keys(errors).length === 0;
+  return {
+    values: { email: parsed.data.email, redirect: parsed.data.redirect ?? "" },
+    errors: {},
+  };
 }
