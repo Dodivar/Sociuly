@@ -1,5 +1,4 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Suspense } from "react";
 import Link from "next/link";
 import { CONSOLE_PUBLIC_LINK } from "@/lib/console/dev";
 import { Avatar, Btn, Card, Chip, Progress, Stars } from "./components";
@@ -294,11 +293,9 @@ export function TopNav({
     >
       <div className="sy-topnav-nav">
         <Link href="/" style={{ textDecoration: "none", color: "inherit" }}><Logo /></Link>
-        {/* Onglet actif déduit de l'URL côté client (cf. TopNavTabs). `active`
-            reste un override manuel optionnel. Suspense requis car useSearchParams. */}
-        <Suspense fallback={<TopNavTabsFallback />}>
-          <TopNavTabs items={TOPNAV_ITEMS} active={active} />
-        </Suspense>
+        {/* Onglet actif déduit du chemin courant côté client (cf. TopNavTabs).
+            `active` reste un override manuel optionnel. */}
+        <TopNavTabs items={TOPNAV_ITEMS} active={active} />
       </div>
       <div className="sy-topnav-actions">
         <Link href="/inscription-club" style={{ textDecoration: "none" }} className="sy-topnav-ghost-hide">
@@ -309,25 +306,6 @@ export function TopNav({
         </Link>
       </div>
     </nav>
-  );
-}
-
-// Rendu statique des onglets (sans surlignage) — fallback Suspense pendant le
-// prérendu, avant que TopNavTabs ne déduise l'onglet actif côté client.
-function TopNavTabsFallback() {
-  return (
-    <div className="sy-topnav-tabs sy-tab-underline sy-tabs" style={{ padding: 0 }}>
-      {TOPNAV_ITEMS.map((it) => (
-        <Link
-          key={it.id}
-          href={it.href}
-          className="sy-tab"
-          style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
-        >
-          {it.label}
-        </Link>
-      ))}
-    </div>
   );
 }
 

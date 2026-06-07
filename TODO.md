@@ -60,7 +60,7 @@ Voir `components/console/club-sidebar.tsx` (lignes 19-27) — 6 entrées sans pa
 - [x] Lien actif vers profil asso + projet financé
 - [x] Avis : pagination « voir plus »
 - [x] Partage (lien copié, mailto)
-- [ ] Favori depuis détail activité
+- [x] Favori depuis détail activité
 
 ### Tunnel `/reserver/[ref]`
 - [x] Navigation entre les 4 étapes du `BookingStepper` (avant/arrière, blocage si étape invalide)

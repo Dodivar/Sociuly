@@ -25,7 +25,7 @@ export default async function ExperiencesPage({ searchParams }: Props) {
       <div className="marketplace-viewport">
         <div className="marketplace-header">
           {/* En-tête standard du site (navigation + connexion) */}
-          <TopNav active="experiences" />
+          <TopNav />
 
           {/* Barre de filtres — câblée sur l'URL (searchParams) */}
           <MarketplaceFilters filters={filters} />

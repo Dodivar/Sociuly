@@ -3,11 +3,12 @@ import { TopNav, SiteFooter } from "@/components/ds/patterns";
 
 // Coquille commune aux pages légales statiques (/cgu, /confidentialite,
 // /mentions-legales) : TopNav publique + corps prose + SiteFooter.
-// `active="legal"` ne correspond à aucun onglet → aucun onglet surligné.
+// Aucune route légale ne correspond à un onglet → aucun onglet surligné
+// (détection automatique via TopNavTabs).
 export default function LegalLayout({ children }: { children: ReactNode }) {
   return (
     <div className="sy-legal">
-      <TopNav active="legal" />
+      <TopNav />
       <main>{children}</main>
       <SiteFooter />
     </div>

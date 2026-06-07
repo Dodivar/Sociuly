@@ -40,7 +40,7 @@ export async function generateStaticParams() {
 export default function ClubProfilePage() {
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <TopNav active="clubs" />
+      <TopNav />
 
       {/* Cover */}
       <div

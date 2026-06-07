@@ -31,7 +31,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <TopNav active="experiences" />
+      <TopNav />
 
       <div style={{ padding: "20px var(--page-pad) 40px", maxWidth: 1440, margin: "0 auto" }}>
         {/* breadcrumb */}

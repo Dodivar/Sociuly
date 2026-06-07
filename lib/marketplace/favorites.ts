@@ -6,7 +6,7 @@
 // custom synchronise les instances montées sur une même page (et l'event
 // `storage` synchronise entre onglets).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const FAV_KEY = "sociuly:favoris";
 const FAV_EVENT = "sociuly:favoris:change";
@@ -33,6 +33,10 @@ export function useFavorites() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   // `ready` évite un flash « non favori » au 1er rendu (localStorage côté client).
   const [ready, setReady] = useState(false);
+  // Miroir de l'état courant pour que `toggle` reste stable tout en lisant la
+  // dernière valeur sans la passer en dépendance.
+  const favoritesRef = useRef(favorites);
+  favoritesRef.current = favorites;
 
   useEffect(() => {
     setFavorites(readFavorites());
@@ -51,15 +55,15 @@ export function useFavorites() {
   }, []);
 
   const toggle = useCallback((id: string) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      writeFavorites(next);
-      // Notifie les autres instances du hook montées sur la page.
-      window.dispatchEvent(new Event(FAV_EVENT));
-      return next;
-    });
+    // Effets de bord hors de l'updater (un updater doit rester pur : React peut
+    // le ré-invoquer en StrictMode/dev). On calcule `next` à partir du ref.
+    const next = new Set(favoritesRef.current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setFavorites(next);
+    writeFavorites(next);
+    // Notifie les autres instances du hook montées sur la page (et onglets via `storage`).
+    window.dispatchEvent(new Event(FAV_EVENT));
   }, []);
 
   const isFavorite = useCallback((id: string) => favorites.has(id), [favorites]);

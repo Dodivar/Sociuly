@@ -1,23 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cx } from "@/lib/cx";
 
 export type TopNavItem = { id: string; label: string; href: string };
 
 /**
- * Déduit l'onglet actif à partir de l'URL courante (chemin + query `vue`).
- * Renvoie `null` sur les pages hors navigation principale (accueil, légal,
- * connexion…) → aucun onglet n'est surligné.
+ * Déduit l'onglet actif à partir du chemin courant. Renvoie `null` sur les pages
+ * hors navigation principale (accueil, légal, connexion…) → aucun onglet surligné.
+ * La vue carte (`/experiences?vue=carte`) reste une sous-vue de la catalogue,
+ * donc l'onglet « Expériences » y est mis en évidence.
  */
-function resolveActiveId(pathname: string, vue: string | null): string | null {
+function resolveActiveId(pathname: string): string | null {
   if (pathname === "/clubs" || pathname.startsWith("/clubs/")) return "clubs";
   if (pathname === "/projets" || pathname.startsWith("/projets/")) return "projets";
-  if (pathname === "/experiences" || pathname.startsWith("/experiences/")) {
-    // La vue carte partage la route /experiences (cf. lien « Carte »).
-    return vue === "carte" ? "carte" : "experiences";
-  }
+  if (pathname === "/experiences" || pathname.startsWith("/experiences/")) return "experiences";
   return null;
 }
 
@@ -30,8 +28,7 @@ export function TopNavTabs({
   active?: string;
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const current = active ?? resolveActiveId(pathname, searchParams.get("vue"));
+  const current = active ?? resolveActiveId(pathname);
 
   return (
     <div className="sy-topnav-tabs sy-tab-underline sy-tabs" style={{ padding: 0 }}>

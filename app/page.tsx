@@ -69,7 +69,7 @@ const FAQ = [
 export default function LandingPage() {
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <TopNav active="experiences" />
+      <TopNav />
 
       {/* HERO */}
       <section style={{ padding: "36px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
