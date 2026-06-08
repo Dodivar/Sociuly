@@ -15,22 +15,8 @@ import Link from "next/link";
 import { Btn } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { ImpactMini } from "@/components/ds/impact";
-import {
-  eur,
-  type ExperienceDetail,
-  type ExperienceSlot,
-} from "@/lib/marketplace/experience-detail";
-
-const WEEKDAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-const MONTHS = [
-  "janv.", "févr.", "mars", "avr.", "mai", "juin",
-  "juil.", "août", "sept.", "oct.", "nov.", "déc.",
-];
-
-function slotLabel(s: ExperienceSlot): string {
-  const d = new Date(`${s.date}T00:00:00`);
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${s.time.replace(":", "h")}`;
-}
+import { eur, type ExperienceDetail } from "@/lib/marketplace/experience-detail";
+import { slotLabel } from "@/lib/format";
 
 export function ExperienceBookingRail({ experience }: { experience: ExperienceDetail }) {
   const {

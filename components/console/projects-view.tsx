@@ -5,6 +5,7 @@ import {
   Btn, Card, Chip, IconBtn, Input, Progress, Tabs,
 } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
+import { eurSymWhole as fmtEuros } from "@/lib/format";
 import type {
   LinkedExperience, ProjectDetail, ProjectStatus, ProjectUpdate,
 } from "@/lib/console/mock-projects";
@@ -26,10 +27,6 @@ const STATUS_VISUAL: Record<ProjectStatus | "upcoming", StatusVisual> = {
 function visualKey(p: { status: ProjectStatus; upcoming?: boolean }) {
   if (p.status === "active" && p.upcoming) return "upcoming" as const;
   return p.status;
-}
-
-function fmtEuros(cents: number) {
-  return `€${Math.round(cents / 100).toLocaleString("fr-FR")}`;
 }
 
 export function ProjectsView({ projects }: Props) {

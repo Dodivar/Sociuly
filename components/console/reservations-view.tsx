@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Btn, Input, Tabs } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
+import { eurSym as fmtEur, eurSymWhole as fmtEurWhole } from "@/lib/format";
 import {
   LOCATION_LABEL,
   STATUS_LABEL,
@@ -43,17 +44,6 @@ const STATUS_VISUAL: Record<BookingStatus, StatusVisual> = {
   cancelled_by_club: { bg: "var(--surface)",        fg: "var(--danger)", border: "var(--line-2)" },
   refunded:          { bg: "var(--surface-2)",      fg: "var(--ink-2)" },
 };
-
-function fmtEur(cents: number): string {
-  return `€${(cents / 100).toLocaleString("fr-FR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-function fmtEurWhole(cents: number): string {
-  return `€${Math.round(cents / 100).toLocaleString("fr-FR")}`;
-}
 
 function StatusChip({ status }: { status: BookingStatus }) {
   const v = STATUS_VISUAL[status];

@@ -156,18 +156,6 @@ export function isStepValid(step: StepNumber, exp: BookingExperience, form: Book
   return Object.keys(validateStep(step, exp, form)).length === 0;
 }
 
-// ─────── Libellé de créneau FR (« lun. 16 juin · 09h00 ») ───────
-const WEEKDAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-const MONTHS = [
-  "janv.", "févr.", "mars", "avr.", "mai", "juin",
-  "juil.", "août", "sept.", "oct.", "nov.", "déc.",
-];
-
-export function slotLabel(s: ExperienceSlot): string {
-  const d = new Date(`${s.date}T00:00:00`);
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${s.time.replace(":", "h")}`;
-}
-
 // ─────── Numéro de réservation factice (placeholder paiement) ───────
 // SPEC §3 — format Booking.bookingNumber = SOC-YYYY-NNNNN. En Phase B il est
 // généré côté serveur à l'acceptation du devis ; ici on en fabrique un pour la

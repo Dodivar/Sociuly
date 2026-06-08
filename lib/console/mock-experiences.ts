@@ -1,11 +1,11 @@
 // Cf. SPEC.md §3 — Experience (produit vendu via devis B2B).
 // TODO(api): remplacer par fetch DB (Prisma). Garder la signature async + les enums alignés sur le schéma.
 
+import type { ExperienceLocation } from "@/lib/marketplace/experience-detail";
+
 export type ExperienceFormat = "demi_journee" | "journee" | "soiree" | "sur_mesure";
 
 export type ExperienceStatus = "draft" | "published" | "paused" | "archived";
-
-export type ExperienceLocation = "at_client" | "at_club" | "at_venue" | "flexible";
 
 export type ExperienceAdmin = {
   id: string;

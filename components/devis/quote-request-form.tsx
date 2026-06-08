@@ -15,6 +15,7 @@ import Link from "next/link";
 import { Btn, Card, Field, Input, Textarea } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { eurDecimal, SAMPLE_SENT_QUOTE_REF } from "@/lib/devis/quotes";
+import { slotLabel } from "@/lib/format";
 
 export type QuoteRequestExperience = {
   slug: string;
@@ -39,13 +40,6 @@ type Props = {
 };
 
 type LocationMode = "at_client" | "at_venue";
-
-const WEEKDAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-function slotLabel(s: { date: string; time: string }): string {
-  const d = new Date(`${s.date}T00:00:00`);
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${s.time.replace(":", "h")}`;
-}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

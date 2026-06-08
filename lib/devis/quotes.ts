@@ -154,11 +154,9 @@ export function quoteAmounts(lines: QuoteLine[]): {
 }
 
 // ─────── Formatage FR ───────
-export const eurDecimal = (cents: number): string =>
-  `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
-
-export const eurWhole = (cents: number): string =>
-  `${Math.round(cents / 100).toLocaleString("fr-FR")} €`;
+// Formatage monétaire centralisé dans `lib/format` (réexporté ici pour les
+// consommateurs existants de ce module).
+export { eurDecimal, eurWhole } from "@/lib/format";
 
 export function frDateLong(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("fr-FR", {

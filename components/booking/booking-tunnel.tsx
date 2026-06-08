@@ -34,9 +34,9 @@ import {
   LAST_TUNNEL_STEP,
   makeBookingNumber,
   needsAddress,
-  slotLabel,
   validateStep,
 } from "@/lib/booking/tunnel";
+import { slotLabel } from "@/lib/format";
 
 type Props = {
   experience: BookingExperience;

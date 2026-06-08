@@ -105,12 +105,9 @@ export type ExperienceDetail = {
 };
 
 // ─────── Helpers ───────
-export const eur = (cents: number) =>
-  `${(cents / 100).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} €`;
-
-/** Centimes → euros lisibles avec décimales (factures / récap). */
-export const eurDecimal = (cents: number) =>
-  `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+// Formatage monétaire centralisé dans `lib/format` (réexporté ici pour les
+// consommateurs existants de ce module).
+export { eur, eurDecimal } from "@/lib/format";
 
 /** Slug club dérivé du nom (mock — sera Club.slug en base). */
 function clubSlug(name: string): string {

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Btn, Tabs } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { StatCard } from "@/components/console/stat-card";
+import { eurSym as fmtEur, eurSymWhole as fmtEurWhole } from "@/lib/format";
 import {
   ENCAISSEMENT_LABEL,
   UPCOMING_STATUS_LABEL,
@@ -17,17 +18,6 @@ import {
 type Props = { data: RevenueData };
 
 type TabId = "upcoming" | "history" | "encaissements";
-
-function fmtEur(cents: number): string {
-  return `€${(cents / 100).toLocaleString("fr-FR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-function fmtEurWhole(cents: number): string {
-  return `€${Math.round(cents / 100).toLocaleString("fr-FR")}`;
-}
 
 const UPCOMING_VISUAL: Record<UpcomingPayoutStatus, { bg: string; fg: string }> = {
   awaiting_completion: { bg: "var(--highlight-soft)", fg: "#6e5111" },
