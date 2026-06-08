@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Btn, Card, Chip } from "@/components/ds/components";
 import { Icon, type IconName } from "@/components/ds/icon";
 import { SiteFooter, TopNav } from "@/components/ds/patterns";
-import { ImpactMap } from "@/components/ds/impact";
+import { ImpactMap } from "@/components/landing/impact-map";
 
 export const metadata: Metadata = {
   title: "Notre impact — Sociuly",
