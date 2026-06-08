@@ -1,6 +1,6 @@
 "use client";
 
-// Carte marketplace interactive — MapLibre GL JS + tuiles MapTiler (SPEC §1).
+// Carte marketplace interactive — MapLibre GL JS + tuiles OpenFreeMap (SPEC §1).
 // Markers cliquables (pastille prix), synchro hover liste ↔ carte, popup mini-card.
 // Centrée par défaut sur la région Grand-Est ; recadrage automatique sur la
 // position de l'utilisateur si la géolocalisation est déjà autorisée.
@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ds/icon";
 import { Stars } from "@/components/ds/components";
+import { GRAND_EST_CENTER, GRAND_EST_ZOOM, MAP_STYLE_URL } from "@/lib/map";
 import type { MarketplaceExperience } from "@/lib/marketplace/experiences";
 
 type Props = {
@@ -29,31 +30,7 @@ type Props = {
   style?: CSSProperties;
 };
 
-// ─── Vue par défaut : région Grand-Est (couvre Strasbourg, Nancy, Metz) ───
-const GRAND_EST_CENTER: [number, number] = [6.2, 48.7]; // [lng, lat]
-const GRAND_EST_ZOOM = 7;
-
-// Style des tuiles : MapTiler en prod (clé via env). Sans clé (dev/CI), on
-// retombe sur un fond raster OpenStreetMap pour que la carte reste fonctionnelle.
-// TODO(map): retirer le fallback OSM une fois NEXT_PUBLIC_MAPTILER_KEY provisionnée.
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY;
-
-const OSM_FALLBACK_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    osm: {
-      type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution: "© OpenStreetMap",
-    },
-  },
-  layers: [{ id: "osm", type: "raster", source: "osm" }],
-};
-
-const MAP_STYLE: string | maplibregl.StyleSpecification = MAPTILER_KEY
-  ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`
-  : OSM_FALLBACK_STYLE;
+// Vue par défaut et style des tuiles : cf. lib/map (OpenFreeMap, sans clé/quota).
 
 // Cœur rouge plein (token --danger) injecté dans la pastille d'un favori.
 // `var()` passe par l'attribut `style` (les variables CSS ne résolvent pas dans
@@ -119,7 +96,7 @@ export function InteractiveMarketMap({
 
     const map = new maplibregl.Map({
       container: mapNodeRef.current,
-      style: MAP_STYLE,
+      style: MAP_STYLE_URL,
       center: GRAND_EST_CENTER,
       zoom: GRAND_EST_ZOOM,
       attributionControl: { compact: true },

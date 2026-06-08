@@ -18,8 +18,8 @@ parallelize once their shared prerequisites are met.
       DKIM/SPF/DMARC.
 - [ ] Provision Stripe account → enable Stripe **Connect Express**, capture
       `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_CLIENT_ID`.
-- [ ] Provision MapTiler account (free tier OK for pilot) → capture
-      `MAPTILER_KEY`.
+- [x] Map tiles : OpenFreeMap (open source, no API key / no quota). Nothing to
+      provision for the pilot — self-host later if needed (openfreemap.org).
 - [ ] Sentry project (errors), PostHog project (product analytics) — both EU
       region. SPEC §10 mandates EU residency.
 - [ ] `.env.local` template + `.env.example` checked into repo. Document every
@@ -157,8 +157,9 @@ Schema (`prisma/schema.prisma`) — see SPEC §6 entities:
 
 ## 4. Marketplace / search / geo
 
-- [ ] Replace `MarketMap` placeholder SVG with MapLibre GL JS + MapTiler
-      tiles, lazy-loaded as a Client Component (`"use client"`).
+- [x] Replace `MarketMap` placeholder SVG with MapLibre GL JS + OpenFreeMap
+      tiles, lazy-loaded as a Client Component (`"use client"`) —
+      `components/marketplace/interactive-map.tsx`.
 - [ ] `/api/prestations/search` — accepts `?city=&cat=&minPrice=&maxPrice=&sort=&bbox=`,
       uses PostGIS `ST_DWithin` for "near me" and `ST_MakeEnvelope` for bbox
       pans. Pagination via `cursor` (createdAt + id).
@@ -243,7 +244,7 @@ Currently linked from nav/footer but unbuilt:
 - [ ] `/cgu` — Conditions Générales d'Utilisation (clubs + customers).
       Legal review required.
 - [ ] `/confidentialite` — RGPD policy. Lists subprocessors (Stripe, Resend,
-      Supabase, MapTiler, Sentry, PostHog) per SPEC §10.
+      Supabase, OpenFreeMap, Sentry, PostHog) per SPEC §10.
 - [ ] `/mentions-legales` — éditeur, hébergeur, contact, CNIL.
 - [ ] `/aide` — FAQ for clubs + customers (split tabs).
 - [ ] `/manifeste` — brand story page (the "why").
@@ -271,8 +272,8 @@ Currently linked from nav/footer but unbuilt:
       `/api/bookings/create` (10/min/IP), contact forms (5/hour/IP),
       auth magic-link request (5/hour/email — Supabase applique aussi sa propre
       limite native, configurable dans Auth → Rate Limits).
-- [ ] CSP headers via `next.config.ts` — allow Stripe, MapTiler, Resend
-      tracking pixel domains only.
+- [ ] CSP headers via `next.config.ts` — allow Stripe, OpenFreeMap
+      (`tiles.openfreemap.org`), Resend tracking pixel domains only.
 
 ---
 

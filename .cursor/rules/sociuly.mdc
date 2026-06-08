@@ -28,7 +28,7 @@ alwaysApply: true
 - **Stockage** : Supabase Storage (RIB, attestations, photos, devis/factures PDF).
 - **Recherche/filtres** : Postgres full-text + index GIN (**pas Algolia/Meilisearch**).
 - **Géo** : PostGIS pour rayon km.
-- **Carte** : MapLibre GL JS + tuiles MapTiler. **Interdit : Google Maps, Mapbox propriétaire.**
+- **Carte** : MapLibre GL JS + tuiles **OpenFreeMap** (tuiles vectorielles OSM open source, sans clé API ni quota, auto-hébergeables). **Interdit : Google Maps, Mapbox propriétaire, MapTiler (abandonné — payant au-delà du palier gratuit).**
 - **PDF** : `@react-pdf/renderer` pour devis et factures.
 - **Hosting** : Vercel (front) + Supabase (DB).
 - **Observabilité** : Sentry (erreurs) + PostHog (analytics).
