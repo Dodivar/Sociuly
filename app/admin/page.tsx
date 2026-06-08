@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { requireRole } from "@/lib/auth/rbac";
 import { getAdminData } from "@/lib/admin/mock-admin";
 
 // Console admin Sociuly — réservée au rôle sociuly_admin (SPEC §6).
@@ -11,8 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  // TODO(auth): protéger derrière un guard rôle sociuly_admin (Supabase Auth)
-  // et rediriger vers /connexion?redirect=/admin si non autorisé.
+  // Garde RBAC : réservé au rôle sociuly_admin (SPEC §6). Le middleware barre
+  // déjà en amont ; garde de page = défense en profondeur.
+  await requireRole(["sociuly_admin"], "/admin");
   // TODO(api): remplacer par un fetch Prisma (cf. SPEC §3/§5).
   const data = await getAdminData();
 

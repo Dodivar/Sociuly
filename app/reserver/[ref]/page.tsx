@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getExperienceBySlug } from "@/lib/marketplace/experience-detail";
 import { BookingTunnel } from "@/components/booking/booking-tunnel";
 import type { BookingExperience } from "@/lib/booking/tunnel";
+import { requireRole } from "@/lib/auth/rbac";
 import { getQuoteByBookingRef, quoteAmounts, frDateShort } from "@/lib/devis/quotes";
 
 // Paiement de l'acompte /reserver/[ref] (SPEC §4/§6).
@@ -20,6 +21,8 @@ type Props = {
 
 export default async function BookingPage({ params }: Props) {
   const { ref } = await params;
+  // Garde RBAC : paiement réservé au rôle org_buyer (SPEC §6).
+  await requireRole(["org_buyer"], `/reserver/${ref}`);
 
   // 1. Le devis doit exister ET être accepté (sinon pas de paiement possible).
   const quote = await getQuoteByBookingRef(ref);
