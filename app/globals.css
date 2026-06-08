@@ -355,7 +355,8 @@ button { font-family: inherit; }
   outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px;
 }
 
-.sy-select-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sy-select-lead { display: inline-flex; flex-shrink: 0; align-items: center; }
+.sy-select-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sy-select-placeholder { color: var(--ink-3); font-weight: 400; }
 
 /* Popover listbox. */

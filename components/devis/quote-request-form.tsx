@@ -12,7 +12,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Btn, Card, Field, Input, Textarea } from "@/components/ds/components";
+import { Btn, Card, Field, Input, Select, Textarea } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { eurDecimal, SAMPLE_SENT_QUOTE_REF } from "@/lib/devis/quotes";
 
@@ -141,17 +141,14 @@ export function QuoteRequestForm({ experience, initial }: Props) {
         <Card style={{ padding: "22px 24px" }}>
           {/* Date & créneau */}
           <Field label="Date souhaitée">
-            <div className="sy-input" style={{ padding: "0 12px", display: "flex", alignItems: "center", gap: 8 }}>
-              <Icon name="calendar" size={15} color="var(--ink-3)" />
-              <select
-                value={slotIdx}
-                onChange={(e) => setSlotIdx(Number(e.target.value))}
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: 14, color: "var(--ink)", appearance: "none", cursor: "pointer", padding: "11px 0" }}
-              >
-                {slots.map((s, i) => (<option key={`${s.date}-${s.time}`} value={i}>{slotLabel(s)}</option>))}
-              </select>
-              <Icon name="chevron" size={14} color="var(--ink-3)" />
-            </div>
+            <Select
+              value={String(slotIdx)}
+              onChange={(v) => setSlotIdx(Number(v))}
+              options={slots.map((s, i) => ({ value: String(i), label: slotLabel(s) }))}
+              allowEmpty={false}
+              ariaLabel="Date souhaitée"
+              leadingIcon={<Icon name="calendar" size={15} color="var(--ink-3)" />}
+            />
           </Field>
 
           {/* Participants */}

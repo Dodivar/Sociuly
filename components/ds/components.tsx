@@ -317,10 +317,15 @@ type SelectProps = {
   ariaLabel?: string;
   /** Variante intégrée à la pilule SearchBar (sans bordure ni fond). */
   inline?: boolean;
+  /** Icône affichée à gauche (ex. calendrier pour un créneau). */
+  leadingIcon?: ReactNode;
+  /** Autorise l'option vide « placeholder » en tête de liste (défaut true). */
+  allowEmpty?: boolean;
 };
 
 export function Select({
-  value, onChange, options, placeholder = "Sélectionner", ariaLabel, inline = false,
+  value, onChange, options, placeholder = "Sélectionner", ariaLabel,
+  inline = false, leadingIcon, allowEmpty = true,
 }: SelectProps) {
   const fine = usePointerFine();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -331,26 +336,46 @@ export function Select({
   useDismiss(open, () => setOpen(false), rootRef);
   useEffect(() => { if (open) listRef.current?.focus(); }, [open]);
 
-  // Mobile / SSR / sans-JS : <select> natif.
+  // Mobile / SSR / sans-JS : <select> natif (éventuellement enveloppé d'une icône).
   if (!fine) {
-    return (
+    const nativeSelect = (
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label={ariaLabel}
-        className={inline ? undefined : "sy-input"}
-        style={inline ? { ...SB_INPUT_STYLE, cursor: "pointer" } : undefined}
+        className={inline || leadingIcon ? undefined : "sy-input"}
+        style={
+          inline
+            ? { ...SB_INPUT_STYLE, cursor: "pointer" }
+            : leadingIcon
+              ? {
+                  flex: 1, border: "none", outline: "none", background: "transparent",
+                  fontFamily: "inherit", fontSize: 14, color: "var(--ink)",
+                  appearance: "none", cursor: "pointer", padding: "11px 0",
+                }
+              : { cursor: "pointer" }
+        }
       >
-        <option value="">{placeholder}</option>
+        {allowEmpty && <option value="">{placeholder}</option>}
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
     );
+    if (leadingIcon) {
+      return (
+        <div className="sy-input" style={{ padding: "0 12px", display: "flex", alignItems: "center", gap: 8 }}>
+          {leadingIcon}
+          {nativeSelect}
+          <Icon name="chevron" size={14} color="var(--ink-3)" />
+        </div>
+      );
+    }
+    return nativeSelect;
   }
 
-  // L'option vide est en tête de liste pour permettre de « tout désélectionner ».
-  const items: SelectOption[] = [{ value: "", label: placeholder }, ...options];
+  // L'option vide n'est ajoutée que si allowEmpty (permet de « tout désélectionner »).
+  const items: SelectOption[] = allowEmpty ? [{ value: "", label: placeholder }, ...options] : [...options];
   const selected = options.find((o) => o.value === value);
 
   const openMenu = () => {
@@ -389,6 +414,7 @@ export function Select({
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onTriggerKey}
       >
+        {leadingIcon && <span className="sy-select-lead">{leadingIcon}</span>}
         <span className={cx("sy-select-value", !selected && "sy-select-placeholder")}>
           {selected ? selected.label : placeholder}
         </span>

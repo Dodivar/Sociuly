@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Btn, Chip, Field, Tabs } from "@/components/ds/components";
+import { Btn, Chip, DateField, Field, Select, Tabs } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import {
   CATEGORIES,
   CITIES,
-  CITY_LABEL,
   PRICE_CEIL,
   PRICE_FLOOR,
   RADIUS_MAX,
@@ -77,11 +76,6 @@ export function MarketplaceFilters({ filters }: Props) {
 
   function handleSort(id: string) {
     commit({ sort: id as Sort });
-  }
-
-  function handleCityInput(value: string) {
-    const match = CITIES.find((c) => c.label.toLowerCase() === value.trim().toLowerCase());
-    commit({ city: match ? match.id : null });
   }
 
   function handleGeoloc() {
@@ -171,19 +165,15 @@ export function MarketplaceFilters({ filters }: Props) {
           {/* Ville + géoloc */}
           <Field label="Ville">
             <div style={{ display: "flex", gap: 8 }}>
-              <input
-                className="sy-input"
-                list="sy-cities"
-                placeholder="Strasbourg, Nancy, Metz…"
-                defaultValue={filters.city ? CITY_LABEL[filters.city] : ""}
-                onChange={(e) => handleCityInput(e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <datalist id="sy-cities">
-                {CITIES.map((c) => (
-                  <option key={c.id} value={c.label} />
-                ))}
-              </datalist>
+              <div style={{ flex: 1 }}>
+                <Select
+                  value={filters.city ?? ""}
+                  onChange={(v) => commit({ city: (v || null) as City | null })}
+                  options={CITIES.map((c) => ({ value: c.id, label: c.label }))}
+                  placeholder="Toutes les villes"
+                  ariaLabel="Choisir une ville"
+                />
+              </div>
               <Btn
                 variant="outline"
                 size="sm"
@@ -252,12 +242,10 @@ export function MarketplaceFilters({ filters }: Props) {
 
           {/* Date */}
           <Field label="Disponible à partir du">
-            <input
-              type="date"
-              className="sy-input"
+            <DateField
               value={filters.date ?? ""}
-              onChange={(e) => commit({ date: e.target.value || null })}
-              aria-label="Date de disponibilité"
+              onChange={(v) => commit({ date: v || null })}
+              ariaLabel="Date de disponibilité"
             />
           </Field>
 

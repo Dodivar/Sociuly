@@ -12,7 +12,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Btn } from "@/components/ds/components";
+import { Btn, Select } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { ImpactMini } from "@/components/ds/impact";
 import {
@@ -79,29 +79,16 @@ export function ExperienceBookingRail({ experience }: { experience: ExperienceDe
       </div>
 
       {/* Sélecteur date / heure */}
-      <label className="sy-label" htmlFor="rail-slot" style={{ display: "block", marginTop: 16 }}>
-        Date & créneau
-      </label>
-      <div
-        className="sy-input"
-        style={{ marginTop: 6, padding: "0 12px", display: "flex", alignItems: "center", gap: 8 }}
-      >
-        <Icon name="calendar" size={15} color="var(--ink-3)" />
-        <select
-          id="rail-slot"
-          value={slotIdx}
-          onChange={(e) => setSlotIdx(Number(e.target.value))}
-          style={{
-            flex: 1, border: "none", outline: "none", background: "transparent",
-            fontFamily: "inherit", fontSize: 14, color: "var(--ink)", appearance: "none",
-            cursor: "pointer", padding: "11px 0",
-          }}
-        >
-          {slots.map((s, i) => (
-            <option key={`${s.date}-${s.time}`} value={i}>{slotLabel(s)}</option>
-          ))}
-        </select>
-        <Icon name="chevron" size={14} color="var(--ink-3)" />
+      <div className="sy-label" style={{ marginTop: 16 }}>Date & créneau</div>
+      <div style={{ marginTop: 6 }}>
+        <Select
+          value={String(slotIdx)}
+          onChange={(v) => setSlotIdx(Number(v))}
+          options={slots.map((s, i) => ({ value: String(i), label: slotLabel(s) }))}
+          allowEmpty={false}
+          ariaLabel="Date & créneau"
+          leadingIcon={<Icon name="calendar" size={15} color="var(--ink-3)" />}
+        />
       </div>
 
       {/* Sélecteur participants */}
