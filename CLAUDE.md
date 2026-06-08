@@ -24,7 +24,7 @@
 - **Storage**: Supabase Storage (bank details/RIB, certificates, photos, quote/invoice PDFs).
 - **Search/filters**: Postgres full-text + GIN index (**not Algolia/Meilisearch**).
 - **Geo**: PostGIS for km radius.
-- **Map**: MapLibre GL JS + MapTiler tiles. **Forbidden: Google Maps, proprietary Mapbox.**
+- **Map**: MapLibre GL JS + **OpenFreeMap** tiles (open-source OSM vector tiles, no API key / no quota, self-hostable). **Forbidden: Google Maps, proprietary Mapbox, MapTiler (dropped — paid above free tier).**
 - **PDF**: `@react-pdf/renderer` for quotes and invoices.
 - **Hosting**: Vercel (frontend) + Supabase (DB).
 - **Observability**: Sentry (errors) + PostHog (analytics).

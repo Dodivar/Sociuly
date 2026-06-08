@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Btn, Card, Chip, Avatar, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
-import { ImpactMap } from "@/components/ds/impact";
+import { ImpactMap } from "@/components/landing/impact-map";
 import type { Category } from "@/lib/marketplace/experiences";
 
 // `id` aligné sur les Category de la marketplace → lien `/experiences?cat=<id>`.

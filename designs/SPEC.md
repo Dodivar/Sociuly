@@ -85,7 +85,7 @@ Cette journée = **une `Experience`** composée de **6 `ExperienceSegment`** ré
 - **Stockage fichiers** (RIB, attestations, photos, devis/factures PDF) : **Supabase Storage**.
 - **Recherche & filtres** : Postgres full-text + index GIN (pas besoin d'Algolia v1).
 - **Géo** : **PostGIS** pour la requête « expériences dans un rayon de X km ».
-- **Carte** : **MapLibre GL JS** + tuiles MapTiler (pas de Google Maps).
+- **Carte** : **MapLibre GL JS** + tuiles **OpenFreeMap** (tuiles vectorielles OSM open source, sans clé API ni quota, auto-hébergeables ; pas de Google Maps, pas de MapTiler).
 - **PDF** : `@react-pdf/renderer` pour devis et factures.
 - **Hosting** : **Vercel** (front) + **Supabase** (DB).
 - **Observabilité** : **Sentry** (erreurs) + **PostHog** (analytics produit).
