@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Btn, Field, Input } from "@/components/ds/components";
+import { Btn, Field, Input, Select } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { lookupSiret } from "@/lib/actions/inscription-club";
 
@@ -179,17 +179,13 @@ export default function Step1Form() {
 
       {/* Sport */}
       <Field label="Sport principal" error={errors.sport}>
-        <select
-          className="sy-input"
+        <Select
           value={form.sport}
-          onChange={(e) => set("sport", e.target.value)}
-          style={{ cursor: "pointer" }}
-        >
-          <option value="">Choisir un sport…</option>
-          {SPORTS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
+          onChange={(v) => set("sport", v)}
+          options={SPORTS}
+          placeholder="Choisir un sport…"
+          ariaLabel="Sport principal"
+        />
       </Field>
 
       {/* Ville + Code postal */}

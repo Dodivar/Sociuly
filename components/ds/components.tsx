@@ -1,10 +1,10 @@
 "use client";
 
 import type {
-  ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactNode,
-  TextareaHTMLAttributes,
+  ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, KeyboardEvent,
+  ReactNode, RefObject, TextareaHTMLAttributes,
 } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
 import {
@@ -268,6 +268,331 @@ const SB_INPUT_STYLE: CSSProperties = {
   color: "var(--ink)", width: "100%", padding: 0,
 };
 
+// ─────── Select & DateField « maison » (desktop) ───────
+// Sur tactile (pointer: coarse) on conserve les contrôles natifs de l'OS — très
+// bons sur iOS/Android. Sur desktop (pointer: fine) on remplace les <select> et
+// <input type=date> non stylables par des popovers du DS, accessibles au clavier.
+// Progressive enhancement : rendu natif en SSR/1er rendu → bascule custom au mount.
+
+// Détecte un pointeur fin + survol (≈ desktop souris/trackpad).
+function usePointerFine() {
+  const [fine, setFine] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setFine(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return fine;
+}
+
+// Ferme un popover au clic extérieur et à la touche Échap.
+function useDismiss(open: boolean, close: () => void, ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
+    };
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, close, ref]);
+}
+
+export type SelectOption = { value: string; label: string };
+
+type SelectProps = {
+  value: string;
+  onChange: (value: string) => void;
+  options: ReadonlyArray<SelectOption>;
+  /** Libellé de l'option vide (valeur ""), affiché comme placeholder. */
+  placeholder?: string;
+  ariaLabel?: string;
+  /** Variante intégrée à la pilule SearchBar (sans bordure ni fond). */
+  inline?: boolean;
+  /** Icône affichée à gauche (ex. calendrier pour un créneau). */
+  leadingIcon?: ReactNode;
+  /** Autorise l'option vide « placeholder » en tête de liste (défaut true). */
+  allowEmpty?: boolean;
+};
+
+export function Select({
+  value, onChange, options, placeholder = "Sélectionner", ariaLabel,
+  inline = false, leadingIcon, allowEmpty = true,
+}: SelectProps) {
+  const fine = usePointerFine();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  useDismiss(open, () => setOpen(false), rootRef);
+  useEffect(() => { if (open) listRef.current?.focus(); }, [open]);
+
+  // Mobile / SSR / sans-JS : <select> natif (éventuellement enveloppé d'une icône).
+  if (!fine) {
+    const nativeSelect = (
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={ariaLabel}
+        className={inline || leadingIcon ? undefined : "sy-input"}
+        style={
+          inline
+            ? { ...SB_INPUT_STYLE, cursor: "pointer" }
+            : leadingIcon
+              ? {
+                  flex: 1, border: "none", outline: "none", background: "transparent",
+                  fontFamily: "inherit", fontSize: 14, color: "var(--ink)",
+                  appearance: "none", cursor: "pointer", padding: "11px 0",
+                }
+              : { cursor: "pointer" }
+        }
+      >
+        {allowEmpty && <option value="">{placeholder}</option>}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    );
+    if (leadingIcon) {
+      return (
+        <div className="sy-input" style={{ padding: "0 12px", display: "flex", alignItems: "center", gap: 8 }}>
+          {leadingIcon}
+          {nativeSelect}
+          <Icon name="chevron" size={14} color="var(--ink-3)" />
+        </div>
+      );
+    }
+    return nativeSelect;
+  }
+
+  // L'option vide n'est ajoutée que si allowEmpty (permet de « tout désélectionner »).
+  const items: SelectOption[] = allowEmpty ? [{ value: "", label: placeholder }, ...options] : [...options];
+  const selected = options.find((o) => o.value === value);
+
+  const openMenu = () => {
+    setActive(Math.max(0, items.findIndex((o) => o.value === value)));
+    setOpen(true);
+  };
+  const commit = (v: string) => {
+    onChange(v);
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+  const onTriggerKey = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openMenu();
+    }
+  };
+  const onListKey = (e: KeyboardEvent<HTMLUListElement>) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(items.length - 1, i + 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(0, i - 1)); }
+    else if (e.key === "Home") { e.preventDefault(); setActive(0); }
+    else if (e.key === "End") { e.preventDefault(); setActive(items.length - 1); }
+    else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); commit(items[active].value); }
+    else if (e.key === "Tab") { setOpen(false); }
+  };
+
+  return (
+    <div ref={rootRef} className="sy-select">
+      <button
+        ref={triggerRef}
+        type="button"
+        className={cx("sy-select-trigger", inline && "sy-select-trigger-inline")}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        onKeyDown={onTriggerKey}
+      >
+        {leadingIcon && <span className="sy-select-lead">{leadingIcon}</span>}
+        <span className={cx("sy-select-value", !selected && "sy-select-placeholder")}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <Icon name="chevron" size={16} style={{ flexShrink: 0, color: "var(--ink-3)" }} />
+      </button>
+      {open && (
+        <ul
+          ref={listRef}
+          className="sy-select-menu"
+          role="listbox"
+          tabIndex={-1}
+          aria-label={ariaLabel}
+          onKeyDown={onListKey}
+        >
+          {items.map((o, i) => (
+            <li
+              key={o.value || "_all"}
+              role="option"
+              aria-selected={o.value === value}
+              className={cx("sy-select-option", i === active && "is-active", o.value === value && "is-selected")}
+              onMouseEnter={() => setActive(i)}
+              onMouseDown={(e) => { e.preventDefault(); commit(o.value); }}
+            >
+              <span>{o.label}</span>
+              {o.value === value && <Icon name="check" size={15} />}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ─────── DateField (calendrier custom desktop) ───────
+const CAL_DOW = ["L", "M", "M", "J", "V", "S", "D"]; // semaine lundi → dimanche
+const CAL_MONTH = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+const CAL_FULL = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+
+function toISODate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function fromISODate(s: string): Date | null {
+  if (!s) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+}
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+type DateFieldProps = {
+  value: string;
+  onChange: (value: string) => void;
+  ariaLabel?: string;
+  inline?: boolean;
+  /** Date min sélectionnable (ISO yyyy-mm-dd). Les jours antérieurs sont désactivés. */
+  min?: string;
+  /** Libellé affiché quand aucune date n'est choisie. */
+  placeholder?: string;
+};
+
+export function DateField({
+  value, onChange, ariaLabel, inline = false, min, placeholder = "Toutes les dates",
+}: DateFieldProps) {
+  const fine = usePointerFine();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const selected = fromISODate(value);
+  const [view, setView] = useState<Date>(() => selected ?? new Date());
+  useDismiss(open, () => setOpen(false), rootRef);
+
+  if (!fine) {
+    return (
+      <input
+        type="date"
+        value={value}
+        min={min}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={ariaLabel}
+        className={inline ? undefined : "sy-input"}
+        style={inline ? { ...SB_INPUT_STYLE, cursor: "text" } : undefined}
+      />
+    );
+  }
+
+  const today = new Date();
+  const minDate = fromISODate(min ?? "");
+  const year = view.getFullYear();
+  const month = view.getMonth();
+  // getDay() : 0 = dimanche → on décale pour une semaine commençant le lundi.
+  const lead = (new Date(year, month, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: Array<Date | null> = [
+    ...Array.from({ length: lead }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1)),
+  ];
+
+  const isDisabled = (d: Date) =>
+    minDate ? d < new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate()) : false;
+  const pick = (d: Date) => {
+    if (isDisabled(d)) return;
+    onChange(toISODate(d));
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  return (
+    <div ref={rootRef} className="sy-datefield">
+      <button
+        ref={triggerRef}
+        type="button"
+        className={cx("sy-select-trigger", inline && "sy-select-trigger-inline")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        onClick={() => { if (selected) setView(selected); setOpen((o) => !o); }}
+      >
+        <span className={cx("sy-select-value", !selected && "sy-select-placeholder")}>
+          {selected ? CAL_FULL.format(selected) : placeholder}
+        </span>
+        <Icon name="calendar" size={16} style={{ flexShrink: 0, color: "var(--ink-3)" }} />
+      </button>
+      {open && (
+        <div className="sy-cal" role="dialog" aria-label={ariaLabel} aria-modal="false">
+          <div className="sy-cal-head">
+            <button
+              type="button" className="sy-cal-nav" aria-label="Mois précédent"
+              onClick={() => setView(new Date(year, month - 1, 1))}
+            >
+              <Icon name="arrowLeft" size={16} />
+            </button>
+            <span className="sy-cal-title">{CAL_MONTH.format(view)}</span>
+            <button
+              type="button" className="sy-cal-nav" aria-label="Mois suivant"
+              onClick={() => setView(new Date(year, month + 1, 1))}
+            >
+              <Icon name="arrow" size={16} />
+            </button>
+          </div>
+          <div className="sy-cal-grid sy-cal-dow">
+            {CAL_DOW.map((d, i) => <span key={i} className="sy-cal-dow-cell">{d}</span>)}
+          </div>
+          <div className="sy-cal-grid">
+            {cells.map((d, i) =>
+              d ? (
+                <button
+                  key={i}
+                  type="button"
+                  className={cx(
+                    "sy-cal-day",
+                    selected && isSameDay(d, selected) && "is-selected",
+                    isSameDay(d, today) && "is-today",
+                  )}
+                  disabled={isDisabled(d)}
+                  aria-pressed={selected ? isSameDay(d, selected) : false}
+                  aria-label={CAL_FULL.format(d)}
+                  onClick={() => pick(d)}
+                >
+                  {d.getDate()}
+                </button>
+              ) : <span key={i} aria-hidden="true" />,
+            )}
+          </div>
+          {value && (
+            <button
+              type="button" className="sy-cal-clear"
+              onClick={() => { onChange(""); setOpen(false); triggerRef.current?.focus(); }}
+            >
+              Effacer la date
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSProperties }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -328,46 +653,40 @@ export function SearchBar({ compact, style }: { compact?: boolean; style?: CSSPr
         />
       </label>
       <div className="sy-divider-vert" />
-      <label className="sb-section" style={{ cursor: "pointer" }}>
+      <div className="sb-section">
         <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Où</span>
-        <select
+        <Select
+          inline
           value={city}
-          onChange={(e) => setCity(e.target.value as City | "")}
-          aria-label="Choisir une ville"
-          style={{ ...SB_INPUT_STYLE, cursor: "pointer" }}
-        >
-          <option value="">Toutes les villes</option>
-          {CITIES.map((c) => (
-            <option key={c.id} value={c.id}>{c.label}</option>
-          ))}
-        </select>
-      </label>
-      <div className="sy-divider-vert" />
-      <label className="sb-section" style={{ cursor: "text" }}>
-        <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quand</span>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          aria-label="Disponible à partir du"
-          style={{ ...SB_INPUT_STYLE, cursor: "text" }}
+          onChange={(v) => setCity(v as City | "")}
+          options={CITIES.map((c) => ({ value: c.id, label: c.label }))}
+          placeholder="Toutes les villes"
+          ariaLabel="Choisir une ville"
         />
-      </label>
+      </div>
       <div className="sy-divider-vert" />
-      <label className="sb-section sb-section-cause" style={{ cursor: "pointer" }}>
+      <div className="sb-section">
+        <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Quand</span>
+        <DateField
+          inline
+          value={date}
+          onChange={setDate}
+          min={toISODate(new Date())}
+          ariaLabel="Disponible à partir du"
+        />
+      </div>
+      <div className="sy-divider-vert" />
+      <div className="sb-section sb-section-cause">
         <span className="sy-mono-strong" style={{ fontSize: 10.5 }}>Catégorie</span>
-        <select
+        <Select
+          inline
           value={category}
-          onChange={(e) => setCategory(e.target.value as Category | "")}
-          aria-label="Choisir une catégorie d'expérience"
-          style={{ ...SB_INPUT_STYLE, cursor: "pointer" }}
-        >
-          <option value="">Toutes les catégories</option>
-          {CATEGORIES.map((c) => (
-            <option key={c.id} value={c.id}>{c.label}</option>
-          ))}
-        </select>
-      </label>
+          onChange={(v) => setCategory(v as Category | "")}
+          options={CATEGORIES.map((c) => ({ value: c.id, label: c.label }))}
+          placeholder="Toutes les catégories"
+          ariaLabel="Choisir une catégorie d'expérience"
+        />
+      </div>
       <div className="sb-cta">
         <Btn type="submit" variant="primary" size="lg" style={{ borderRadius: 999, padding: "0 24px" }}>
           <Icon name="search" /> Rechercher
