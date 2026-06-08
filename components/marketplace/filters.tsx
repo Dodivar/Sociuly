@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Btn, Chip, DateField, Field, Select, Tabs } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
+import { useMarketplaceView } from "@/components/marketplace/view-context";
+import { cx } from "@/lib/cx";
 import {
   CATEGORIES,
   CITIES,
@@ -47,6 +49,11 @@ type Props = {
 export function MarketplaceFilters({ filters }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+
+  // En mobile, la carte est affichée en premier : les filtres (catégories, tri,
+  // budget, note…) n'ont pas d'intérêt sur la carte → on les masque tant que la
+  // liste n'est pas affichée. Sans effet sur desktop (liste + carte côte à côte).
+  const { view } = useMarketplaceView();
 
   const [open, setOpen] = useState(false);
   const [geolocBusy, setGeolocBusy] = useState(false);
@@ -104,7 +111,10 @@ export function MarketplaceFilters({ filters }: Props) {
   }
 
   return (
-    <div style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+    <div
+      className={cx("marketplace-filters", view === "map" && "marketplace-filters--map")}
+      style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}
+    >
       {/* Barre de chips + tri */}
       <div
         style={{

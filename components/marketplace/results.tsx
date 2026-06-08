@@ -7,6 +7,7 @@ import { Btn, Chip } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { ExperienceCard } from "@/components/ds/patterns";
 import { useFavorites } from "@/lib/marketplace/favorites";
+import { useMarketplaceView } from "@/components/marketplace/view-context";
 import {
   CATEGORY_LABEL,
   CITY_LABEL,
@@ -47,9 +48,10 @@ export function MarketplaceResults({ experiences, filters }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  // Vue active en mobile (≤768px) : la carte est affichée en premier pour
-  // « trouver une activité », un bouton flottant bascule vers la liste.
-  const [mobileView, setMobileView] = useState<"map" | "list">("map");
+  // Vue active en mobile (≤768px), partagée avec la barre de filtres : la carte
+  // est affichée en premier pour « trouver une activité », un bouton flottant
+  // bascule vers la liste. Cf. components/marketplace/view-context.
+  const { view: mobileView, toggle: toggleMobileView } = useMarketplaceView();
 
   // Liste affichée (filtre favoris côté client + pagination « voir plus »).
   const list = useMemo(
@@ -171,7 +173,7 @@ export function MarketplaceResults({ experiences, filters }: Props) {
       <Btn
         variant="dark"
         className="marketplace-toggle"
-        onClick={() => setMobileView((v) => (v === "map" ? "list" : "map"))}
+        onClick={toggleMobileView}
         icon={<Icon name={mobileView === "map" ? "menu" : "map"} size={15} color="#fff" />}
         aria-label={mobileView === "map" ? "Afficher la liste" : "Afficher la carte"}
       >
@@ -207,6 +209,9 @@ export function MarketplaceResults({ experiences, filters }: Props) {
           /* Mobile : une seule vue à la fois, carte affichée en premier,
              bascule via la pilule flottante. */
           .marketplace-split { grid-template-columns: 1fr; }
+          /* Filtres (catégories, tri, budget, note…) masqués sur la carte :
+             ils ne servent qu'à affiner la liste. */
+          .marketplace-filters--map { display: none; }
           .experience-grid { grid-template-columns: 1fr; }
           .mkt-mobile-map .marketplace-list { display: none; }
           .mkt-mobile-list .marketplace-map { display: none; }
