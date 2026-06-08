@@ -125,7 +125,7 @@ export default function ConfidentialitePage() {
           <li><strong>Sentry</strong> — supervision technique et détection des erreurs.</li>
           <li><strong>PostHog</strong> — mesure d'audience et analyse d'usage.</li>
           <li><strong>Upstash</strong> — limitation de débit (protection des API).</li>
-          <li><strong>MapTiler</strong> — affichage cartographique.</li>
+          <li><strong>OpenFreeMap</strong> — affichage cartographique (tuiles open source).</li>
         </ul>
         <p>
           Vos données ne sont jamais vendues à des tiers. Elles peuvent être communiquées aux

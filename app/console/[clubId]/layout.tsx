@@ -1,4 +1,5 @@
 import { ClubSidebar } from "@/components/console/club-sidebar";
+import { requireClubAccess } from "@/lib/auth/rbac";
 import { getClubSummary, getDashboardData } from "@/lib/console/mock-dashboard";
 
 type Props = {
@@ -8,6 +9,9 @@ type Props = {
 
 export default async function ConsoleLayout({ children, params }: Props) {
   const { clubId } = await params;
+  // Garde RBAC (défense en profondeur ; le middleware barre déjà en amont) :
+  // rôle club_admin + appartenance au club via ClubMember (SPEC §6).
+  await requireClubAccess(clubId);
   // TODO(api): paralléliser via Promise.all et remplacer par des fetchers réels.
   const [club, data] = await Promise.all([
     getClubSummary(clubId),

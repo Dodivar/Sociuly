@@ -17,7 +17,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Btn, Card, Field, Input, Stars, Textarea } from "@/components/ds/components";
+import { Btn, Card, Field, Input, Select, Stars, Textarea } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo } from "@/components/ds/patterns";
 import { ImpactMini } from "@/components/ds/impact";
@@ -361,23 +361,14 @@ function StepDetails({
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Date & créneau */}
       <Field label="Date & créneau" error={errors.slotIdx}>
-        <div className="sy-input" style={{ padding: "0 12px", display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon name="calendar" size={15} color="var(--ink-3)" />
-          <select
-            value={form.slotIdx}
-            onChange={(e) => set("slotIdx", Number(e.target.value))}
-            style={{
-              flex: 1, border: "none", outline: "none", background: "transparent",
-              fontFamily: "inherit", fontSize: 14, color: "var(--ink)", appearance: "none",
-              cursor: "pointer", padding: "11px 0",
-            }}
-          >
-            {slots.map((s, i) => (
-              <option key={`${s.date}-${s.time}`} value={i}>{slotLabel(s)}</option>
-            ))}
-          </select>
-          <Icon name="chevron" size={14} color="var(--ink-3)" />
-        </div>
+        <Select
+          value={String(form.slotIdx)}
+          onChange={(v) => set("slotIdx", Number(v))}
+          options={slots.map((s, i) => ({ value: String(i), label: slotLabel(s) }))}
+          allowEmpty={false}
+          ariaLabel="Date & créneau"
+          leadingIcon={<Icon name="calendar" size={15} color="var(--ink-3)" />}
+        />
       </Field>
 
       {/* Participants */}

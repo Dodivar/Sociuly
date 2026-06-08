@@ -1,8 +1,6 @@
 import type { CSSProperties } from "react";
-import Link from "next/link";
 import { Progress } from "./components";
 import { Icon } from "./icon";
-import { CITY_LABEL, type City } from "@/lib/marketplace/experiences";
 
 // ─────── ImpactHero (signature) ───────
 export function ImpactHero({
@@ -165,119 +163,6 @@ export function ImpactMini({
       <Progress value={value} style={{ marginTop: 6 }} />
       <div className="sy-small sy-muted sy-num" style={{ marginTop: 4 }}>
         €{collected.toLocaleString("fr-FR")} / €{target.toLocaleString("fr-FR")}
-      </div>
-    </div>
-  );
-}
-
-// ─────── ImpactMap — visualizes contributions across nearby clubs ───────
-export function ImpactMap({ style }: { style?: CSSProperties }) {
-  const clubs: Array<{ x: number; y: number; size: "lg" | "md" | "sm"; pct: number; label: string; city: City; hot?: boolean }> = [
-    { x: 18, y: 25, size: "lg", pct: 92, label: "SIG Strasbourg", city: "strasbourg", hot: true },
-    { x: 38, y: 60, size: "md", pct: 68, label: "SLUC Nancy Basket", city: "nancy" },
-    { x: 62, y: 32, size: "sm", pct: 32, label: "Metz Basket Métropole", city: "metz" },
-    { x: 78, y: 70, size: "md", pct: 55, label: "RC Strasbourg", city: "strasbourg" },
-    { x: 50, y: 18, size: "sm", pct: 18, label: "FC Nancy-Sud", city: "nancy" },
-  ];
-  return (
-    <div
-      style={{
-        position: "relative", borderRadius: "var(--radius-lg)", overflow: "hidden",
-        background: "var(--surface-2)", aspectRatio: "16/10", ...style,
-      }}
-    >
-      <svg
-        viewBox="0 0 100 60"
-        preserveAspectRatio="none"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-      >
-        <defs>
-          <pattern id="dotgrid" width="6" height="6" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.4" fill="var(--ink-3)" opacity="0.3" />
-          </pattern>
-        </defs>
-        <rect width="100" height="60" fill="url(#dotgrid)" />
-        <path d="M 5 40 Q 25 25 45 35 T 95 30" stroke="var(--line-2)" fill="none" strokeWidth="0.6" />
-        <path d="M 0 22 Q 30 12 60 22 T 100 18" stroke="var(--line-2)" fill="none" strokeWidth="0.5" />
-        <path d="M 0 50 Q 35 42 65 50 T 100 48" stroke="var(--line-2)" fill="none" strokeWidth="0.4" />
-      </svg>
-      {clubs.map((c, i) => {
-        const r = c.size === "lg" ? 30 : c.size === "md" ? 22 : 16;
-        return (
-          <Link
-            key={i}
-            href={`/experiences?ville=${c.city}`}
-            className="sy-impact-marker"
-            aria-label={`Voir les expériences à ${CITY_LABEL[c.city]} — ${c.label}, ${c.pct}% collectés`}
-            style={{
-              position: "absolute", left: `${c.x}%`, top: `${c.y}%`,
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            <span
-              className="sy-impact-pin"
-              style={{
-                width: r, height: r, borderRadius: "50%",
-                background: c.hot ? "var(--accent)" : "var(--primary)",
-                color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "var(--display)", fontWeight: 700, fontSize: r < 20 ? 9 : 11,
-                boxShadow: "0 4px 12px rgba(20,36,31,.25)", position: "relative",
-              }}
-            >
-              {c.pct}%
-              {c.hot && (
-                <span
-                  style={{
-                    position: "absolute", inset: -6, borderRadius: "50%",
-                    border: "2px solid var(--accent)", opacity: 0.4,
-                    animation: "sy-ping 2s ease-out infinite",
-                  }}
-                />
-              )}
-            </span>
-            <span className="sy-impact-tip" role="tooltip">
-              {c.label} · {CITY_LABEL[c.city]}
-            </span>
-          </Link>
-        );
-      })}
-      <style>{`
-        @keyframes sy-ping { 0% { transform: scale(1); opacity: .6 } 100% { transform: scale(1.6); opacity: 0 } }
-        .sy-impact-marker { display: block; text-decoration: none; z-index: 1; border-radius: 50%; }
-        .sy-impact-marker:hover, .sy-impact-marker:focus-visible { z-index: 6; }
-        .sy-impact-marker:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
-        .sy-impact-pin { transition: transform .16s ease; }
-        .sy-impact-marker:hover .sy-impact-pin,
-        .sy-impact-marker:focus-visible .sy-impact-pin { transform: scale(1.12); }
-        .sy-impact-tip {
-          position: absolute; top: calc(100% + 8px); left: 50%;
-          transform: translateX(-50%) translateY(-4px);
-          background: var(--ink); color: var(--surface);
-          font-family: var(--mono); font-size: 11px; letter-spacing: .02em;
-          padding: 6px 10px; border-radius: 8px; white-space: nowrap;
-          opacity: 0; pointer-events: none; z-index: 7;
-          box-shadow: var(--shadow-md);
-          transition: opacity .16s ease, transform .16s ease;
-        }
-        .sy-impact-marker:hover .sy-impact-tip,
-        .sy-impact-marker:focus-visible .sy-impact-tip {
-          opacity: 1; transform: translateX(-50%) translateY(0);
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .sy-impact-pin, .sy-impact-tip { transition: none; }
-        }
-      `}</style>
-      <div style={{ position: "absolute", left: 16, bottom: 16, right: 16 }}>
-        <div
-          className="sy-card"
-          style={{
-            background: "rgba(252,249,241,.95)", backdropFilter: "blur(12px)",
-            padding: 14, borderRadius: "var(--radius-md)",
-          }}
-        >
-          <div className="sy-mono">Cette semaine près de vous</div>
-          <div className="sy-h3 sy-num" style={{ marginTop: 4 }}>€8 320 collectés · 5 clubs actifs</div>
-        </div>
       </div>
     </div>
   );

@@ -1,13 +1,17 @@
 import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { AccountNav } from "@/components/account/account-nav";
+import { requireRole } from "@/lib/auth/rbac";
 import { getOrganizationSummary, getOrgBookings } from "@/lib/account/mock-org";
 import { getQuotesForOrg } from "@/lib/devis/quotes";
 
 // Espace entreprise /compte (SPEC §6) — réservé org_buyer.
-// TODO(api): garde d'auth Supabase (rôle org_buyer) + résolution de l'Organization
-// depuis la session. En l'absence d'auth, on charge l'organisation de démo.
+// TODO(api): résoudre l'Organization depuis la session (session.organizationId)
+// au lieu de l'organisation de démo.
 
 export default async function CompteLayout({ children }: { children: React.ReactNode }) {
+  // Garde RBAC : réservé au rôle org_buyer (SPEC §6).
+  await requireRole(["org_buyer"], "/compte");
+
   const [org, quotes, bookings] = await Promise.all([
     getOrganizationSummary(),
     getQuotesForOrg(),

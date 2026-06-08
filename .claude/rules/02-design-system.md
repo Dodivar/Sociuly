@@ -14,7 +14,8 @@ Tous les primitives se trouvent dans `components/ds/` :
 | `components.tsx` | `Btn`, `IconBtn`, `Chip`, `Card`, `Avatar`, `Progress`, `Tabs`, `Stars`, `Field`, `Input`, `Textarea`, `SearchBar` |
 | `patterns.tsx` | `Logo`, `PrestationCard`, `SectionHeader`, `SiteFooter`, `TopNav` |
 | `icon.tsx` | `Icon` (SVG inline, prop `name`) |
-| `impact.tsx` | `ImpactMap` |
+| `impact.tsx` | `ImpactHero`, `ImpactMini`, `MarketMap` |
+| `landing/impact-map.tsx` | `ImpactMap` (carte MapLibre/OpenFreeMap lazy-loadée) |
 
 Avant de créer un nouveau composant, vérifier qu'il n'existe pas déjà dans le DS.
 

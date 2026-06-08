@@ -1,14 +1,11 @@
 // Callback du magic link Supabase.
 // Quand l'utilisateur clique le lien dans son e-mail, il atterrit ici avec
 // un `?code=…`. On l'échange contre une session (cookie) puis on redirige
-// vers la destination adaptée à son rôle.
-//
-// TODO(prisma) : la résolution du rôle (`User.role` + `ClubMember.clubId` +
-// `Organization.id`) se fera dès que le schéma Prisma sera en place (CLAUDE.md §3).
-// En attendant on retombe sur DEV_CONSOLE_HOME pour permettre la navigation
-// post-login en dev — comportement explicite, à retirer en prod.
+// vers la destination adaptée à son rôle (cf. lib/auth/session + rbac).
 
 import { NextResponse, type NextRequest } from "next/server";
+import { checkRouteAccess, homePathForRole } from "@/lib/auth/access";
+import { roleContextFromUser } from "@/lib/auth/session";
 import { DEV_CONSOLE_HOME } from "@/lib/console/dev";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -36,31 +33,30 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) {
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error || !data.user) {
     // Lien expiré, déjà utilisé, ou code invalide.
     return NextResponse.redirect(`${origin}/connexion?error=expired`);
   }
 
-  // Si l'appelant a demandé une cible explicite (lien profond protégé),
-  // on l'honore après vérification de session.
+  // ─── Résolution du rôle ─────────────────────────────────────────────
+  // Le rôle + les rattachements sont lus depuis les claims `app_metadata`
+  // du JWT (cf. lib/auth/session). Multi-club (SPEC §11) : on entre sur le
+  // premier club rattaché.
+  // TODO(prisma) : ces claims seront alimentés par le trigger
+  // `on_auth_user_created` + un Access Token Hook une fois les tables
+  // User/ClubMember/Organization en place (cf. docs/adr/0001-rbac-role-resolution.md).
+  const session = roleContextFromUser(data.user);
+  const home = homePathForRole(session.role, session.clubIds);
+
+  // Si l'appelant a demandé une cible explicite (lien profond protégé) et que
+  // l'utilisateur y a droit, on l'honore ; sinon on retombe sur son espace.
   if (requestedRedirect) {
-    return NextResponse.redirect(`${origin}${requestedRedirect}`);
+    const decision = checkRouteAccess(requestedRedirect, session);
+    if (decision.kind === "allow") {
+      return NextResponse.redirect(`${origin}${requestedRedirect}`);
+    }
   }
 
-  // ─── Résolution du rôle ─────────────────────────────────────────────
-  // TODO(prisma) : remplacer par une lecture de User/ClubMember/Organization.
-  //   const dbUser = await prisma.user.findUnique({
-  //     where: { id: user.id },
-  //     include: { clubMemberships: { orderBy: [{ role: "asc" }, { joinedAt: "asc" }] } },
-  //   });
-  //   switch (dbUser.role) {
-  //     case "sociuly_admin": return redirect("/admin");
-  //     case "club_admin":    return redirect(`/console/${dbUser.clubMemberships[0].clubId}/dashboard`);
-  //     case "org_buyer":     return redirect("/compte");
-  //     default:              return redirect("/inscription"); // chooser
-  //   }
-  // Le décompte de clubs (§11 SPEC — multi-club) est résolu en prenant
-  // le premier ClubMember par ordre (`role`, `joinedAt`) — décision validée.
-  return NextResponse.redirect(`${origin}${DEV_CONSOLE_HOME}`);
+  return NextResponse.redirect(`${origin}${home}`);
 }

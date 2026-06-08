@@ -332,6 +332,105 @@ button { font-family: inherit; }
   .sy-searchbar-full .sb-cta .sy-btn { width: 100%; border-radius: var(--radius-lg); }
 }
 
+/* ─────── Select & DateField custom (desktop, pointer fin) ─────── */
+.sy-select, .sy-datefield { position: relative; }
+
+/* Trigger — variante bordée par défaut (formulaires hors SearchBar). */
+.sy-select-trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; height: 44px; padding: 0 12px;
+  background: var(--surface); border: 1.5px solid var(--line-2);
+  border-radius: 10px; cursor: pointer; text-align: left;
+  font-family: inherit; font-size: 14px; color: var(--ink);
+}
+.sy-select-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Variante inline — intégrée à la pilule SearchBar (ni bordure ni fond). */
+.sy-select-trigger-inline {
+  height: auto; padding: 0; margin-top: 2px; border: none;
+  border-radius: 0; background: transparent; font-weight: 500;
+}
+.sy-select-trigger-inline:focus-visible { outline: none; }
+.sy-select-trigger-inline:focus-visible .sy-select-value {
+  outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px;
+}
+
+.sy-select-lead { display: inline-flex; flex-shrink: 0; align-items: center; }
+.sy-select-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sy-select-placeholder { color: var(--ink-3); font-weight: 400; }
+
+/* Popover listbox. */
+.sy-select-menu {
+  position: absolute; top: calc(100% + 10px); left: 0; z-index: 40;
+  min-width: 100%; max-height: 280px; overflow-y: auto;
+  margin: 0; padding: 6px; list-style: none; outline: none;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+  animation: sy-pop-in .14s ease;
+}
+.sy-select-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 12px; border-radius: 8px; cursor: pointer;
+  font-size: 14px; color: var(--ink); white-space: nowrap;
+}
+.sy-select-option.is-active { background: var(--surface-2); }
+.sy-select-option.is-selected { font-weight: 600; color: var(--accent); }
+
+/* Calendrier DateField. */
+.sy-cal {
+  position: absolute; top: calc(100% + 10px); left: 0; z-index: 40;
+  width: 284px; padding: 14px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+  animation: sy-pop-in .14s ease;
+}
+.sy-cal-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+.sy-cal-title {
+  font-family: var(--display); font-weight: 600; font-size: 15px;
+  color: var(--ink); text-transform: capitalize;
+  font-variation-settings: var(--display-var);
+}
+.sy-cal-nav {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+  background: transparent; border: 1px solid var(--line); color: var(--ink);
+}
+.sy-cal-nav:hover { background: var(--surface-2); }
+.sy-cal-nav:focus-visible, .sy-cal-day:focus-visible, .sy-cal-clear:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.sy-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.sy-cal-dow { margin-bottom: 4px; }
+.sy-cal-dow-cell {
+  display: flex; align-items: center; justify-content: center; height: 26px;
+  font-size: 11px; font-weight: 600; color: var(--ink-3);
+}
+.sy-cal-day {
+  display: flex; align-items: center; justify-content: center; height: 34px;
+  border: none; border-radius: 8px; cursor: pointer; background: transparent;
+  font-family: inherit; font-size: 13px; color: var(--ink);
+}
+.sy-cal-day:hover:not(:disabled) { background: var(--surface-2); }
+.sy-cal-day.is-today { font-weight: 700; color: var(--accent); }
+.sy-cal-day.is-selected { background: var(--accent); color: #fff; font-weight: 600; }
+.sy-cal-day:disabled { color: var(--line-2); cursor: not-allowed; }
+.sy-cal-clear {
+  margin-top: 10px; width: 100%; padding: 8px; cursor: pointer;
+  background: transparent; border: 1px solid var(--line); border-radius: 8px;
+  font-family: inherit; font-size: 13px; color: var(--ink-3);
+}
+.sy-cal-clear:hover { background: var(--surface-2); color: var(--ink); }
+
+@keyframes sy-pop-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sy-select-menu, .sy-cal { animation: none; }
+}
+
 /* ─────────────── Pages légales (CGU / confidentialité / mentions) ─────────────── */
 .sy-legal { background: var(--bg); min-height: 100vh; }
 

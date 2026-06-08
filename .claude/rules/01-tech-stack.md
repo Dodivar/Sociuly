@@ -14,7 +14,7 @@
 | Paiements | Stripe Connect Express (`stripe`) | |
 | Email | Resend + React Email (`resend`, `react-email`) | Templates dans `emails/` |
 | Validation | Zod | Toutes les entrées : Server Actions, routes API, webhooks |
-| Cartes | MapLibre GL JS + MapTiler | Client Component lazy-loadé uniquement |
+| Cartes | MapLibre GL JS + OpenFreeMap | Tuiles OSM open source, sans clé API ni quota, auto-hébergeables. Client Component lazy-loadé uniquement |
 | Observabilité | Sentry EU + PostHog EU | `@sentry/nextjs`, `posthog-js` |
 | Tests | Vitest + @testing-library/react + Playwright + axe-core | |
 | Rate-limiting | @upstash/ratelimit + Upstash Redis | Routes sensibles uniquement |
