@@ -6,6 +6,7 @@
 // exposés en euros côté carte.
 
 import type { ExperienceHue } from "@/components/ds/patterns";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { CITY_CENTERS, cityFromName, haversineKm } from "./geo";
 
@@ -172,7 +173,7 @@ type CatalogRow = {
  * Club (géo PostGIS lat/lng) et au Projet financé. Le filtrage/tri est appliqué
  * ensuite en mémoire par `filterAndSortExperiences`.
  */
-export async function getMarketplaceExperiences(): Promise<MarketplaceExperience[]> {
+async function queryMarketplaceExperiences(): Promise<MarketplaceExperience[]> {
   const rows = await prisma.$queryRaw<CatalogRow[]>`
     SELECT
       e.id,
@@ -239,6 +240,18 @@ export async function getMarketplaceExperiences(): Promise<MarketplaceExperience
     };
   });
 }
+
+/**
+ * Catalogue mis en cache (Data Cache Next). La lecture en base est coûteuse et
+ * les données sont quasi statiques : on évite un aller-retour Postgres à chaque
+ * requête (page d'accueil, /notre-impact en ISR + /experiences en rendu dynamique).
+ * Revalidation toutes les 5 min ; invalidable à la demande via le tag "experiences".
+ */
+export const getMarketplaceExperiences = unstable_cache(
+  queryMarketplaceExperiences,
+  ["marketplace-experiences"],
+  { revalidate: 300, tags: ["experiences"] },
+);
 
 // Normalise une chaîne pour la recherche : minuscules + sans accents/diacritiques.
 function normalizeSearch(s: string): string {
