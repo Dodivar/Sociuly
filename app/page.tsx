@@ -3,7 +3,11 @@ import { Btn, Card, Chip, Avatar, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/landing/impact-map";
-import type { Category } from "@/lib/marketplace/experiences";
+import { getMarketplaceExperiences, type Category } from "@/lib/marketplace/experiences";
+
+// Le catalogue d'expériences est lu en base à chaque requête (carte d'impact) :
+// on rend la page côté serveur à la demande plutôt qu'au build (cf. /experiences).
+export const dynamic = "force-dynamic";
 
 // `id` aligné sur les Category de la marketplace → lien `/experiences?cat=<id>`.
 const CATEGORIES = [
@@ -66,7 +70,11 @@ const FAQ = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // Mêmes expériences publiées que la page /experiences (catalogue Prisma + géo),
+  // affichées sur la carte d'impact ci-dessous.
+  const experiences = await getMarketplaceExperiences();
+
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <TopNav />
@@ -255,7 +263,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-          <ImpactMap style={{ aspectRatio: "4/3" }} />
+          <ImpactMap experiences={experiences} style={{ aspectRatio: "4/3" }} />
         </div>
       </section>
 

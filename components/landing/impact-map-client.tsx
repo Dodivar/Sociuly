@@ -1,8 +1,9 @@
 "use client";
 
 // Carte d'impact de la landing — MapLibre GL JS + tuiles OpenFreeMap (cf. lib/map).
-// Vue « affichage » (pas la carte de recherche) : pastilles « % collecté » par club
-// à travers les 3 villes pilotes, cliquables vers la marketplace filtrée par ville.
+// Vue « affichage » (pas la carte de recherche interactive) : elle présente les
+// MÊMES expériences publiées que la page /experiences (cf. getMarketplaceExperiences),
+// sous forme de pastilles « prix » cliquables vers le détail de l'expérience.
 // Choix UX : le zoom à la molette est DÉSACTIVÉ (scrollZoom) pour ne pas capturer
 // le défilement de la page d'accueil — on garde le pan + les boutons +/−.
 // Lazy-loadée côté client uniquement (cf. impact-map.tsx → next/dynamic, ssr:false).
@@ -11,43 +12,27 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
 import { useEffect, useRef, type CSSProperties } from "react";
 import { GRAND_EST_CENTER, GRAND_EST_ZOOM, MAP_STYLE_URL } from "@/lib/map";
-import { CITY_LABEL, type City } from "@/lib/marketplace/experiences";
+import { CITY_LABEL, type MarketplaceExperience } from "@/lib/marketplace/experiences";
 
-// Clubs mis en avant sur la carte d'impact (mock — sera dérivé de Project.collectedAmount
-// / targetAmount + Club.geo). `pct` = part du projet de saison déjà financée.
-const CLUBS: Array<{
-  lng: number; lat: number; pct: number; label: string; city: City; hot?: boolean;
-}> = [
-  { lng: 7.7455, lat: 48.5839, pct: 92, label: "SIG Strasbourg", city: "strasbourg", hot: true },
-  { lng: 7.7905, lat: 48.6012, pct: 55, label: "RC Strasbourg", city: "strasbourg" },
-  { lng: 6.1844, lat: 48.6921, pct: 68, label: "SLUC Nancy Basket", city: "nancy" },
-  { lng: 6.1700, lat: 48.6600, pct: 18, label: "FC Nancy-Sud", city: "nancy" },
-  { lng: 6.1757, lat: 49.1193, pct: 32, label: "Metz Basket Métropole", city: "metz" },
-];
-
-// Construit l'élément DOM d'une pastille (lien vers la marketplace filtrée par ville).
-function createPinElement(club: (typeof CLUBS)[number]): HTMLAnchorElement {
-  const r = club.hot ? 34 : club.pct >= 50 ? 28 : 22;
-
+// Construit l'élément DOM d'une pastille « prix » (lien vers le détail de l'expérience).
+// `hot` met en avant l'expérience focale (pastille orange + halo animé).
+function createPinElement(exp: MarketplaceExperience, hot: boolean): HTMLAnchorElement {
   const link = document.createElement("a");
-  link.href = `/experiences?ville=${club.city}`;
+  link.href = `/experiences/${exp.slug}`;
   link.className = "sy-impact-marker";
   link.setAttribute(
     "aria-label",
-    `Voir les expériences à ${CITY_LABEL[club.city]} — ${club.label}, ${club.pct}% collectés`,
+    `${exp.title} — ${exp.club}, ${CITY_LABEL[exp.city]}, à partir de ${exp.price} €`,
   );
 
   const pin = document.createElement("span");
-  pin.className = "sy-impact-pin";
-  pin.textContent = `${club.pct}%`;
-  Object.assign(pin.style, {
-    width: `${r}px`,
-    height: `${r}px`,
-    fontSize: r < 26 ? "9px" : "11px",
-    background: club.hot ? "var(--accent)" : "var(--primary)",
-  } satisfies Partial<CSSStyleDeclaration>);
+  pin.className = "sy-num sy-impact-pin";
+  pin.textContent = `€${exp.price}`;
+  pin.style.background = hot ? "var(--accent)" : "var(--surface)";
+  pin.style.color = hot ? "#fff" : "var(--ink)";
+  pin.style.border = `1.5px solid ${hot ? "var(--accent-deep)" : "var(--ink)"}`;
 
-  if (club.hot) {
+  if (hot) {
     const ping = document.createElement("span");
     ping.className = "sy-impact-ping";
     pin.appendChild(ping);
@@ -56,15 +41,24 @@ function createPinElement(club: (typeof CLUBS)[number]): HTMLAnchorElement {
   const tip = document.createElement("span");
   tip.className = "sy-impact-tip";
   tip.setAttribute("role", "tooltip");
-  tip.textContent = `${club.label} · ${CITY_LABEL[club.city]}`;
+  tip.textContent = `${exp.title} · ${exp.club}`;
 
   link.append(pin, tip);
   return link;
 }
 
-export function ImpactMapClient({ style }: { style?: CSSProperties }) {
+export function ImpactMapClient({
+  experiences,
+  style,
+}: {
+  experiences: MarketplaceExperience[];
+  style?: CSSProperties;
+}) {
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  // Conserve la dernière liste d'expériences sans relancer l'init MapLibre.
+  const experiencesRef = useRef(experiences);
+  experiencesRef.current = experiences;
 
   useEffect(() => {
     if (!mapNodeRef.current || mapRef.current) return;
@@ -83,9 +77,15 @@ export function ImpactMapClient({ style }: { style?: CSSProperties }) {
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-    for (const club of CLUBS) {
-      new maplibregl.Marker({ element: createPinElement(club), anchor: "center" })
-        .setLngLat([club.lng, club.lat])
+    const list = experiencesRef.current;
+    // Expérience focale = la plus chère (point premium mis en avant).
+    const hotId = list.length
+      ? list.reduce((a, b) => (b.price > a.price ? b : a)).id
+      : null;
+
+    for (const exp of list) {
+      new maplibregl.Marker({ element: createPinElement(exp, exp.id === hotId), anchor: "center" })
+        .setLngLat([exp.lng, exp.lat])
         .addTo(map);
     }
 
@@ -94,6 +94,9 @@ export function ImpactMapClient({ style }: { style?: CSSProperties }) {
       mapRef.current = null;
     };
   }, []);
+
+  // Statistiques de l'encart, dérivées des expériences réelles affichées.
+  const clubCount = new Set(experiences.map((x) => x.club)).size;
 
   return (
     <div
@@ -107,18 +110,19 @@ export function ImpactMapClient({ style }: { style?: CSSProperties }) {
       <style>{`
         @keyframes sy-ping { 0% { transform: scale(1); opacity: .6 } 100% { transform: scale(1.7); opacity: 0 } }
         .sy-impact-marker { display: block; text-decoration: none; cursor: pointer; }
-        .sy-impact-marker:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; border-radius: 50%; }
+        .sy-impact-marker:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; border-radius: 999px; }
         .sy-impact-pin {
-          display: flex; align-items: center; justify-content: center;
-          border-radius: 50%; color: #fff;
-          font-family: var(--display); font-weight: 700;
+          display: inline-flex; align-items: center; justify-content: center;
+          padding: 7px 14px; border-radius: 999px;
+          font-family: var(--display); font-weight: 700; font-size: 13px;
+          font-variation-settings: var(--display-var); white-space: nowrap;
           box-shadow: 0 4px 12px rgba(20,36,31,.25); position: relative;
           transition: transform .16s ease;
         }
         .sy-impact-marker:hover .sy-impact-pin,
         .sy-impact-marker:focus-visible .sy-impact-pin { transform: scale(1.12); }
         .sy-impact-ping {
-          position: absolute; inset: -6px; border-radius: 50%;
+          position: absolute; inset: -6px; border-radius: 999px;
           border: 2px solid var(--accent); opacity: .4;
           animation: sy-ping 2s ease-out infinite; pointer-events: none;
         }
@@ -142,7 +146,7 @@ export function ImpactMapClient({ style }: { style?: CSSProperties }) {
         }
       `}</style>
 
-      {/* Encart « cette semaine près de vous » (superposé, conserve le DS) */}
+      {/* Encart « expériences près de vous » (superposé, conserve le DS) */}
       <div style={{ position: "absolute", left: 16, bottom: 16, right: 16, pointerEvents: "none" }}>
         <div
           className="sy-card"
@@ -151,8 +155,11 @@ export function ImpactMapClient({ style }: { style?: CSSProperties }) {
             padding: 14, borderRadius: "var(--radius-md)",
           }}
         >
-          <div className="sy-mono">Cette semaine près de vous</div>
-          <div className="sy-h3 sy-num" style={{ marginTop: 4 }}>€8 320 collectés · 5 clubs actifs</div>
+          <div className="sy-mono">Expériences près de vous</div>
+          <div className="sy-h3 sy-num" style={{ marginTop: 4 }}>
+            {experiences.length} {experiences.length > 1 ? "expériences" : "expérience"} · {clubCount}{" "}
+            {clubCount > 1 ? "clubs" : "club"}
+          </div>
         </div>
       </div>
     </div>

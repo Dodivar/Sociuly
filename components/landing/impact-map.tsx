@@ -6,6 +6,7 @@
 
 import dynamic from "next/dynamic";
 import type { CSSProperties } from "react";
+import type { MarketplaceExperience } from "@/lib/marketplace/experiences";
 
 const ImpactMapClient = dynamic(
   () => import("./impact-map-client").then((m) => m.ImpactMapClient),
@@ -26,6 +27,12 @@ const ImpactMapClient = dynamic(
   },
 );
 
-export function ImpactMap({ style }: { style?: CSSProperties }) {
-  return <ImpactMapClient style={style} />;
+export function ImpactMap({
+  experiences,
+  style,
+}: {
+  experiences: MarketplaceExperience[];
+  style?: CSSProperties;
+}) {
+  return <ImpactMapClient experiences={experiences} style={style} />;
 }
