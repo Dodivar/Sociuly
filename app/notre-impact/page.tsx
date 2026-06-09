@@ -4,6 +4,13 @@ import { Btn, Card, Chip } from "@/components/ds/components";
 import { Icon, type IconName } from "@/components/ds/icon";
 import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/landing/impact-map";
+import {
+  getMarketplaceExperiences,
+  type MarketplaceExperience,
+} from "@/lib/marketplace/experiences";
+
+// Page statique régénérée toutes les 5 min (ISR) ; catalogue mis en cache.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Notre impact — Sociuly",
@@ -160,7 +167,16 @@ const METHODOLOGY: ReadonlyArray<{ t: string; d: string }> = [
   },
 ];
 
-export default function NotreImpactPage() {
+export default async function NotreImpactPage() {
+  // Mêmes expériences publiées que la page /experiences, affichées sur la carte.
+  // Dégradation gracieuse si la base est indisponible (carte sans pastilles).
+  let experiences: MarketplaceExperience[] = [];
+  try {
+    experiences = await getMarketplaceExperiences();
+  } catch {
+    experiences = [];
+  }
+
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <TopNav />
@@ -265,7 +281,7 @@ export default function NotreImpactPage() {
               </div>
             </div>
           </div>
-          <ImpactMap style={{ aspectRatio: "4/3" }} />
+          <ImpactMap experiences={experiences} style={{ aspectRatio: "4/3" }} />
         </div>
       </section>
 

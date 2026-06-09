@@ -3,7 +3,16 @@ import { Btn, Card, Chip, Avatar, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/landing/impact-map";
-import type { Category } from "@/lib/marketplace/experiences";
+import {
+  getMarketplaceExperiences,
+  type Category,
+  type MarketplaceExperience,
+} from "@/lib/marketplace/experiences";
+
+// Page marketing statique régénérée toutes les 5 min (ISR) : la carte d'impact
+// reflète le catalogue sans rendre la page dynamique à chaque requête. Le
+// catalogue lui-même est mis en cache (cf. getMarketplaceExperiences).
+export const revalidate = 300;
 
 // `id` aligné sur les Category de la marketplace → lien `/experiences?cat=<id>`.
 const CATEGORIES = [
@@ -66,7 +75,17 @@ const FAQ = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // Mêmes expériences publiées que la page /experiences (catalogue Prisma + géo),
+  // affichées sur la carte d'impact ci-dessous. Si la base est indisponible, la
+  // page marketing reste affichée (carte sans pastilles) plutôt que de planter.
+  let experiences: MarketplaceExperience[] = [];
+  try {
+    experiences = await getMarketplaceExperiences();
+  } catch {
+    experiences = [];
+  }
+
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <TopNav />
@@ -255,7 +274,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-          <ImpactMap style={{ aspectRatio: "4/3" }} />
+          <ImpactMap experiences={experiences} style={{ aspectRatio: "4/3" }} />
         </div>
       </section>
 
