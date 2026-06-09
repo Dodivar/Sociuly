@@ -1,5 +1,5 @@
 import { Icon } from "@/components/ds/icon";
-import type { Task, TaskTone } from "@/lib/console/mock-dashboard";
+import type { Task, TaskTone } from "@/lib/console/dashboard";
 
 const TONE_COLOR: Record<TaskTone, string> = {
   urgent: "var(--accent)",

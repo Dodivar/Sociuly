@@ -3,7 +3,7 @@ import { StatCard } from "@/components/console/stat-card";
 import { BookingsPanel } from "@/components/console/bookings-panel";
 import { FundingCard } from "@/components/console/funding-card";
 import { TasksCard } from "@/components/console/tasks-card";
-import { getDashboardData } from "@/lib/console/mock-dashboard";
+import { getDashboardData } from "@/lib/console/dashboard";
 
 type Props = { params: Promise<{ clubId: string }> };
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Btn, Tabs } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import type { Booking, BookingStatus } from "@/lib/console/mock-dashboard";
+import type { Booking, BookingStatus } from "@/lib/console/dashboard";
 
 const TABS = ["Toutes", "En attente", "Confirmées"] as const;
 type Tab = (typeof TABS)[number];

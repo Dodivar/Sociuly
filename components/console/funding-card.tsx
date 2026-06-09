@@ -1,5 +1,5 @@
 import { Progress } from "@/components/ds/components";
-import type { Project } from "@/lib/console/mock-dashboard";
+import type { Project } from "@/lib/console/dashboard";
 
 type Props = { project: Project };
 

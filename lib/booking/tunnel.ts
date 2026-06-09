@@ -67,9 +67,16 @@ export const LAST_TUNNEL_STEP: StepNumber = 3;
 // être validés. Ne pas figer ailleurs qu'ici.
 export const DEPOSIT_RATE = 0.3;
 
-// ─────── Calculs de montants (TTC indicatif) ───────
-// TODO(§11) : décomposition HT / TVA / TTC selon Club.vatLiable — décision
-// comptable OUVERTE. L'acheteur ne voit que le TTC + l'échéancier (SPEC §5).
+// ─────── TVA (décision actée : 20 % pour Sociuly et les clubs) ───────
+// Les lignes de devis (QuoteLine.unitPriceCents) sont exprimées HT ; le TTC payé
+// par l'acheteur = HT × (1 + TVA_RATE). La commission Sociuly (6 % TTC) est, elle,
+// calculée UNIQUEMENT côté serveur (lib/booking/commission.ts) et jamais surfacée.
+export const VAT_RATE = 0.2;
+
+// ─────── Estimation indicative (TTC) avant devis ferme ───────
+// Teaser affiché dans le tunnel avant le devis contractuel ; basePriceCents /
+// pricePerPersonCents sont des montants d'appel TTC (SPEC §3). Le montant ferme
+// provient toujours du devis accepté (quoteAmounts), pas de cette estimation.
 export function estimateCents(exp: BookingExperience, participants: number): number {
   return exp.priceModel === "per_person"
     ? exp.pricePerPersonCents * participants

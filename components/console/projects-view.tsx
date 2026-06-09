@@ -7,7 +7,7 @@ import {
 import { Icon } from "@/components/ds/icon";
 import type {
   LinkedExperience, ProjectDetail, ProjectStatus, ProjectUpdate,
-} from "@/lib/console/mock-projects";
+} from "@/lib/console/projects";
 
 type Props = { projects: ProjectDetail[] };
 

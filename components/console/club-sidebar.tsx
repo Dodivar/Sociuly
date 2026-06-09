@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar, Progress } from "@/components/ds/components";
 import { Icon, type IconName } from "@/components/ds/icon";
-import type { Club, NavBadges } from "@/lib/console/mock-dashboard";
+import type { Club, NavBadges } from "@/lib/console/dashboard";
 
 type NavId = "home" | "experiences" | "devis" | "resa" | "projets" | "rev" | "avis" | "team";
 

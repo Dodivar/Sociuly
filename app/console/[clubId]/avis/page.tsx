@@ -1,5 +1,5 @@
 import { ReviewsView } from "@/components/console/reviews-view";
-import { getReviewsData } from "@/lib/console/mock-reviews";
+import { getReviewsData } from "@/lib/console/reviews";
 
 type Props = { params: Promise<{ clubId: string }> };
 

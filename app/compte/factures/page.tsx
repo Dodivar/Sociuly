@@ -1,6 +1,6 @@
 import { PanelCard } from "@/components/account/account-bits";
 import { InvoiceRows } from "@/components/account/org-lists";
-import { getOrgInvoices } from "@/lib/account/mock-org";
+import { getOrgInvoices } from "@/lib/account/org";
 
 // Factures de l'entreprise — /compte/factures (SPEC §6).
 export default async function CompteFacturesPage() {

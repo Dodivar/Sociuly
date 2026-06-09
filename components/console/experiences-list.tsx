@@ -10,7 +10,7 @@ import {
   STATUS_LABEL,
   type ExperienceAdmin,
   type ExperienceStatus,
-} from "@/lib/console/mock-experiences";
+} from "@/lib/console/experiences";
 
 type TabId = "all" | "published" | "draft" | "paused" | "archived";
 

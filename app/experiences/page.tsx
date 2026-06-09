@@ -2,9 +2,9 @@ import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { MarketplaceFilters } from "@/components/marketplace/filters";
 import { MarketplaceResults } from "@/components/marketplace/results";
 import { MarketplaceViewProvider } from "@/components/marketplace/view-context";
+import { getMarketplaceExperiences } from "@/lib/marketplace/experiences.server";
 import {
   filterAndSortExperiences,
-  getMarketplaceExperiences,
   parseFilters,
 } from "@/lib/marketplace/experiences";
 

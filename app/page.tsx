@@ -3,8 +3,8 @@ import { Btn, Card, Chip, Avatar, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/landing/impact-map";
+import { getMarketplaceExperiences } from "@/lib/marketplace/experiences.server";
 import {
-  getMarketplaceExperiences,
   type Category,
   type MarketplaceExperience,
 } from "@/lib/marketplace/experiences";

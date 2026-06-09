@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ds/icon";
 import { ExperiencesList } from "@/components/console/experiences-list";
-import { getExperiences } from "@/lib/console/mock-experiences";
+import { getExperiences } from "@/lib/console/experiences";
 
 type Props = { params: Promise<{ clubId: string }> };
 

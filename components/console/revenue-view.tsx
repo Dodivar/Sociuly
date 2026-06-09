@@ -12,7 +12,7 @@ import {
   type RevenueData,
   type UpcomingPayout,
   type UpcomingPayoutStatus,
-} from "@/lib/console/mock-revenues";
+} from "@/lib/console/revenues";
 
 type Props = { data: RevenueData };
 

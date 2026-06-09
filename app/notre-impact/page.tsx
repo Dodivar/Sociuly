@@ -4,10 +4,8 @@ import { Btn, Card, Chip } from "@/components/ds/components";
 import { Icon, type IconName } from "@/components/ds/icon";
 import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/landing/impact-map";
-import {
-  getMarketplaceExperiences,
-  type MarketplaceExperience,
-} from "@/lib/marketplace/experiences";
+import { getMarketplaceExperiences } from "@/lib/marketplace/experiences.server";
+import { type MarketplaceExperience } from "@/lib/marketplace/experiences";
 
 // Page statique régénérée toutes les 5 min (ISR) ; catalogue mis en cache.
 export const revalidate = 300;

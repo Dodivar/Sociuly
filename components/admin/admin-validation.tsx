@@ -12,7 +12,7 @@ import {
   type AdminKpi,
   type KycCheckItem,
   type PendingClub,
-} from "@/lib/admin/mock-admin";
+} from "@/lib/admin/data";
 
 type Filter = "all" | "to_verify" | "docs_incomplete";
 

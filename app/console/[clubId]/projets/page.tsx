@@ -1,4 +1,4 @@
-import { getProjects } from "@/lib/console/mock-projects";
+import { getProjects } from "@/lib/console/projects";
 import { ProjectsView } from "@/components/console/projects-view";
 
 type Props = { params: Promise<{ clubId: string }> };

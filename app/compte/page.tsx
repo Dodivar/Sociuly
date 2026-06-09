@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/ds/icon";
 import { StatCard, PanelCard } from "@/components/account/account-bits";
 import { QuoteRows, BookingRows } from "@/components/account/org-lists";
-import { getOrgBookings, getOrganizationSummary } from "@/lib/account/mock-org";
+import { getOrgBookings, getOrganizationSummary } from "@/lib/account/org";
 import { getQuotesForOrg, eurWhole } from "@/lib/devis/quotes";
 
 // Vue d'ensemble de l'espace entreprise — /compte (SPEC §6).
