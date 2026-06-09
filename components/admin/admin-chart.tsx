@@ -2,7 +2,7 @@
 // (CLAUDE.md §1 interdit l'ajout d'une lib de charting). Approche barres
 // reprise de components/console/funding-card.tsx.
 
-import type { ChartSeries, CategoryBar } from "@/lib/admin/mock-admin";
+import type { ChartSeries, CategoryBar } from "@/lib/admin/data";
 
 // ─────── Area chart (CA / commissions / reversé) ───────
 

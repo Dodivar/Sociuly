@@ -1,6 +1,6 @@
 import { ClubSidebar } from "@/components/console/club-sidebar";
 import { requireClubAccess } from "@/lib/auth/rbac";
-import { getClubSummary, getDashboardData } from "@/lib/console/mock-dashboard";
+import { getClubSummary, getDashboardData } from "@/lib/console/dashboard";
 
 type Props = {
   children: React.ReactNode;

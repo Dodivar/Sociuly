@@ -19,7 +19,7 @@ import {
   type OrgBookingStatus,
   type OrgInvoice,
   type OrgInvoiceStatus,
-} from "@/lib/account/mock-org";
+} from "@/lib/account/org";
 
 const ROW_CSS = `
   .ol-list { list-style: none; margin: 0; padding: 0; }

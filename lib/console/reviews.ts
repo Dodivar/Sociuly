@@ -1,0 +1,135 @@
+// Cf. SPEC.md §4 — Review · §5 — règles "Reviews".
+// Avis servis par Prisma (Review du club + booking/experience/organization).
+//
+// Rappel des règles métier (SPEC §5), à ne pas enfreindre côté console club :
+//   - L'avis est rédigé par l'ORGANISATION acheteuse (jamais un particulier, cf. §2),
+//     uniquement entre `completedAt` et J+30. Note 1–5 obligatoire, commentaire
+//     optionnel (≤ 600 caractères).
+//   - PAS de réponse publique du club en v1 (prévu v2, cf. §2). On n'expose donc
+//     aucune action "répondre" ici.
+//   - Modération a posteriori par l'admin Sociuly. Le club peut seulement
+//     SIGNALER un avis problématique → il passe en attente de modération admin.
+//
+// Modèle B2B : l'auteur d'un avis est toujours une `Organization`. Libellés de
+// dates pré-formatés (FR) côté donnée car la vue est "use client".
+
+import { prisma } from "@/lib/prisma";
+import { resolveClubId } from "./club";
+
+// Statut d'un avis tel que vu par le club.
+//   published = visible publiquement.
+//   reported  = signalé par le club, en attente de modération admin Sociuly.
+export type ReviewStatus = "published" | "reported";
+
+// Motif de signalement transmis à l'admin Sociuly.
+export type ReportReason =
+  | "offensive" // propos injurieux, haineux ou discriminatoires
+  | "false" // avis mensonger / factuellement inexact
+  | "off_topic" // hors-sujet, ne concerne pas l'expérience
+  | "personal_data" // données personnelles / diffamation
+  | "spam" // spam, concurrence déloyale
+  | "other"; // autre (préciser)
+
+export type Review = {
+  id: string;
+  bookingNumber: string; // SOC-YYYY-NNNNN (1 avis max par booking, cf. §4)
+  organizationName: string; // organisation acheteuse (auteur de l'avis)
+  organizationInitials: string;
+  experienceTitle: string;
+  rating: number; // 1..5 (obligatoire)
+  comment?: string; // ≤ 600 caractères, optionnel
+  publishedAtLabel: string; // date pré-formatée FR
+  publishedAtISO: string; // tri / fenêtre J+30 côté serveur
+  status: ReviewStatus;
+  isNew: boolean; // non encore consulté par le club (alimente le badge nav)
+  reportReason?: ReportReason; // renseigné si status = reported
+};
+
+export type RatingDistribution = Record<1 | 2 | 3 | 4 | 5, number>;
+
+export type ReviewKpis = {
+  averageRating: number; // note moyenne (1 décimale)
+  totalCount: number;
+  newCount: number; // avis non encore consultés
+  reportedCount: number; // avis en cours de modération
+  distribution: RatingDistribution; // nombre d'avis par note
+};
+
+export type ReviewsData = {
+  kpis: ReviewKpis;
+  reviews: Review[];
+};
+
+export const REPORT_REASON_LABEL: Record<ReportReason, string> = {
+  offensive: "Propos injurieux ou haineux",
+  false: "Avis mensonger ou inexact",
+  off_topic: "Hors-sujet / sans rapport avec l'expérience",
+  personal_data: "Données personnelles ou diffamation",
+  spam: "Spam ou concurrence déloyale",
+  other: "Autre motif",
+};
+
+// Avis reçus (mock). Le club mock = SIG Strasbourg → expériences cohérentes.
+
+function computeKpis(reviews: Review[]): ReviewKpis {
+  const totalCount = reviews.length;
+  const distribution: RatingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let ratingSum = 0;
+  let newCount = 0;
+  let reportedCount = 0;
+
+  for (const r of reviews) {
+    distribution[r.rating as 1 | 2 | 3 | 4 | 5] += 1;
+    ratingSum += r.rating;
+    if (r.isNew) newCount += 1;
+    if (r.status === "reported") reportedCount += 1;
+  }
+
+  // Moyenne arrondie à 1 décimale ; 0 si aucun avis (évite NaN).
+  const averageRating = totalCount === 0 ? 0 : Math.round((ratingSum / totalCount) * 10) / 10;
+
+  return { averageRating, totalCount, newCount, reportedCount, distribution };
+}
+
+// L'enum DB ReviewReportReason utilise `inaccurate` (mot réservé `false` interdit).
+// Mapping vers le type de vue ReportReason.
+function toReportReason(r: string | null): ReportReason | undefined {
+  if (!r) return undefined;
+  return (r === "inaccurate" ? "false" : r) as ReportReason;
+}
+
+const initialsOf = (name: string) =>
+  name.split(" ").map((w) => w[0]).join("").slice(0, 3).toUpperCase();
+const frReviewDate = (d: Date) =>
+  d.toLocaleDateString("fr-FR", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
+
+export async function getReviewsData(clubIdParam: string): Promise<ReviewsData> {
+  const clubId = await resolveClubId(clubIdParam);
+  if (!clubId) return { kpis: computeKpis([]), reviews: [] };
+
+  const rows = await prisma.review.findMany({
+    where: { clubId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      organization: { select: { name: true } },
+      booking: { select: { bookingNumber: true, experience: { select: { title: true } } } },
+    },
+  });
+
+  const reviews: Review[] = rows.map((r) => ({
+    id: r.id,
+    bookingNumber: r.booking.bookingNumber,
+    organizationName: r.organization.name,
+    organizationInitials: initialsOf(r.organization.name),
+    experienceTitle: r.booking.experience.title,
+    rating: r.rating,
+    comment: r.comment ?? undefined,
+    publishedAtLabel: frReviewDate(r.createdAt),
+    publishedAtISO: r.createdAt.toISOString(),
+    status: r.status as ReviewStatus,
+    isNew: !r.viewedByClub,
+    reportReason: toReportReason(r.reportReason),
+  }));
+
+  return { kpis: computeKpis(reviews), reviews };
+}

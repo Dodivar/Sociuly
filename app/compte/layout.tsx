@@ -1,7 +1,7 @@
 import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { AccountNav } from "@/components/account/account-nav";
 import { requireRole } from "@/lib/auth/rbac";
-import { getOrganizationSummary, getOrgBookings } from "@/lib/account/mock-org";
+import { getOrganizationSummary, getOrgBookings } from "@/lib/account/org";
 import { getQuotesForOrg } from "@/lib/devis/quotes";
 
 // Espace entreprise /compte (SPEC §6) — réservé org_buyer.

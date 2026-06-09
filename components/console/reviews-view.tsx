@@ -10,7 +10,7 @@ import {
   type ReportReason,
   type Review,
   type ReviewsData,
-} from "@/lib/console/mock-reviews";
+} from "@/lib/console/reviews";
 
 type Props = { data: ReviewsData };
 

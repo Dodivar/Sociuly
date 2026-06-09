@@ -48,6 +48,20 @@ enum ClubStatus {
   suspended
 }
 
+enum ClubDocumentType {
+  statuts // statuts / K-bis
+  rna // RNA / récépissé
+  rib // coordonnées bancaires
+  president_id // pièce d'identité du président
+  insurance // attestation RC pro
+  other
+}
+
+enum ClubDocumentStatus {
+  uploaded
+  missing
+}
+
 enum ClubMemberRole {
   president
   manager
@@ -132,6 +146,27 @@ enum QuoteEventKind {
   revision
   decision
   note
+}
+
+enum ReviewStatus {
+  published
+  reported
+}
+
+enum ReviewReportReason {
+  offensive
+  inaccurate // avis mensonger / factuellement inexact (view: "false")
+  off_topic
+  personal_data
+  spam
+  other
+}
+
+enum PayoutStatus {
+  awaiting_completion // booking pas encore terminé
+  dispute_window // 48 h post-completion (litige possible)
+  scheduled // versement programmé
+  paid // virement effectué
 }
 
 enum BookingStatus {
@@ -223,10 +258,18 @@ model Club {
 
   // KYC / statut (§4)
   status              ClubStatus @default(pending_verification)
+  siretVerified       Boolean    @default(false) // SIRET vérifié via API INSEE Sirene
   corporateReady      Boolean    @default(false)
   federationNumber    String? // affiliation fédérale (association_1901)
   stripeAccountId     String?
   bankDetailsVerified Boolean    @default(false)
+
+  // Gate « corporate-ready » (§4 — vendre en B2B). corporateReady = dérivé des 3.
+  insuranceRcPro      Boolean @default(false) // attestation RC pro valide
+  certifiedInstructor Boolean @default(false) // ≥ 1 encadrant diplômé (BPJEPS / APA)
+  canInvoice          Boolean @default(false) // capable d'émettre une facture conforme
+
+  adminNote String? // note interne admin Sociuly (file de validation KYC)
 
   members     ClubMember[]
   projects    Project[]
@@ -235,11 +278,28 @@ model Club {
   quotes      Quote[]
   bookings    Booking[]
   reviews     Review[]
+  documents   ClubDocument[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([siret])
+  @@index([status])
+}
+
+/// Pièce justificative KYC d'un club (Supabase Storage). 1 ligne par type attendu.
+model ClubDocument {
+  id         String             @id @default(uuid()) @db.Uuid
+  clubId     String             @db.Uuid
+  club       Club               @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  type       ClubDocumentType
+  label      String
+  storageKey String? // objet Supabase Storage (null si non téléversé)
+  status     ClubDocumentStatus @default(missing)
+
+  createdAt DateTime @default(now())
+
+  @@unique([clubId, type])
 }
 
 /// Membre d'un club avec permissions par rôle (§4).
@@ -262,18 +322,37 @@ model Project {
   id              String        @id @default(uuid()) @db.Uuid
   clubId          String        @db.Uuid
   club            Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  slug            String        @unique
   title           String
   description     String?
   targetAmount    Int // cents
   collectedAmount Int           @default(0) // cents
   status          ProjectStatus @default(draft)
 
+  // Vanity metrics (analytics) — viewsCount alimenté à part (PostHog/agrégat), 0 par défaut.
+  viewsCount Int @default(0)
+
   experiences Experience[]
+  updates     ProjectUpdate[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([clubId, status])
+}
+
+/// Actualité d'un projet (fil affiché sur la fiche projet / console).
+model ProjectUpdate {
+  id        String  @id @default(uuid()) @db.Uuid
+  projectId String  @db.Uuid
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  body      String?
+  done      Boolean @default(false) // jalon atteint
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
 }
 
 /// Module d'expérience réutilisable (« moment »).
@@ -467,6 +546,7 @@ model Booking {
 
   invoice Invoice?
   review  Review?
+  payout  Payout?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -501,7 +581,33 @@ model Review {
   rating         Int // 1–5
   comment        String?      @db.VarChar(600)
 
+  // Modération (§4 — modération post-hoc, signalement public possible).
+  status        ReviewStatus        @default(published)
+  reportReason  ReviewReportReason?
+  viewedByClub  Boolean             @default(false) // isNew = !viewedByClub (badge nav)
+
   createdAt DateTime @default(now())
 
   @@index([clubId])
+  @@index([clubId, status])
+}
+
+/// Versement Stripe au club (transfert D+1 après completedAt, §4). Net = TTC − commission.
+model Payout {
+  id        String  @id @default(uuid()) @db.Uuid
+  bookingId String  @unique @db.Uuid
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  grossAmountTTCCents Int
+  feeAmountCents      Int
+  netAmountCents      Int
+
+  status       PayoutStatus @default(awaiting_completion)
+  scheduledFor DateTime? // date de versement prévue (J+1 après completedAt)
+  paidAt       DateTime? // virement effectué
+  stripeTransferId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([status])
 }

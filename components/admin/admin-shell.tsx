@@ -5,7 +5,7 @@ import { Icon, type IconName } from "@/components/ds/icon";
 import { AdminSidebar, type AdminSection } from "@/components/admin/admin-sidebar";
 import { AdminOverview } from "@/components/admin/admin-overview";
 import { AdminValidation } from "@/components/admin/admin-validation";
-import type { AdminData } from "@/lib/admin/mock-admin";
+import type { AdminData } from "@/lib/admin/data";
 
 type Props = { data: AdminData };
 

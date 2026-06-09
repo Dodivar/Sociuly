@@ -1,7 +1,7 @@
 import { Avatar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { PanelCard, StatusChip } from "@/components/account/account-bits";
-import { getOrgTeam, ORG_ROLE_LABEL } from "@/lib/account/mock-org";
+import { getOrgTeam, ORG_ROLE_LABEL } from "@/lib/account/org";
 
 // Équipe de l'entreprise — /compte/equipe (SPEC §6).
 // TODO(api): invitation par email (Resend) + gestion des rôles org_buyer.

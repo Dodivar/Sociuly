@@ -47,11 +47,11 @@ async function ensureAuthUser(email: string, fullName: string): Promise<string> 
   throw new Error(`Impossible de créer/retrouver l'utilisateur ${email}: ${error?.message}`);
 }
 
-/** HT/TVA/TTC + commission à partir d'un montant TTC (cents). TVA 20 %, fee 6 %. */
-function amounts(ttc: number) {
-  const ht = Math.round(ttc / 1.2);
-  const vat = ttc - ht;
-  const fee = Math.round(ttc * 0.06); // commission Sociuly, sans TVA (§ décision)
+/** HT/TVA/TTC + commission à partir d'une base HT (cents). TVA 20 %, fee 6 % TTC. */
+function amounts(ht: number) {
+  const vat = Math.round(ht * 0.2); // TVA 20 % (décision actée)
+  const ttc = ht + vat;
+  const fee = Math.round(ttc * 0.06); // commission Sociuly, sans TVA (décision actée)
   const net = ttc - fee;
   return { ht, vat, ttc, fee, net };
 }
@@ -60,6 +60,16 @@ function amounts(ttc: number) {
 function capacity(label: string): { min: number; max: number } {
   const m = label.match(/(\d+)\D+(\d+)/);
   return m ? { min: Number(m[1]), max: Number(m[2]) } : { min: 10, max: 50 };
+}
+
+/** Slug ASCII à partir d'un libellé FR. */
+function slugify(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 // ─────── Données clubs (dérivées du catalogue marketplace) ───────
@@ -263,14 +273,27 @@ async function main() {
   const clubIdBySlug = new Map<string, string>();
   const projectIdByClub = new Map<string, string>();
   for (const c of CLUBS) {
+    const isActive = c.status === "active";
     const club = await prisma.club.upsert({
       where: { siret: c.siret },
       create: {
         slug: c.slug, name: c.name, clubType: c.clubType, vatLiable: c.vatLiable, siret: c.siret,
         city: c.city, postalCode: c.postalCode, status: c.status,
-        corporateReady: c.status === "active", bankDetailsVerified: c.status === "active",
+        siretVerified: true,
+        corporateReady: isActive, bankDetailsVerified: isActive,
+        insuranceRcPro: isActive, certifiedInstructor: isActive, canInvoice: isActive,
         hasVenue: c.hasVenue ?? false, venueCapacity: c.venueCapacity, canHostVipMatch: c.canHostVipMatch ?? false,
         federationNumber: c.clubType === "association_1901" ? "FED-" + c.siret.slice(0, 6) : null,
+        // Documents KYC : tous présents pour les clubs actifs ; pour le club en
+        // attente, RIB + pièce d'identité manquants (dossier incomplet à valider).
+        documents: {
+          create: [
+            { type: "statuts", label: "Statuts / K-bis (PDF)", status: "uploaded", storageKey: `${c.slug}/statuts.pdf` },
+            { type: "rna", label: "RNA / Récépissé", status: "uploaded", storageKey: `${c.slug}/rna.pdf` },
+            { type: "rib", label: "RIB", status: isActive ? "uploaded" : "missing", storageKey: isActive ? `${c.slug}/rib.pdf` : null },
+            { type: "president_id", label: "Pièce identité prés.", status: isActive ? "uploaded" : "missing", storageKey: isActive ? `${c.slug}/id.pdf` : null },
+          ],
+        },
       },
       update: { name: c.name, status: c.status },
     });
@@ -301,6 +324,7 @@ async function main() {
     const existingProject = await prisma.project.findFirst({
       where: { clubId: club.id, title: c.project.title },
     });
+    const projectSlug = `${c.slug}--${slugify(c.project.title)}`;
     const project = existingProject
       ? await prisma.project.update({
           where: { id: existingProject.id },
@@ -308,8 +332,17 @@ async function main() {
         })
       : await prisma.project.create({
           data: {
-            clubId: club.id, title: c.project.title, targetAmount: c.project.targetCents,
-            collectedAmount: collected, status: projectStatus,
+            clubId: club.id, slug: projectSlug, title: c.project.title,
+            targetAmount: c.project.targetCents, collectedAmount: collected, status: projectStatus,
+            viewsCount: Math.round(200 + Math.random() * 1200),
+            updates: {
+              create: [
+                { title: "Projet lancé", body: `Objectif : ${Math.round(c.project.targetCents / 100)} € pour « ${c.project.title} ».`, done: true,
+                  createdAt: new Date("2026-02-01T09:00:00Z") },
+                { title: "Mi-parcours atteint", body: "Merci aux entreprises partenaires pour leur soutien.", done: collected * 2 >= c.project.targetCents,
+                  createdAt: new Date("2026-04-15T09:00:00Z") },
+              ],
+            },
           },
         });
     projectIdByClub.set(c.slug, project.id);
@@ -361,7 +394,7 @@ async function main() {
   const expNancy = expIdBySlug.get("atelier-cohesion-nancy")!;
 
   // Devis 1 — envoyé (Atlas → SIG). ref figé = lien de démo SAMPLE_SENT_QUOTE_REF.
-  const a1 = amounts(48_000); // 480 € TTC
+  const a1 = amounts(48_000); // 480 € HT (576 € TTC)
   await prisma.quote.upsert({
     where: { quoteNumber: "DEV-2026-00001" },
     create: {
@@ -390,7 +423,7 @@ async function main() {
   });
 
   // Devis 2 — accepté + Booking confirmé + complété + facture + avis (Atlas → SIG).
-  const a2 = amounts(96_000); // 960 € TTC
+  const a2 = amounts(96_000); // 960 € HT (1152 € TTC)
   const q2 = await prisma.quote.upsert({
     where: { quoteNumber: "DEV-2026-00002" },
     create: {
@@ -440,14 +473,27 @@ async function main() {
   await prisma.review.upsert({
     where: { bookingId: b2.id },
     create: {
-      bookingId: b2.id, organizationId: atlas, clubId: sig, rating: 5,
+      bookingId: b2.id, organizationId: atlas, clubId: sig, rating: 5, status: "published",
       comment: "Journée exceptionnelle, équipe ravie. Organisation au top.",
+    },
+    update: {},
+  });
+  // Versement effectué (J+1 après completedAt) pour le booking terminé.
+  await prisma.payout.upsert({
+    where: { bookingId: b2.id },
+    create: {
+      bookingId: b2.id,
+      grossAmountTTCCents: a2.ttc, feeAmountCents: a2.fee, netAmountCents: a2.net,
+      status: "paid",
+      scheduledFor: new Date(completedAt.getTime() + 86_400_000),
+      paidAt: new Date(completedAt.getTime() + 86_400_000),
+      stripeTransferId: "tr_demo_0001",
     },
     update: {},
   });
 
   // Devis 3 — accepté + Booking deposit_paid (Novarue → ASNL).
-  const a3 = amounts(75_000); // 750 € TTC
+  const a3 = amounts(75_000); // 750 € HT (900 € TTC)
   const q3 = await prisma.quote.upsert({
     where: { quoteNumber: "DEV-2026-00003" },
     create: {
@@ -474,7 +520,7 @@ async function main() {
     },
     update: {},
   });
-  await prisma.booking.upsert({
+  const b3 = await prisma.booking.upsert({
     where: { bookingNumber: "SOC-2026-00002" },
     create: {
       bookingNumber: "SOC-2026-00002", quoteId: q3.id, organizationId: novarue, clubId: asnl, experienceId: expNancy,
@@ -483,6 +529,17 @@ async function main() {
       requestedDate: new Date("2026-09-10T09:00:00Z"),
     },
     update: { status: "deposit_paid" },
+  });
+  // Versement à venir (booking pas encore réalisé).
+  await prisma.payout.upsert({
+    where: { bookingId: b3.id },
+    create: {
+      bookingId: b3.id,
+      grossAmountTTCCents: a3.ttc, feeAmountCents: a3.fee, netAmountCents: a3.net,
+      status: "awaiting_completion",
+      scheduledFor: new Date("2026-09-11T00:00:00Z"),
+    },
+    update: {},
   });
 
   console.log("✓ Seed terminé.");

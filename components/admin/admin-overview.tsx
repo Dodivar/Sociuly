@@ -10,7 +10,7 @@ import {
   type AdminKpi,
   type ChartSeries,
   type PendingClub,
-} from "@/lib/admin/mock-admin";
+} from "@/lib/admin/data";
 
 // Style des puces de statut — tokens uniquement (CLAUDE.md §6/§7).
 export const PENDING_STATUS_CHIP: Record<

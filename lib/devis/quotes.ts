@@ -27,7 +27,7 @@
 // Server Actions avec calcul commission/acompte côté serveur (TODO).
 // Tous les montants sont en centimes (Int), jamais de float (SPEC §3).
 
-import { DEPOSIT_RATE } from "@/lib/booking/tunnel";
+import { DEPOSIT_RATE, VAT_RATE } from "@/lib/booking/tunnel";
 import type { ExperienceLocation } from "@/lib/marketplace/experience-detail";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -149,9 +149,10 @@ export function quoteAmounts(lines: QuoteLine[]): {
   depositCents: number;
   balanceCents: number;
 } {
-  const amountTTCCents = lines.reduce((sum, l) => sum + lineSubtotalCents(l), 0);
-  const vatCents = 0; // TODO(§11) — voir ci-dessus.
-  const amountHTCents = amountTTCCents - vatCents;
+  // Les lignes sont exprimées HT ; TVA 20 % (décision actée) → TTC payé par l'acheteur.
+  const amountHTCents = lines.reduce((sum, l) => sum + lineSubtotalCents(l), 0);
+  const vatCents = Math.round(amountHTCents * VAT_RATE);
+  const amountTTCCents = amountHTCents + vatCents;
   const depositCents = Math.round(amountTTCCents * DEPOSIT_RATE);
   const balanceCents = amountTTCCents - depositCents;
   return { amountTTCCents, amountHTCents, vatCents, depositCents, balanceCents };

@@ -8,7 +8,7 @@ import {
   STATUS_LABEL,
   type BookingAdmin,
   type BookingStatus,
-} from "@/lib/console/mock-reservations";
+} from "@/lib/console/reservations";
 
 type Props = { bookings: BookingAdmin[] };
 
