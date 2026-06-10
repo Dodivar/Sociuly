@@ -1,5 +1,5 @@
 import { ReservationsView } from "@/components/console/reservations-view";
-import { getReservations } from "@/lib/console/reservations";
+import { getReservations } from "@/lib/console/reservations.server";
 
 type Props = { params: Promise<{ clubId: string }> };
 

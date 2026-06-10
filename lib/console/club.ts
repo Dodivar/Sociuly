@@ -4,13 +4,15 @@
 // du club (ou son slug). TODO(auth): vérifier l'appartenance ClubMember du
 // club_admin connecté au niveau de la route.
 
-import { prisma } from "@/lib/prisma";
+import { isDatabaseConfigured, prisma } from "@/lib/prisma";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Résout le param de route vers l'enregistrement Club (ou null). */
 export async function resolveClub(param: string) {
+  // Build sans base (CI/preview) : aucun club → les getters console renvoient un repli vide.
+  if (!isDatabaseConfigured) return null;
   if (UUID_RE.test(param)) return prisma.club.findUnique({ where: { id: param } });
   if (param === "demo") {
     return prisma.club.findFirst({

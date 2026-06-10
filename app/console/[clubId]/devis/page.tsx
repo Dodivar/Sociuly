@@ -1,5 +1,5 @@
 import { QuotesView } from "@/components/console/quotes-view";
-import { getQuotesForClub } from "@/lib/devis/quotes";
+import { getQuotesForClub } from "@/lib/devis/quotes.server";
 
 type Props = { params: Promise<{ clubId: string }> };
 

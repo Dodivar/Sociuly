@@ -20,6 +20,18 @@ const PAD_BOTTOM = 22;
 
 export function AreaChart({ months, series, activeId, height = 150 }: AreaChartProps) {
   const active = series.find((s) => s.id === activeId) ?? series[0];
+  // Aucune série (ex. build sans base / période sans donnée) : graphique vide.
+  if (!active) {
+    return (
+      <svg
+        role="img"
+        aria-label="Aucune donnée disponible"
+        viewBox={`0 0 ${VB_W} ${height}`}
+        preserveAspectRatio="none"
+        style={{ width: "100%", height, display: "block" }}
+      />
+    );
+  }
   const max = Math.max(1, ...series.flatMap((s) => s.points));
   const n = active.points.length;
   const plotH = height - PAD_TOP - PAD_BOTTOM;
