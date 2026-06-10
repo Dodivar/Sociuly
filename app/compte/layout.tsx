@@ -2,7 +2,7 @@ import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { AccountNav } from "@/components/account/account-nav";
 import { requireRole } from "@/lib/auth/rbac";
 import { getOrganizationSummary, getOrgBookings } from "@/lib/account/org";
-import { getQuotesForOrg } from "@/lib/devis/quotes";
+import { getQuotesForOrg } from "@/lib/devis/quotes.server";
 
 // Espace entreprise /compte (SPEC §6) — réservé org_buyer.
 // TODO(api): résoudre l'Organization depuis la session (session.organizationId)

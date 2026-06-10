@@ -4,7 +4,7 @@
 // Montants en centimes (Int), jamais de float (SPEC §3).
 
 import type { IconName } from "@/components/ds/icon";
-import { prisma } from "@/lib/prisma";
+import { isDatabaseConfigured, prisma } from "@/lib/prisma";
 import type { BookingStatus } from "@/lib/generated/prisma/enums";
 
 // Organisation de démonstration (fallback historique). En attendant le câblage de
@@ -13,6 +13,8 @@ export const DEMO_ORG_NAME = "Klaxoon SAS";
 
 // TODO(auth): remplacer par l'Organization de l'org_buyer authentifié (session Supabase).
 async function resolveOrg() {
+  // Build sans base (CI/preview) : aucune org → les getters /compte renvoient un repli vide.
+  if (!isDatabaseConfigured) return null;
   return prisma.organization.findFirst({ orderBy: { createdAt: "asc" } });
 }
 

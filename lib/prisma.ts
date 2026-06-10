@@ -11,6 +11,15 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 
+/**
+ * Vrai quand une base est configurée (`DATABASE_URL` présent). En prod et en dev
+ * local, elle l'est toujours. En revanche un `next build` lancé sans base (CI /
+ * preview sans Postgres) ne peut pas pré-rendre les pages adossées à Prisma : les
+ * getters serveur court-circuitent alors vers un repli vide via ce drapeau, ce qui
+ * laisse le build aboutir. Le comportement runtime (DATABASE_URL défini) est inchangé.
+ */
+export const isDatabaseConfigured = Boolean(process.env.DATABASE_URL);
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };

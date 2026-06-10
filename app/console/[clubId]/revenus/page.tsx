@@ -1,5 +1,5 @@
 import { RevenueView } from "@/components/console/revenue-view";
-import { getRevenueData } from "@/lib/console/revenues";
+import { getRevenueData } from "@/lib/console/revenues.server";
 
 type Props = { params: Promise<{ clubId: string }> };
 

@@ -13,7 +13,7 @@ import {
   eur,
   getAllExperienceSlugs,
   getExperienceBySlug,
-} from "@/lib/marketplace/experience-detail";
+} from "@/lib/marketplace/experience-detail.server";
 
 type Props = { params: Promise<{ slug: string }> };
 
