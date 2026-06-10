@@ -18,6 +18,7 @@ config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../lib/generated/prisma/client";
+import { makeQuoteRef } from "../lib/devis/quotes";
 
 const adapter = new PrismaPg({ connectionString: process.env.DIRECT_URL });
 const prisma = new PrismaClient({ adapter });
@@ -427,6 +428,7 @@ async function main() {
   const q2 = await prisma.quote.upsert({
     where: { quoteNumber: "DEV-2026-00002" },
     create: {
+      ref: makeQuoteRef(),
       quoteNumber: "DEV-2026-00002", organizationId: atlas, clubId: sig, experienceId: expSig,
       requestedDate: new Date("2026-05-20T09:00:00Z"), requestedTime: "09:00",
       participants: 40, location: "at_venue",
@@ -497,6 +499,7 @@ async function main() {
   const q3 = await prisma.quote.upsert({
     where: { quoteNumber: "DEV-2026-00003" },
     create: {
+      ref: makeQuoteRef(),
       quoteNumber: "DEV-2026-00003", organizationId: novarue, clubId: asnl, experienceId: expNancy,
       requestedDate: new Date("2026-09-10T09:00:00Z"), requestedTime: "09:00",
       participants: 24, location: "at_client", serviceAddress: "12 rue Saint-Dizier, 54000 Nancy",

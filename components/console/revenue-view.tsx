@@ -13,6 +13,7 @@ import {
   type UpcomingPayout,
   type UpcomingPayoutStatus,
 } from "@/lib/console/revenues";
+import { revenueExportFilename, revenueLedgerCsv } from "@/lib/console/revenue-export";
 
 type Props = { data: RevenueData };
 
@@ -37,9 +38,20 @@ const UPCOMING_VISUAL: Record<UpcomingPayoutStatus, { bg: string; fg: string }> 
 export function RevenueView({ data }: Props) {
   const [tab, setTab] = useState<TabId>("upcoming");
 
-  // TODO(api): brancher sur un export comptable réel (CSV/PDF, cf. SPEC §8 RGPD).
+  // Export comptable de l'onglet affiché (cf. SPEC §8 — export self-service RGPD).
+  // CSV généré côté client à partir des données déjà chargées (aucune dépendance,
+  // séparateur « ; » + BOM UTF-8 pour Excel FR). Un export PDF reste à venir.
   function onExport() {
-    /* stub — export indisponible tant que la couche données n'est pas branchée */
+    const csv = revenueLedgerCsv(tab, data);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = revenueExportFilename(tab);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   return (
