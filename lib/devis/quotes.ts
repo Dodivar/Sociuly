@@ -193,9 +193,32 @@ export function daysUntil(iso: string): number {
 
 // ─────── Générateurs (Phase B — serveur uniquement) ───────
 // TODO(api): la numérotation DEV-YYYY-NNNNN doit être une séquence atomique en base
-// (SPEC §3). Le token `ref` doit être cryptographiquement aléatoire (non devinable).
+// (SPEC §3) — à brancher dans la Server Action de création de devis.
 export function makeQuoteNumber(year: number, seq: number): string {
   return `DEV-${year}-${String(seq).padStart(5, "0")}`;
+}
+
+// Alphabet base58 (sans 0/O/I/l, ambigus) pour un token lisible et copiable.
+const REF_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+/**
+ * Token opaque de l'URL `/devis/[ref]` : cryptographiquement aléatoire (non
+ * devinable, contre l'énumération — décision §11), préfixé `qr_`. 14 caractères
+ * base58 ≈ 82 bits d'entropie. Utilise Web Crypto (universel Node/Edge), avec
+ * rejet des octets hors plage pour éviter tout biais de modulo.
+ */
+export function makeQuoteRef(length = 14): string {
+  // Plus grand multiple de l'alphabet ≤ 256 : au-delà, l'octet est rejeté.
+  const ceiling = Math.floor(256 / REF_ALPHABET.length) * REF_ALPHABET.length;
+  const buf = new Uint8Array(length);
+  let out = "";
+  while (out.length < length) {
+    crypto.getRandomValues(buf);
+    for (const b of buf) {
+      if (b < ceiling && out.length < length) out += REF_ALPHABET[b % REF_ALPHABET.length];
+    }
+  }
+  return `qr_${out}`;
 }
 
 // ─────── Lecture Prisma → view-model Quote ───────
