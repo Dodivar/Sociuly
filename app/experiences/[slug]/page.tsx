@@ -74,7 +74,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
         {/* Main grid: content + right rail */}
         <div className="detail-grid">
-          <div>
+          <div className="detail-main">
             {/* club strip — lien actif vers le profil du club */}
             <div
               style={{
@@ -136,43 +136,46 @@ export default async function ExperienceDetailPage({ params }: Props) {
               ))}
             </div>
 
-            {/* projet financé — lien actif vers le projet du club */}
-            <h2 className="sy-h2" style={{ marginTop: 28 }}>Votre devis finance un projet</h2>
-            <Link
-              href={`/clubs/${project.clubSlug}`}
-              style={{ textDecoration: "none", color: "inherit", display: "block", marginTop: 12 }}
-            >
-              <Card
-                style={{
-                  padding: 18, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap",
-                  cursor: "pointer",
-                }}
+            {/* projet financé — lien actif vers le projet du club.
+                Section isolée pour pouvoir la remonter en tête sur mobile (voir .detail-project). */}
+            <section className="detail-project">
+              <h2 className="sy-h2" style={{ marginTop: 28 }}>Votre devis finance un projet</h2>
+              <Link
+                href={`/clubs/${project.clubSlug}`}
+                style={{ textDecoration: "none", color: "inherit", display: "block", marginTop: 12 }}
               >
-                <span
+                <Card
                   style={{
-                    width: 48, height: 48, borderRadius: 12, flex: "0 0 auto",
-                    background: "var(--primary-soft)", display: "inline-flex",
-                    alignItems: "center", justifyContent: "center",
+                    padding: 18, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap",
+                    cursor: "pointer",
                   }}
                 >
-                  <Icon name="trophy" size={22} color="var(--primary-deep)" />
-                </span>
-                <div style={{ flex: 1, minWidth: 200 }}>
-                  <div className="sy-mono">Projet financé · {club.name}</div>
-                  <div className="sy-h3" style={{ marginTop: 2 }}>{project.title}</div>
-                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 10 }}>
-                    <span className="sy-small sy-muted">
-                      {eur(project.raisedCents)} collectés sur {eur(project.targetCents)}
-                    </span>
-                    <span className="sy-mono sy-num" style={{ color: "var(--accent-deep)" }}>
-                      {Math.round(project.goal * 100)}%
-                    </span>
+                  <span
+                    style={{
+                      width: 48, height: 48, borderRadius: 12, flex: "0 0 auto",
+                      background: "var(--primary-soft)", display: "inline-flex",
+                      alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Icon name="trophy" size={22} color="var(--primary-deep)" />
+                  </span>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div className="sy-mono">Projet financé · {club.name}</div>
+                    <div className="sy-h3" style={{ marginTop: 2 }}>{project.title}</div>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 10 }}>
+                      <span className="sy-small sy-muted">
+                        {eur(project.raisedCents)} collectés sur {eur(project.targetCents)}
+                      </span>
+                      <span className="sy-mono sy-num" style={{ color: "var(--accent-deep)" }}>
+                        {Math.round(project.goal * 100)}%
+                      </span>
+                    </div>
+                    <Progress value={project.goal} style={{ marginTop: 8 }} />
                   </div>
-                  <Progress value={project.goal} style={{ marginTop: 8 }} />
-                </div>
-                <Icon name="arrow" size={16} color="var(--ink-3)" />
-              </Card>
-            </Link>
+                  <Icon name="arrow" size={16} color="var(--ink-3)" />
+                </Card>
+              </Link>
+            </section>
 
             {/* calendar */}
             <h2 className="sy-h2" style={{ marginTop: 28 }}>Disponibilités</h2>
@@ -217,8 +220,8 @@ export default async function ExperienceDetailPage({ params }: Props) {
           </div>
 
           {/* RIGHT RAIL — estimateur de devis sticky */}
-          <aside>
-            <div style={{ position: "sticky", top: 16 }}>
+          <aside className="detail-rail">
+            <div className="detail-rail-inner" style={{ position: "sticky", top: 16 }}>
               <ExperienceBookingRail experience={exp} />
               <div style={{ marginTop: 16 }}>
                 <ImpactHero />
@@ -271,6 +274,14 @@ export default async function ExperienceDetailPage({ params }: Props) {
           .detail-grid { grid-template-columns: 1fr; }
           .facts-grid { grid-template-columns: repeat(2, 1fr); }
           .detail-gallery { height: 320px; }
+
+          /* Vue empilée (mobile/tablette) : on remonte la carte de demande de devis
+             et le projet financé en tête, au lieu de les laisser en bas de page.
+             La grille passe en colonne unique → on réordonne les blocs via order. */
+          .detail-rail { order: -2; }            /* carte « Demander un devis » en premier */
+          .detail-rail-inner { position: static; } /* le sticky n'a pas de sens empilé */
+          .detail-main { display: flex; flex-direction: column; }
+          .detail-project { order: -1; margin-top: 24px; } /* projet financé juste après */
         }
         @media (max-width: 768px) {
           .detail-gallery {
