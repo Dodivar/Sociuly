@@ -17,14 +17,16 @@ import {
 export const revalidate = 300;
 
 // `id` aligné sur les Category de la marketplace → lien `/experiences?cat=<id>`.
+// Le `count` n'est PAS codé en dur : il est dérivé du catalogue publié réel
+// (cf. countByCategory ci-dessous), pour que les chiffres reflètent la base.
 const CATEGORIES = [
-  { id: "cohesion",   label: "Cohésion d'équipe",      count: 84,  hue: "green" },
-  { id: "initiation", label: "Initiation sportive",    count: 121, hue: "yellow" },
-  { id: "tournoi",    label: "Mini-tournois d'équipe", count: 47,  hue: "orange" },
-  { id: "match_vip",  label: "Match VIP & hospitalités", count: 62, hue: "teal" },
-  { id: "masterclass", label: "Masterclass joueur pro", count: 38, hue: "green" },
-  { id: "coulisses",  label: "Cocktail & coulisses",   count: 19,  hue: "orange" },
-] satisfies ReadonlyArray<{ id: Category; label: string; count: number; hue: string }>;
+  { id: "cohesion",   label: "Cohésion d'équipe",      hue: "green" },
+  { id: "initiation", label: "Initiation sportive",    hue: "yellow" },
+  { id: "tournoi",    label: "Mini-tournois d'équipe", hue: "orange" },
+  { id: "match_vip",  label: "Match VIP & hospitalités", hue: "teal" },
+  { id: "masterclass", label: "Masterclass joueur pro", hue: "green" },
+  { id: "coulisses",  label: "Cocktail & coulisses",   hue: "orange" },
+] satisfies ReadonlyArray<{ id: Category; label: string; hue: string }>;
 
 const HUE_BG: Record<string, string> = {
   orange: "linear-gradient(160deg, #e8623d 0%, #c0451f 100%)",
@@ -96,6 +98,14 @@ export default async function LandingPage() {
     b.reviews - a.reviews || b.rating - a.rating;
   const strasbourg = experiences.filter((x) => x.city === "strasbourg").sort(byPopularity);
   const featured = (strasbourg.length >= 4 ? strasbourg : [...experiences].sort(byPopularity)).slice(0, 4);
+
+  // Nombre réel d'expériences publiées par catégorie (tuiles « Par type
+  // d'expérience »). Branché sur le catalogue Prisma plutôt que sur des
+  // compteurs codés en dur, pour rester fidèle à la base.
+  const countByCategory = experiences.reduce<Record<string, number>>((acc, x) => {
+    acc[x.category] = (acc[x.category] ?? 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -365,7 +375,7 @@ export default async function LandingPage() {
                   <div>
                     <div className="sy-h3" style={{ color: "var(--ink)" }}>{c.label}</div>
                     <div className="sy-mono" style={{ marginTop: 4 }}>
-                      <span className="sy-num">{c.count}</span> expériences
+                      <span className="sy-num">{countByCategory[c.id] ?? 0}</span> expériences
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
