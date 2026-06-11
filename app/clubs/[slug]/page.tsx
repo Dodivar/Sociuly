@@ -1,43 +1,24 @@
-import Link from "next/link";
-import { Btn, IconBtn, Chip, Card, Progress, Stars } from "@/components/ds/components";
+import { notFound } from "next/navigation";
+import { Chip, Card, Progress, Stars } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { TopNav, SiteFooter } from "@/components/ds/patterns";
+import { eur } from "@/lib/marketplace/experience-detail";
+import { getAllClubSlugs, getClubBySlug } from "@/lib/clubs/club-detail.server";
+import { ClubActions } from "./ClubActions";
 import { ClubTabs } from "./ClubTabs";
 
-// Placeholder data — will be replaced by Prisma queries in Phase B
-const CLUB = {
-  slug: "sig-strasbourg",
-  initials: "SIG",
-  name: "SIG Strasbourg",
-  fullName: "Strasbourg IG Basket",
-  clubType: "club_pro" as const,
-  city: "Strasbourg (67000)",
-  rating: 4.9,
-  reviewCount: 47,
-  memberCount: 180,
-  teamCount: 6,
-  verified: true,
-  description:
-    "Club professionnel de basket évoluant en Betclic Élite. La SIG ouvre son Arena et son staff aux entreprises : séminaires de cohésion, initiations encadrées, matchs VIP et masterclass. Chaque expérience finance directement notre école de jeunes et nos déplacements.",
-  stats: [
-    { value: "12", label: "expériences", sub: "au catalogue" },
-    { value: "€42 800", label: "reversés", sub: "à 6 projets" },
-    { value: "4.9 / 5", label: "satisfaction", sub: "47 avis" },
-  ],
-  featuredProject: {
-    title: "École de jeunes U17 · saison 2026",
-    raised: 24800,
-    target: 40000,
-    goal: 0.62,
-    daysLeft: 12,
-  },
-};
+type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
-  return [{ slug: "sig-strasbourg" }];
+  const slugs = await getAllClubSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
-export default function ClubProfilePage() {
+export default async function ClubProfilePage({ params }: Props) {
+  const { slug } = await params;
+  const CLUB = await getClubBySlug(slug);
+  if (!CLUB) notFound();
+
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <TopNav />
@@ -73,7 +54,7 @@ export default function ClubProfilePage() {
           <div style={{ flex: 1, minWidth: 0, paddingBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h1 className="sy-h1 asso-title">
-                {CLUB.name} · {CLUB.fullName}
+                {CLUB.name}
               </h1>
               {CLUB.verified && (
                 <span
@@ -106,29 +87,25 @@ export default function ClubProfilePage() {
                 className="sy-small"
                 style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
               >
-                <Icon name="pin" size={13} /> {CLUB.city}
+                <Icon name="pin" size={13} /> {CLUB.cityLabel}
               </span>
+              {CLUB.reviewCount > 0 && (
+                <>
+                  <span className="sy-small sy-muted">·</span>
+                  <Stars value={CLUB.rating} size={13} mono />
+                </>
+              )}
               <span className="sy-small sy-muted">·</span>
-              <Stars value={CLUB.rating} size={13} mono />
-              <span className="sy-small sy-muted">·</span>
-              <span className="sy-small">
-                {CLUB.memberCount} adhérents · {CLUB.teamCount} équipes
-              </span>
-              <Chip variant="primary" size="sm">
-                <Icon name="check" size={10} /> vérifié
-              </Chip>
+              <span className="sy-small">{CLUB.descriptor}</span>
+              {CLUB.verified && (
+                <Chip variant="primary" size="sm">
+                  <Icon name="check" size={10} /> vérifié
+                </Chip>
+              )}
             </div>
           </div>
 
-          <div className="asso-actions">
-            <Btn className="asso-act-contact" variant="outline">Contacter</Btn>
-            <Link className="asso-act-devis" href="/experiences" style={{ textDecoration: "none" }}>
-              <Btn variant="dark">Demander un devis</Btn>
-            </Link>
-            <IconBtn className="asso-act-share" aria-label="Partager">
-              <Icon name="share" size={16} />
-            </IconBtn>
-          </div>
+          <ClubActions slug={CLUB.slug} clubName={CLUB.name} contactEmail={CLUB.contactEmail} />
         </div>
 
         {/* About + featured project */}
@@ -160,45 +137,48 @@ export default function ClubProfilePage() {
           </div>
 
           <div>
-            <Card
-              variant="accent"
-              style={{ padding: 20, borderRadius: "var(--radius-lg)" }}
-            >
-              <div className="sy-mono">projet phare en cours</div>
-              <div className="sy-h2" style={{ marginTop: 6 }}>
-                {CLUB.featuredProject.title}
-              </div>
-              <Progress
-                value={CLUB.featuredProject.goal}
-                size="tall"
-                style={{ marginTop: 12 }}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginTop: 8,
-                }}
+            {CLUB.featuredProject && (
+              <Card
+                variant="accent"
+                style={{ padding: 20, borderRadius: "var(--radius-lg)" }}
               >
-                <div className="sy-small sy-num">
-                  €{CLUB.featuredProject.raised.toLocaleString("fr-FR")} / €
-                  {CLUB.featuredProject.target.toLocaleString("fr-FR")}
+                <div className="sy-mono">projet phare en cours</div>
+                <div className="sy-h2" style={{ marginTop: 6 }}>
+                  {CLUB.featuredProject.title}
                 </div>
-                <div className="sy-small sy-num">
-                  reste {CLUB.featuredProject.daysLeft}j
+                <Progress
+                  value={CLUB.featuredProject.goal}
+                  size="tall"
+                  style={{ marginTop: 12 }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: 8,
+                  }}
+                >
+                  <div className="sy-small sy-num">
+                    {eur(CLUB.featuredProject.raisedCents)} / {eur(CLUB.featuredProject.targetCents)}
+                  </div>
+                  <div className="sy-small sy-num">
+                    {Math.round(CLUB.featuredProject.goal * 100)}%
+                  </div>
                 </div>
-              </div>
-              <Link href="/experiences" style={{ textDecoration: "none", display: "block", marginTop: 14 }}>
-                <Btn variant="primary" block>
-                  Voir les expériences du club
-                </Btn>
-              </Link>
-            </Card>
+              </Card>
+            )}
           </div>
         </div>
 
         {/* Tabs + tab content — Client Component */}
-        <ClubTabs />
+        <ClubTabs
+          clubName={CLUB.name}
+          experiences={CLUB.experiences}
+          projects={CLUB.projects}
+          reviews={CLUB.reviews}
+          team={CLUB.team}
+          counts={CLUB.counts}
+        />
       </div>
 
       <SiteFooter />

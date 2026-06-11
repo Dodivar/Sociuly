@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { SiteFooter, TopNav } from "@/components/ds/patterns";
-import { QuoteRequestForm, type QuoteRequestExperience } from "@/components/devis/quote-request-form";
+import { QuoteRequestForm, type QuoteRequestClub, type QuoteRequestExperience } from "@/components/devis/quote-request-form";
 import { getExperienceBySlug } from "@/lib/marketplace/experience-detail.server";
 
 // Demande de devis depuis une expérience — /experiences/[slug]/devis (SPEC §4/§6).
@@ -45,10 +45,17 @@ export default async function ExperienceQuotePage({ params, searchParams }: Prop
     projectTitle: detail.project.title,
   };
 
+  const club: QuoteRequestClub = {
+    slug: detail.club.slug,
+    name: detail.club.name,
+    cityLabel: detail.cityLabel,
+    venueLabel: detail.venueLabel,
+  };
+
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <TopNav />
-      <QuoteRequestForm experience={experience} initial={{ slotIdx, participants }} />
+      <QuoteRequestForm club={club} experience={experience} initial={{ slotIdx, participants }} />
       <SiteFooter />
     </main>
   );
