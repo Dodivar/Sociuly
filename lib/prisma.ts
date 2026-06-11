@@ -20,6 +20,42 @@ import { PrismaClient } from "@/lib/generated/prisma/client";
  */
 export const isDatabaseConfigured = Boolean(process.env.DATABASE_URL);
 
+/**
+ * Vrai pendant `next build` (Next pose `NEXT_PHASE=phase-production-build`).
+ * Sert à distinguer le PRÉ-RENDU (build) de l'exécution réelle (requêtes/ISR).
+ */
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
+/**
+ * Lecture Prisma résiliente au build (cf. `readForBuild` côté getters).
+ *
+ * Vercel lance `next build` avec `DATABASE_URL` défini, mais la base peut être
+ * injoignable ou non migrée au moment du build : le pré-rendu des pages statiques
+ * (`/`, `/notre-impact`, `/admin`, `/compte/*`) et SSG (`/clubs|experiences/[slug]`)
+ * faisait alors échouer le build (P1001 « Can't reach database server »).
+ *
+ * Ce wrapper :
+ *  - renvoie le repli si aucune base n'est configurée (build CI sans Postgres) ;
+ *  - AU BUILD uniquement, renvoie le repli au lieu de jeter si la lecture échoue ;
+ *  - À L'EXÉCUTION (requête réelle, revalidation ISR), laisse toute erreur remonter
+ *    normalement — le comportement runtime est inchangé.
+ */
+export async function readForBuild<T>(read: () => Promise<T>, fallback: T): Promise<T> {
+  if (!isDatabaseConfigured) return fallback;
+  try {
+    return await read();
+  } catch (error) {
+    if (isBuildPhase) {
+      console.warn(
+        "[build] lecture Prisma indisponible, repli statique utilisé :",
+        error instanceof Error ? error.message : error,
+      );
+      return fallback;
+    }
+    throw error;
+  }
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };

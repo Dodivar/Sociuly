@@ -4,7 +4,7 @@
 // Cf. SPEC.md §4 (KYC plateforme + corporate-ready) + §6 (route /admin).
 
 import { FORMAT_LABEL, type ExperienceFormat } from "@/lib/console/experiences";
-import { isDatabaseConfigured, prisma } from "@/lib/prisma";
+import { prisma, readForBuild } from "@/lib/prisma";
 import type { ClubDocumentType, BookingStatus } from "@/lib/generated/prisma/enums";
 import {
   CLUB_TYPE_LABEL,
@@ -45,19 +45,18 @@ const DOC_DEFS: Array<{ type: ClubDocumentType; viewId: string; label: string }>
 ];
 
 export async function getAdminData(): Promise<AdminData> {
-  const now = new Date();
+  // Build sans base / base injoignable (CI/preview) : console admin vide → le prérendu aboutit.
+  const EMPTY: AdminData = {
+    periodLabel: "",
+    pendingCount: 0,
+    overviewKpis: [],
+    charts: { months: [], series: [], topFormats: [] },
+    validationKpis: [],
+    pending: [],
+  };
 
-  // Build sans base (CI/preview) : console admin vide → le prérendu aboutit sans Postgres.
-  if (!isDatabaseConfigured) {
-    return {
-      periodLabel: "",
-      pendingCount: 0,
-      overviewKpis: [],
-      charts: { months: [], series: [], topFormats: [] },
-      validationKpis: [],
-      pending: [],
-    };
-  }
+  return readForBuild<AdminData>(async () => {
+  const now = new Date();
 
   const [pendingClubs, activeClubsCount, reportedCount, bookings] = await Promise.all([
     prisma.club.findMany({
@@ -189,4 +188,5 @@ export async function getAdminData(): Promise<AdminData> {
     ],
     pending,
   };
+  }, EMPTY);
 }

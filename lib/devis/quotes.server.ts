@@ -9,7 +9,7 @@
 //
 // Ré-exporte les helpers purs pour offrir un point d'import unique côté serveur.
 
-import { isDatabaseConfigured, prisma } from "@/lib/prisma";
+import { prisma, readForBuild } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
 import type { ExperienceLocation } from "@/lib/marketplace/experience-detail";
 import type { Quote, QuoteStatus, QuoteThreadKind } from "./quotes";
@@ -86,39 +86,43 @@ function toQuoteView(q: QuoteRow): Quote {
 
 /** Devis d'un club (console). Scoper sur le club_admin connecté est fait au niveau route. */
 export async function getQuotesForClub(clubId: string): Promise<Quote[]> {
-  if (!isDatabaseConfigured) return [];
-  const rows = await prisma.quote.findMany({
-    where: { clubId },
-    include: QUOTE_INCLUDE,
-    orderBy: { createdAt: "desc" },
-  });
-  return rows.map(toQuoteView);
+  return readForBuild(async () => {
+    const rows = await prisma.quote.findMany({
+      where: { clubId },
+      include: QUOTE_INCLUDE,
+      orderBy: { createdAt: "desc" },
+    });
+    return rows.map(toQuoteView);
+  }, []);
 }
 
 /** Devis d'une organisation (espace entreprise). Sans orgId : tous (dev). */
 export async function getQuotesForOrg(orgId?: string): Promise<Quote[]> {
-  if (!isDatabaseConfigured) return [];
-  const rows = await prisma.quote.findMany({
-    where: orgId ? { organizationId: orgId } : {},
-    include: QUOTE_INCLUDE,
-    orderBy: { createdAt: "desc" },
-  });
-  return rows.map(toQuoteView);
+  return readForBuild(async () => {
+    const rows = await prisma.quote.findMany({
+      where: orgId ? { organizationId: orgId } : {},
+      include: QUOTE_INCLUDE,
+      orderBy: { createdAt: "desc" },
+    });
+    return rows.map(toQuoteView);
+  }, []);
 }
 
 /** Récupère un devis par son token opaque d'URL (/devis/[ref]). */
 export async function getQuoteByRef(ref: string): Promise<Quote | null> {
-  if (!isDatabaseConfigured) return null;
-  const q = await prisma.quote.findUnique({ where: { ref }, include: QUOTE_INCLUDE });
-  return q ? toQuoteView(q) : null;
+  return readForBuild<Quote | null>(async () => {
+    const q = await prisma.quote.findUnique({ where: { ref }, include: QUOTE_INCLUDE });
+    return q ? toQuoteView(q) : null;
+  }, null);
 }
 
 /** Récupère le devis accepté correspondant à une réf. de réservation (garde /reserver). */
 export async function getQuoteByBookingRef(bookingRef: string): Promise<Quote | null> {
-  if (!isDatabaseConfigured) return null;
-  const q = await prisma.quote.findFirst({
-    where: { booking: { bookingNumber: bookingRef }, status: "accepted" },
-    include: QUOTE_INCLUDE,
-  });
-  return q ? toQuoteView(q) : null;
+  return readForBuild<Quote | null>(async () => {
+    const q = await prisma.quote.findFirst({
+      where: { booking: { bookingNumber: bookingRef }, status: "accepted" },
+      include: QUOTE_INCLUDE,
+    });
+    return q ? toQuoteView(q) : null;
+  }, null);
 }
