@@ -1,5 +1,5 @@
 import { RevenueView } from "@/components/console/revenue-view";
-import { getRevenueData } from "@/lib/console/revenues";
+import { getRevenueData } from "@/lib/console/revenues.server";
 
 type Props = { params: Promise<{ clubId: string }> };
 
@@ -10,3 +10,6 @@ export default async function RevenusPage({ params }: Props) {
 
   return <RevenueView data={data} />;
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";

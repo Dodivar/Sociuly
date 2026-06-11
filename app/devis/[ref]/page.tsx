@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Logo, SiteFooter } from "@/components/ds/patterns";
 import { QuoteView } from "@/components/devis/quote-view";
 import { requireRole } from "@/lib/auth/rbac";
-import { getQuoteByRef } from "@/lib/devis/quotes";
+import { getQuoteByRef } from "@/lib/devis/quotes.server";
 
 // Suivi & validation d'un devis côté entreprise — /devis/[ref] (SPEC §6).
 // `ref` = token opaque (décision §11). Réservé au rôle org_buyer.
@@ -38,3 +38,6 @@ export default async function QuotePage({ params }: Props) {
     </main>
   );
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";

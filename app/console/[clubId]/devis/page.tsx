@@ -1,5 +1,5 @@
 import { QuotesView } from "@/components/console/quotes-view";
-import { getQuotesForClub } from "@/lib/devis/quotes";
+import { getQuotesForClub } from "@/lib/devis/quotes.server";
 
 type Props = { params: Promise<{ clubId: string }> };
 
@@ -12,3 +12,6 @@ export default async function DevisPage({ params }: Props) {
 
   return <QuotesView quotes={quotes} />;
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";

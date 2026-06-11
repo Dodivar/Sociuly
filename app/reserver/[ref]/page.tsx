@@ -1,9 +1,10 @@
 import { notFound, redirect } from "next/navigation";
-import { getExperienceBySlug } from "@/lib/marketplace/experience-detail";
+import { getExperienceBySlug } from "@/lib/marketplace/experience-detail.server";
 import { BookingTunnel } from "@/components/booking/booking-tunnel";
 import type { BookingExperience } from "@/lib/booking/tunnel";
 import { requireRole } from "@/lib/auth/rbac";
-import { getQuoteByBookingRef, quoteAmounts, frDateShort } from "@/lib/devis/quotes";
+import { quoteAmounts, frDateShort } from "@/lib/devis/quotes";
+import { getQuoteByBookingRef } from "@/lib/devis/quotes.server";
 
 // Paiement de l'acompte /reserver/[ref] (SPEC §4/§6).
 // `ref` = bookingNumber (SOC-YYYY-NNNNN) d'un devis ACCEPTÉ.
@@ -80,3 +81,6 @@ export default async function BookingPage({ params }: Props) {
     />
   );
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";

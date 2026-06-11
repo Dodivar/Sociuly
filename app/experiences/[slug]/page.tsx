@@ -9,18 +9,15 @@ import { ExperienceBookingRail } from "@/components/experiences/booking-rail";
 import { ExperienceReviews } from "@/components/experiences/reviews";
 import { ShareButton } from "@/components/experiences/share-button";
 import { FavoriteButton } from "@/components/experiences/favorite-button";
-import {
-  eur,
-  getAllExperienceSlugs,
-  getExperienceBySlug,
-} from "@/lib/marketplace/experience-detail";
+import { eur } from "@/lib/marketplace/experience-detail";
+import { getExperienceBySlug } from "@/lib/marketplace/experience-detail.server";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateStaticParams() {
-  const slugs = await getAllExperienceSlugs();
-  return slugs.map((slug) => ({ slug }));
-}
+// Rendu dynamique : la fiche lit la base à la demande (pas de prerender au build,
+// qui n'a pas accès à la DB). Repasser en ISR (generateStaticParams + revalidate)
+// une fois la base provisionnée.
+export const dynamic = "force-dynamic";
 
 export default async function ExperienceDetailPage({ params }: Props) {
   const { slug } = await params;

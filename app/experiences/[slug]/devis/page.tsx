@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { QuoteRequestForm, type QuoteRequestExperience } from "@/components/devis/quote-request-form";
-import { getExperienceBySlug } from "@/lib/marketplace/experience-detail";
+import { getExperienceBySlug } from "@/lib/marketplace/experience-detail.server";
 
 // Demande de devis depuis une expérience — /experiences/[slug]/devis (SPEC §4/§6).
 // Entrée du parcours B2B : remplace l'ancien accès direct au paiement. Le rail

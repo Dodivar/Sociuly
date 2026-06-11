@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { requireRole } from "@/lib/auth/rbac";
-import { getAdminData } from "@/lib/admin/data";
+import { getAdminData } from "@/lib/admin/data.server";
 
 // Console admin Sociuly — réservée au rôle sociuly_admin (SPEC §6).
 export const metadata: Metadata = {
@@ -20,3 +20,6 @@ export default async function AdminPage() {
 
   return <AdminShell data={data} />;
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";

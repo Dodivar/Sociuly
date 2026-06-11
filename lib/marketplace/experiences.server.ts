@@ -40,7 +40,9 @@ type CatalogRow = {
  * ensuite en mémoire par `filterAndSortExperiences`.
  */
 async function queryMarketplaceExperiences(): Promise<MarketplaceExperience[]> {
-  const rows = await prisma.$queryRaw<CatalogRow[]>`
+  let rows: CatalogRow[];
+  try {
+    rows = await prisma.$queryRaw<CatalogRow[]>`
     SELECT
       e.id,
       e.slug,
@@ -71,6 +73,12 @@ async function queryMarketplaceExperiences(): Promise<MarketplaceExperience[]> {
     LEFT JOIN "Project" p ON p.id = e."projectId"
     WHERE e.status = 'published'
   `;
+  } catch (err) {
+    // Base indisponible (build sans DB, migration non encore appliquée…) →
+    // catalogue vide plutôt que crash du prerender ISR. Renseigné dès que la DB répond.
+    console.error("[marketplace] lecture du catalogue échouée:", err);
+    return [];
+  }
 
   return rows.map((r) => {
     const category = categoryFromModuleType(r.primary_type);

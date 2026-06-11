@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ds/icon";
 import { ExperiencesList } from "@/components/console/experiences-list";
-import { getExperiences } from "@/lib/console/experiences";
+import { getExperiences } from "@/lib/console/experiences.server";
 
 type Props = { params: Promise<{ clubId: string }> };
 
@@ -50,3 +50,6 @@ export default async function ExperiencesAdminPage({ params }: Props) {
     </>
   );
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";

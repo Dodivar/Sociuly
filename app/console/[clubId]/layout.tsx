@@ -41,3 +41,6 @@ export default async function ConsoleLayout({ children, params }: Props) {
     </div>
   );
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";

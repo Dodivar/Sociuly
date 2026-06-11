@@ -1,5 +1,5 @@
 import { ReviewsView } from "@/components/console/reviews-view";
-import { getReviewsData } from "@/lib/console/reviews";
+import { getReviewsData } from "@/lib/console/reviews.server";
 
 type Props = { params: Promise<{ clubId: string }> };
 
@@ -10,3 +10,6 @@ export default async function AvisPage({ params }: Props) {
 
   return <ReviewsView data={data} />;
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";

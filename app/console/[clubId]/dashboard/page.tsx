@@ -54,3 +54,6 @@ export default async function DashboardPage({ params }: Props) {
     </>
   );
 }
+
+// Lecture DB à la demande : pas de prerender au build (la DB n'est pas câblée).
+export const dynamic = "force-dynamic";
