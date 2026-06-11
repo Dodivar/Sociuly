@@ -5,6 +5,8 @@ import { Logo, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/compo
 import { ImpactMap } from "@/components/landing/impact-map";
 import { getMarketplaceExperiences } from "@/lib/marketplace/experiences.server";
 import {
+  CATEGORY_LABEL,
+  CITY_LABEL,
   type Category,
   type MarketplaceExperience,
 } from "@/lib/marketplace/experiences";
@@ -85,6 +87,15 @@ export default async function LandingPage() {
   } catch {
     experiences = [];
   }
+
+  // Section « Expériences populaires » : on affiche de VRAIES fiches publiées
+  // (lien actif vers /experiences/[slug]) plutôt que des cartes statiques, qui
+  // pointaient toutes vers le href par défaut d'ExperienceCard → 404. Strasbourg
+  // en priorité (cf. titre de section), puis tri par popularité (avis, note).
+  const byPopularity = (a: MarketplaceExperience, b: MarketplaceExperience) =>
+    b.reviews - a.reviews || b.rating - a.rating;
+  const strasbourg = experiences.filter((x) => x.city === "strasbourg").sort(byPopularity);
+  const featured = (strasbourg.length >= 4 ? strasbourg : [...experiences].sort(byPopularity)).slice(0, 4);
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -223,24 +234,38 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* FEATURED EXPERIENCES */}
-      <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <div className="sy-mono">Expériences populaires · Strasbourg</div>
-            <h2 className="sy-h1" style={{ marginTop: 6 }}>Plébiscitées par les entreprises locales.</h2>
+      {/* FEATURED EXPERIENCES — vraies fiches publiées (lien actif). Masquée si
+          le catalogue est indisponible, pour ne pas afficher de liens morts. */}
+      {featured.length > 0 && (
+        <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div className="sy-mono">Expériences populaires · Strasbourg</div>
+              <h2 className="sy-h1" style={{ marginTop: 6 }}>Plébiscitées par les entreprises locales.</h2>
+            </div>
+            <Link href="/experiences" style={{ textDecoration: "none" }}>
+              <Btn variant="ghost" iconRight={<Icon name="arrow" size={14} />}>Voir tout</Btn>
+            </Link>
           </div>
-          <Link href="/experiences" style={{ textDecoration: "none" }}>
-            <Btn variant="ghost" iconRight={<Icon name="arrow" size={14} />}>Voir tout</Btn>
-          </Link>
-        </div>
-        <div className="sy-grid-4">
-          <ExperienceCard hue="green" />
-          <ExperienceCard title="Initiation rugby encadrée" price={900} hue="orange" goal={0.78} funds="Mini-bus du club" category="Initiation · 15–30 pers." />
-          <ExperienceCard title="Match VIP & hospitalités" price={2_400} hue="yellow" goal={0.25} funds="École de jeunes" rating={4.6} category="Match VIP · 20–60 pers." />
-          <ExperienceCard title="Mini-tournoi inter-équipes" price={1_500} hue="teal" goal={0.55} funds="Vestiaires neufs" category="Tournoi · 20–80 pers." />
-        </div>
-      </section>
+          <div className="sy-grid-4">
+            {featured.map((x) => (
+              <ExperienceCard
+                key={x.id}
+                title={x.title}
+                price={x.price}
+                loc={`${CITY_LABEL[x.city]} · ${x.distanceKm} km`}
+                rating={x.rating}
+                reviews={x.reviews}
+                category={`${CATEGORY_LABEL[x.category]} · ${x.capacityLabel}`}
+                funds={x.funds}
+                goal={x.goal}
+                hue={x.hue}
+                href={`/experiences/${x.slug}`}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* IMPACT */}
       <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>

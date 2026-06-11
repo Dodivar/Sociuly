@@ -51,7 +51,7 @@ export function ExperienceCard({
   saved,
   onToggleSave,
   compact,
-  href = "/experiences/seminaire-cohesion-sig",
+  href = "/experiences",
   style,
 }: ExperienceCardProps) {
   const h = HUES[hue];
