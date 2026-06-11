@@ -1,9 +1,15 @@
 "use client";
 
-// Formulaire de demande de devis — /experiences/[slug]/devis (SPEC §4/§6).
-// C'est l'entrée du parcours B2B : l'entreprise décrit son besoin, le club
-// recevra la demande dans sa console (Quote.draft) puis renverra un devis ferme.
-// AUCUN paiement ici (le paiement n'arrive qu'après acceptation du devis).
+// Formulaire de demande de devis — SPEC §4/§6. Entrée du parcours B2B :
+// l'entreprise décrit son besoin, le club le recevra dans sa console (Quote.draft)
+// puis renverra un devis ferme. AUCUN paiement ici (le paiement n'arrive qu'après
+// acceptation du devis).
+//
+// Deux modes, MÊME parcours (un seul pipeline Quote) :
+//   • « expérience » : devis rattaché à une Experience (slug) — créneaux, capacité
+//     et prix d'appel pré-remplis. Route /experiences/[slug]/devis.
+//   • « sur mesure » : devis rattaché au CLUB seul (experienceId = null, SPEC §3) —
+//     date / effectif / format / budget libres. Route /clubs/[slug]/devis.
 //
 // Modèle « frictionless » (décision §11) : on capte SIRET + email ; côté serveur
 // l'Organization est créée/rapprochée et un magic-link est envoyé pour suivre le
@@ -33,9 +39,18 @@ export type QuoteRequestExperience = {
   projectTitle: string;
 };
 
+export type QuoteRequestClub = {
+  slug: string;
+  name: string;
+  cityLabel: string;
+  venueLabel: string;
+};
+
 type Props = {
-  experience: QuoteRequestExperience;
-  initial: { slotIdx: number; participants: number };
+  club: QuoteRequestClub;
+  /** Présent → mode « expérience ». Absent → mode « sur mesure » (club seul). */
+  experience?: QuoteRequestExperience;
+  initial?: { slotIdx: number; participants: number };
 };
 
 type LocationMode = "at_client" | "at_venue";
@@ -47,16 +62,34 @@ function slotLabel(s: { date: string; time: string }): string {
   return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${s.time.replace(":", "h")}`;
 }
 
+const FORMAT_OPTIONS = [
+  { value: "sur_mesure", label: "Sur mesure" },
+  { value: "demi_journee", label: "Demi-journée" },
+  { value: "journee", label: "Journée" },
+  { value: "soiree", label: "Soirée" },
+];
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function QuoteRequestForm({ experience, initial }: Props) {
-  const { capacityMin, capacityMax, slots, priceModel, pricePerPersonCents, basePriceCents } = experience;
+export function QuoteRequestForm({ club, experience, initial }: Props) {
+  const isCustom = !experience;
+  const venueLabel = experience?.venueLabel ?? club.venueLabel;
+  const cityLabel = experience?.cityLabel ?? club.cityLabel;
+
+  // Capacité : bornée en mode expérience, libre (≥ 1) en sur mesure.
+  const capacityMin = experience?.capacityMin ?? 1;
+  const capacityMax = experience?.capacityMax ?? 100000;
   const clamp = (n: number) => Math.min(capacityMax, Math.max(capacityMin, n));
 
   const [sent, setSent] = useState(false);
-  const [slotIdx, setSlotIdx] = useState(initial.slotIdx);
-  const [participants, setParticipants] = useState(clamp(initial.participants));
-  const [locationMode, setLocationMode] = useState<LocationMode>(experience.location === "at_client" ? "at_client" : "at_venue");
+  const [slotIdx, setSlotIdx] = useState(initial?.slotIdx ?? 0);
+  const [customDate, setCustomDate] = useState("");
+  const [format, setFormat] = useState("sur_mesure");
+  const [budget, setBudget] = useState("");
+  const [participants, setParticipants] = useState(clamp(initial?.participants ?? 20));
+  const [locationMode, setLocationMode] = useState<LocationMode>(
+    experience && experience.location === "at_client" ? "at_client" : "at_venue",
+  );
   const [addressLine, setAddressLine] = useState("");
   const [addressPostal, setAddressPostal] = useState("");
   const [addressCity, setAddressCity] = useState("");
@@ -68,17 +101,31 @@ export function QuoteRequestForm({ experience, initial }: Props) {
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const canChooseLocation = experience.location === "flexible";
-  const needsAddress = experience.location === "at_client" || (canChooseLocation && locationMode === "at_client");
+  // En sur mesure le lieu est toujours choisissable ; en expérience uniquement si flexible.
+  const canChooseLocation = isCustom || experience.location === "flexible";
+  const needsAddress = isCustom
+    ? locationMode === "at_client"
+    : experience.location === "at_client" || (canChooseLocation && locationMode === "at_client");
 
+  // Estimation : seulement en mode expérience (le sur mesure est chiffré par le club).
   const estimateCents = useMemo(
-    () => (priceModel === "per_person" ? pricePerPersonCents * participants : basePriceCents),
-    [priceModel, pricePerPersonCents, basePriceCents, participants],
+    () =>
+      experience
+        ? experience.priceModel === "per_person"
+          ? experience.pricePerPersonCents * participants
+          : experience.basePriceCents
+        : 0,
+    [experience, participants],
   );
 
   function validate(): boolean {
     const e: Record<string, string> = {};
-    if (participants < capacityMin || participants > capacityMax) e.participants = `Effectif entre ${capacityMin} et ${capacityMax} personnes`;
+    if (isCustom) {
+      if (!customDate) e.customDate = "Date souhaitée requise";
+      if (participants < 1) e.participants = "Au moins 1 participant";
+    } else if (participants < capacityMin || participants > capacityMax) {
+      e.participants = `Effectif entre ${capacityMin} et ${capacityMax} personnes`;
+    }
     if (needsAddress) {
       if (!addressLine.trim()) e.addressLine = "Adresse requise pour une intervention sur site";
       if (!/^\d{5}$/.test(addressPostal.trim())) e.addressPostal = "Code postal invalide (5 chiffres)";
@@ -97,9 +144,14 @@ export function QuoteRequestForm({ experience, initial }: Props) {
     ev.preventDefault();
     if (!validate()) return;
     // TODO(api): server action → upsert Organization + create Quote(draft) + email.
+    // En sur mesure : experienceId = null, clubId = club.slug (SPEC §3).
     setSent(true);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  const requestTitle = isCustom ? "votre demande sur mesure" : experience.title;
+  const backHref = isCustom ? `/clubs/${club.slug}` : `/experiences/${experience.slug}`;
+  const backLabel = isCustom ? "Retour au club" : "Retour à l'expérience";
 
   if (sent) {
     return (
@@ -109,9 +161,8 @@ export function QuoteRequestForm({ experience, initial }: Props) {
         </div>
         <h1 className="sy-h1" style={{ textAlign: "center", fontSize: 30 }}>Demande envoyée 🎉</h1>
         <p className="sy-body" style={{ textAlign: "center", marginTop: 12, color: "var(--ink-2)" }}>
-          <strong style={{ color: "var(--ink)" }}>{experience.clubName}</strong> a reçu votre demande pour
-          {" "}<strong style={{ color: "var(--ink)" }}>{experience.title}</strong>. Vous recevrez un
-          devis ferme sous 48h à l'adresse <b style={{ color: "var(--ink)" }}>{contactEmail}</b>,
+          <strong style={{ color: "var(--ink)" }}>{club.name}</strong> a reçu {isCustom ? "votre demande de devis sur mesure" : <>votre demande pour <strong style={{ color: "var(--ink)" }}>{experience.title}</strong></>}.
+          {" "}Vous recevrez un devis ferme sous 48h à l'adresse <b style={{ color: "var(--ink)" }}>{contactEmail}</b>,
           avec un lien sécurisé pour le consulter et l'accepter. Aucun paiement n'est requis à ce stade.
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 24, flexWrap: "wrap" }}>
@@ -133,43 +184,81 @@ export function QuoteRequestForm({ experience, initial }: Props) {
     <form className="qr-grid" onSubmit={submit} noValidate>
       <div>
         <div className="sy-mono" style={{ color: "var(--primary)", marginBottom: 6 }}>Demande de devis · sans engagement</div>
-        <h1 className="sy-h1" style={{ marginBottom: 6 }}>Demander un devis</h1>
+        <h1 className="sy-h1" style={{ marginBottom: 6 }}>{isCustom ? "Demander un devis sur mesure" : "Demander un devis"}</h1>
         <p className="sy-small sy-muted" style={{ marginBottom: 22 }}>
-          Décrivez votre besoin : {experience.clubName} vous renverra un devis ferme sous 48h.
+          {isCustom
+            ? `Décrivez votre projet : ${club.name} vous proposera une expérience sur mesure et un devis ferme sous 48h.`
+            : `Décrivez votre besoin : ${club.name} vous renverra un devis ferme sous 48h.`}
         </p>
 
         <Card style={{ padding: "22px 24px" }}>
           {/* Date & créneau */}
-          <Field label="Date souhaitée">
-            <Select
-              value={String(slotIdx)}
-              onChange={(v) => setSlotIdx(Number(v))}
-              options={slots.map((s, i) => ({ value: String(i), label: slotLabel(s) }))}
-              allowEmpty={false}
-              ariaLabel="Date souhaitée"
-              leadingIcon={<Icon name="calendar" size={15} color="var(--ink-3)" />}
-            />
-          </Field>
+          {isCustom ? (
+            <Field label="Date souhaitée" error={errors.customDate} hint="Date indicative — le club confirmera la disponibilité">
+              <Input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 10)}
+              />
+            </Field>
+          ) : (
+            <Field label="Date souhaitée">
+              <Select
+                value={String(slotIdx)}
+                onChange={(v) => setSlotIdx(Number(v))}
+                options={experience.slots.map((s, i) => ({ value: String(i), label: slotLabel(s) }))}
+                allowEmpty={false}
+                ariaLabel="Date souhaitée"
+                leadingIcon={<Icon name="calendar" size={15} color="var(--ink-3)" />}
+              />
+            </Field>
+          )}
+
+          {/* Format (sur mesure uniquement) */}
+          {isCustom && (
+            <Field label="Format souhaité" style={{ marginTop: 20 }}>
+              <Select
+                value={format}
+                onChange={(v) => setFormat(v)}
+                options={FORMAT_OPTIONS}
+                allowEmpty={false}
+                ariaLabel="Format souhaité"
+              />
+            </Field>
+          )}
 
           {/* Participants */}
-          <Field label="Participants" hint={`Capacité : ${capacityMin}–${capacityMax} personnes`} error={errors.participants} style={{ marginTop: 20 }}>
+          <Field
+            label="Participants"
+            hint={isCustom ? "Effectif indicatif" : `Capacité : ${capacityMin}–${capacityMax} personnes`}
+            error={errors.participants}
+            style={{ marginTop: 20 }}
+          >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid var(--line)", borderRadius: "var(--radius-md)", padding: "6px 10px", maxWidth: 220 }}>
               <button type="button" aria-label="Retirer un participant" disabled={participants <= capacityMin} onClick={() => setParticipants(clamp(participants - 1))} className="sy-btn sy-btn-soft sy-btn-icon-sm" style={{ opacity: participants <= capacityMin ? 0.4 : 1 }}>
                 <Icon name="minus" size={15} />
               </button>
-              <input type="number" min={capacityMin} max={capacityMax} value={participants} onChange={(e) => setParticipants(clamp(Number(e.target.value) || capacityMin))} aria-label="Nombre de participants" style={{ width: 64, textAlign: "center", border: "none", outline: "none", background: "transparent", fontFamily: "var(--display)", fontWeight: 700, fontSize: 20, color: "var(--ink)" }} />
-              <button type="button" aria-label="Ajouter un participant" disabled={participants >= capacityMax} onClick={() => setParticipants(clamp(participants + 1))} className="sy-btn sy-btn-soft sy-btn-icon-sm" style={{ opacity: participants >= capacityMax ? 0.4 : 1 }}>
+              <input type="number" min={capacityMin} max={experience ? capacityMax : undefined} value={participants} onChange={(e) => setParticipants(clamp(Number(e.target.value) || capacityMin))} aria-label="Nombre de participants" style={{ width: 64, textAlign: "center", border: "none", outline: "none", background: "transparent", fontFamily: "var(--display)", fontWeight: 700, fontSize: 20, color: "var(--ink)" }} />
+              <button type="button" aria-label="Ajouter un participant" disabled={!!experience && participants >= capacityMax} onClick={() => setParticipants(clamp(participants + 1))} className="sy-btn sy-btn-soft sy-btn-icon-sm" style={{ opacity: experience && participants >= capacityMax ? 0.4 : 1 }}>
                 <Icon name="plus" size={15} />
               </button>
             </div>
           </Field>
+
+          {/* Budget indicatif (sur mesure uniquement) */}
+          {isCustom && (
+            <Field label="Budget indicatif (optionnel)" hint="En euros HT — aide le club à calibrer sa proposition" style={{ marginTop: 20 }}>
+              <Input inputMode="numeric" value={budget} onChange={(e) => setBudget(e.target.value.replace(/\D/g, ""))} placeholder="5000" />
+            </Field>
+          )}
 
           {/* Lieu */}
           <div className="sy-field" style={{ marginTop: 20 }}>
             <label className="sy-label">Lieu de l'événement</label>
             {canChooseLocation && (
               <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-                {([{ mode: "at_venue", label: `Au club · ${experience.venueLabel}` }, { mode: "at_client", label: "À votre adresse" }] as const).map((opt) => {
+                {([{ mode: "at_venue", label: `Au club · ${venueLabel}` }, { mode: "at_client", label: "À votre adresse" }] as const).map((opt) => {
                   const on = locationMode === opt.mode;
                   return (
                     <button key={opt.mode} type="button" onClick={() => setLocationMode(opt.mode)} className="sy-chip" aria-pressed={on} style={{ cursor: "pointer", background: on ? "var(--ink)" : "var(--surface)", color: on ? "var(--surface)" : "var(--ink)", border: `1px solid ${on ? "var(--ink)" : "var(--line-2)"}` }}>
@@ -197,8 +286,10 @@ export function QuoteRequestForm({ experience, initial }: Props) {
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: "var(--radius-md)", background: "var(--surface-2)" }}>
                 <Icon name="pin" size={16} color="var(--ink-3)" />
                 <div>
-                  <div style={{ fontWeight: 500 }}>{experience.venueLabel}</div>
-                  <div className="sy-small sy-muted">Cette expérience se déroule dans les installations du club.</div>
+                  <div style={{ fontWeight: 500 }}>{venueLabel}</div>
+                  <div className="sy-small sy-muted">
+                    {isCustom ? "Le club vous accueille dans ses installations." : "Cette expérience se déroule dans les installations du club."}
+                  </div>
                 </div>
               </div>
             )}
@@ -223,14 +314,17 @@ export function QuoteRequestForm({ experience, initial }: Props) {
           <Field label="Téléphone (optionnel)">
             <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" autoComplete="tel" />
           </Field>
-          <Field label="Message au club (optionnel)" hint="Précisez vos attentes : contexte, contraintes, options souhaitées…">
+          <Field
+            label={isCustom ? "Décrivez votre projet" : "Message au club (optionnel)"}
+            hint="Précisez vos attentes : contexte, contraintes, options souhaitées…"
+          >
             <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Bonjour, c'est pour notre séminaire annuel…" />
           </Field>
         </Card>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, flexWrap: "wrap", gap: 8 }}>
-          <Link href={`/experiences/${experience.slug}`} style={{ textDecoration: "none" }}>
-            <Btn variant="ghost" icon={<Icon name="arrowLeft" size={14} />}>Retour à l'expérience</Btn>
+          <Link href={backHref} style={{ textDecoration: "none" }}>
+            <Btn variant="ghost" icon={<Icon name="arrowLeft" size={14} />}>{backLabel}</Btn>
           </Link>
           <Btn type="submit" variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} color="#fff" />}>
             Envoyer ma demande de devis
@@ -242,24 +336,28 @@ export function QuoteRequestForm({ experience, initial }: Props) {
       <aside>
         <div style={{ position: "sticky", top: 16 }}>
           <Card variant="elevated" style={{ padding: 20 }}>
-            <div className="sy-mono">{experience.clubName}</div>
-            <div className="sy-h3" style={{ marginTop: 2 }}>{experience.title}</div>
+            <div className="sy-mono">{club.name}</div>
+            <div className="sy-h3" style={{ marginTop: 2 }}>{isCustom ? "Devis sur mesure" : experience.title}</div>
             <div className="sy-small sy-muted" style={{ marginTop: 4 }}>
-              {experience.format} · {experience.cityLabel}
+              {isCustom
+                ? `${FORMAT_OPTIONS.find((f) => f.value === format)?.label ?? "Sur mesure"} · ${cityLabel}`
+                : `${experience.format} · ${cityLabel}`}
             </div>
             <div style={{ marginTop: 16, padding: 14, borderRadius: "var(--radius-md)", background: "var(--surface-2)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <div className="sy-mono">Estimation TTC</div>
-                <div className="sy-num" style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 24, fontVariationSettings: "var(--display-var)" }}>
-                  {eurDecimal(estimateCents)}
+                <div className="sy-mono">{isCustom ? "Montant" : "Estimation TTC"}</div>
+                <div className="sy-num" style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: isCustom ? 18 : 24, fontVariationSettings: "var(--display-var)" }}>
+                  {isCustom ? "Sur devis" : eurDecimal(estimateCents)}
                 </div>
               </div>
-              {priceModel === "per_person" && (
-                <div className="sy-small sy-muted" style={{ marginTop: 4 }}>{eurDecimal(pricePerPersonCents)} × {participants} pers.</div>
+              {!isCustom && experience.priceModel === "per_person" && (
+                <div className="sy-small sy-muted" style={{ marginTop: 4 }}>{eurDecimal(experience.pricePerPersonCents)} × {participants} pers.</div>
               )}
             </div>
             <div className="sy-small sy-muted" style={{ marginTop: 10 }}>
-              Estimation indicative — le montant ferme figure dans le devis envoyé par le club.
+              {isCustom
+                ? "Le club chiffre votre demande et vous renvoie un devis ferme."
+                : "Estimation indicative — le montant ferme figure dans le devis envoyé par le club."}
             </div>
             <div className="sy-small sy-muted" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
               <Icon name="check" size={12} color="var(--success)" /> Devis ferme sous 48h · sans engagement
