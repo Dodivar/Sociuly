@@ -5,7 +5,7 @@
 // Cf. SPEC.md §3 (Experience) et §6 (filtres marketplace).
 
 import { unstable_cache } from "next/cache";
-import { isDatabaseConfigured, prisma } from "@/lib/prisma";
+import { prisma, readForBuild } from "@/lib/prisma";
 import { CITY_CENTERS, cityFromName, haversineKm } from "./geo";
 import {
   categoryFromModuleType,
@@ -40,8 +40,8 @@ type CatalogRow = {
  * ensuite en mémoire par `filterAndSortExperiences`.
  */
 async function queryMarketplaceExperiences(): Promise<MarketplaceExperience[]> {
-  // Build sans base (CI/preview) : catalogue vide → le prérendu ISR aboutit sans Postgres.
-  if (!isDatabaseConfigured) return [];
+  // Build sans base / base injoignable (CI/preview) : catalogue vide → le prérendu ISR aboutit.
+  return readForBuild<MarketplaceExperience[]>(async () => {
   const rows = await prisma.$queryRaw<CatalogRow[]>`
     SELECT
       e.id,
@@ -107,6 +107,7 @@ async function queryMarketplaceExperiences(): Promise<MarketplaceExperience[]> {
       lng,
     };
   });
+  }, []);
 }
 
 /**

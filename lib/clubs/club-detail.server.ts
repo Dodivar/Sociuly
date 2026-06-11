@@ -6,7 +6,7 @@
 //
 // Ré-exporte les types/helpers purs pour un point d'import unique côté serveur.
 
-import { isDatabaseConfigured, prisma } from "@/lib/prisma";
+import { prisma, readForBuild } from "@/lib/prisma";
 import {
   CATEGORY_LABEL,
   categoryFromModuleType,
@@ -59,9 +59,8 @@ function buildDescription(name: string, typeLabel: string, city: string, hasVenu
 
 /** Récupère la fiche club publique par slug (ou null si introuvable). */
 export async function getClubBySlug(slug: string): Promise<ClubDetail | null> {
-  // Build sans base (CI/preview) : aucune fiche → la page rend notFound().
-  if (!isDatabaseConfigured) return null;
-
+  // Build sans base / base injoignable (CI/preview) : aucune fiche → la page rend notFound().
+  return readForBuild<ClubDetail | null>(async () => {
   const club = await prisma.club.findUnique({
     where: { slug },
     include: {
@@ -215,11 +214,13 @@ export async function getClubBySlug(slug: string): Promise<ClubDetail | null> {
       reviews: reviewCount,
     },
   };
+  }, null);
 }
 
 /** Tous les slugs de clubs (generateStaticParams). */
 export async function getAllClubSlugs(): Promise<string[]> {
-  if (!isDatabaseConfigured) return [];
-  const rows = await prisma.club.findMany({ select: { slug: true } });
-  return rows.map((r) => r.slug);
+  return readForBuild(async () => {
+    const rows = await prisma.club.findMany({ select: { slug: true } });
+    return rows.map((r) => r.slug);
+  }, []);
 }

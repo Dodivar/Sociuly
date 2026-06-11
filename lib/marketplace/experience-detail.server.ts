@@ -9,7 +9,7 @@
 // Ré-exporte les types/helpers purs pour un point d'import unique côté serveur.
 
 import type { ExperienceHue } from "@/components/ds/patterns";
-import { isDatabaseConfigured, prisma } from "@/lib/prisma";
+import { prisma, readForBuild } from "@/lib/prisma";
 import { categoryFromModuleType, CATEGORY_LABEL, HUE_BY_CATEGORY } from "./experiences";
 import { cityFromName } from "./geo";
 import type {
@@ -149,8 +149,8 @@ function slotsFromAvailability(raw: unknown, createdAt: Date): ExperienceSlot[] 
 
 /** Récupère le détail d'une expérience publiée par slug (ou null si introuvable). */
 export async function getExperienceBySlug(slug: string): Promise<ExperienceDetail | null> {
-  // Build sans base (CI/preview) : aucune fiche → la page rend notFound() sans Postgres.
-  if (!isDatabaseConfigured) return null;
+  // Build sans base / base injoignable (CI/preview) : aucune fiche → la page rend notFound().
+  return readForBuild<ExperienceDetail | null>(async () => {
   const exp = await prisma.experience.findUnique({
     where: { slug },
     include: {
@@ -266,15 +266,17 @@ export async function getExperienceBySlug(slug: string): Promise<ExperienceDetai
       : { clubSlug: exp.club.slug, title: "", raisedCents: 0, targetCents: 0, goal: 0 },
     reviews,
   };
+  }, null);
 }
 
 /** Tous les slugs publiés (generateStaticParams). */
 export async function getAllExperienceSlugs(): Promise<string[]> {
-  // Build sans base (CI/preview) : aucun slug pré-généré → pages rendues à la demande.
-  if (!isDatabaseConfigured) return [];
-  const rows = await prisma.experience.findMany({
-    where: { status: "published" },
-    select: { slug: true },
-  });
-  return rows.map((r) => r.slug);
+  // Build sans base / base injoignable (CI/preview) : aucun slug pré-généré → pages à la demande.
+  return readForBuild(async () => {
+    const rows = await prisma.experience.findMany({
+      where: { status: "published" },
+      select: { slug: true },
+    });
+    return rows.map((r) => r.slug);
+  }, []);
 }
