@@ -141,12 +141,15 @@ As long as `status != 'active'` → all `Experience` / `ExperienceModule` stay `
 
 Canonical routes (see SPEC.md §6). The mockups stay a **visual** reference; their logic/copy must be realigned to B2B. The current `/prestations` and `/associations` routes must be **renamed** (`/experiences`, `/clubs`).
 
+> **Discovery model — club-first (amendment 2026-06, see SPEC.md §6)**: the **primary discovery surface is the club**, not the experience. `/clubs` (index list + map) is the default entry point; `/experiences` becomes a secondary view. The map plots **clubs** (geo lives on `Club.geo`); the sport facet derives from `Club.federation`. Still B2B / quote-driven: `/clubs` is a discovery surface, not a self-service directory — the buyable unit is always an `Experience` → quote.
+
 | Route | Auth | Reference screen |
 |---|---|---|
 | `/` | public | `screen-landing.jsx` (B2B landing) |
-| `/experiences` | public | `screen-marketplace.jsx` (experience catalog) |
+| `/clubs` | public | `screen-marketplace.jsx` (adapted) — **primary discovery: club list + map**, filters: sport/ville/format/capacité |
+| `/clubs/[slug]` | public | `screen-asso.jsx` (club showcase + its experiences) |
+| `/experiences` | public | `screen-marketplace.jsx` (**secondary** experience catalog) |
 | `/experiences/[slug]` | public | `screen-detail.jsx` (+ "Demander un devis" CTA) |
-| `/clubs/[slug]` | public | `screen-asso.jsx` (club showcase) |
 | `/devis/[ref]` | `org_buyer` | (to design — quote tracking) |
 | `/reserver/[ref]` | `org_buyer` | `screen-booking.jsx` (deposit/balance payment) |
 | `/reserver/[ref]/confirmation` | `org_buyer` | `BookingConfirmDesktop` |
@@ -220,8 +223,8 @@ Note: route paths stay in French (part of the public URL contract — do not ang
 Do not skip a step:
 1. Tokens → `globals.css` + Tailwind theme.
 2. Atomic components (Btn, Card, Chip…).
-3. Composite components (ExperienceCard, TopNav…).
-4. Screens in this order: **Landing → Experience catalog → Experience detail → Quote request → Contracting/Payment → Confirmation → Club console → Admin**, then Company space and Projects.
+3. Composite components (ExperienceCard, **ClubCard** (port `AssoCard`), TopNav…).
+4. Screens in this order (reordered club-first, see §5 / SPEC.md §6): **Landing → Club directory (`/clubs`, list + map) → Club showcase → Experience detail → Quote request → Contracting/Payment → Confirmation → Club console → Admin**, then the secondary `/experiences` catalog, Company space and Projects.
 
 ---
 

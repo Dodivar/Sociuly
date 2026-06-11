@@ -309,12 +309,21 @@ Tant que `Club.status != 'active'`, ses `Experience` et `ExperienceModule` reste
 
 > Les écrans `screen-*.jsx` restent la référence **visuelle** (DS, layout). Leur **logique et leur copy** doivent être réalignées B2B. Les routes `/prestations` et `/associations` du code actuel sont à **renommer** (`/experiences`, `/clubs`).
 
+### Modèle de découverte — club-first (amendement 2026-06)
+
+> **Décision produit (acté par le PO, 2026-06)** : la **surface de découverte principale est le club**, l'expérience devient la surface secondaire. Rationnel : en B2B premium, l'acheteur raisonne d'abord par **sport → club** (sa marque, ses joueurs, son stade, son palmarès *sont* la valeur) avant de raisonner par expérience. Ce choix s'aligne sur le modèle de données — la géo vit sur `Club.geo` (les `Experience` n'ont pas de coordonnées propres), et le sport n'existe que via `Club.federation`. À l'échelle v1 (3 villes, ~6 clubs), une vitrine de clubs paraît plus curatée/premium qu'une grille d'expériences clairsemée.
+>
+> **Reste B2B / sur-devis** : `/clubs` est une surface de **découverte**, pas un annuaire self-service ni un catalogue à réservation instantanée (cf. §2). L'achat passe toujours par une `Experience` → devis. Le club est la **vitrine d'entrée** ; l'`Experience` reste l'**unité de conversion**.
+>
+> **Implémentation** : `/clubs` propose une **liste + carte** (deux vues d'une même donnée). La carte plotte des **clubs** (pin = club ; popup : nom, sport, ville, nb d'expériences). Filtres de premier niveau : **sport** (dérivé de `Club.federation`), ville, format, capacité. Le catalogue `/experiences` reste accessible (vue/onglet secondaire) avec les mêmes filtres. `/clubs/[slug]` (vitrine) liste en aval les expériences du club.
+
 | Route | Auth | Écran de référence | Notes |
 |---|---|---|---|
 | `/` | public | `screen-landing.jsx` | Landing B2B (« Offrez un grand moment à vos équipes ») |
-| `/experiences` | public | `screen-marketplace.jsx` | Catalogue d'expériences. Filtres : club, format (demi-journée/journée/soirée), thème, ville, capacité |
+| `/clubs` | public | `screen-marketplace.jsx` (adapté) + `screen-asso.jsx` (cards) | **Surface de découverte principale.** Annuaire clubs : liste + carte (clubs). Filtres : sport, ville, format, capacité |
+| `/clubs/[slug]` | public | `screen-asso.jsx` | Vitrine club : actifs, infra, moments proposables, projets + expériences du club |
+| `/experiences` | public | `screen-marketplace.jsx` | **Surface secondaire** (vue/onglet). Catalogue d'expériences. Filtres : club, sport, format (demi-journée/journée/soirée), ville, capacité |
 | `/experiences/[slug]` | public | `screen-detail.jsx` | Fiche expérience + segments + CTA **« Demander un devis »** |
-| `/clubs/[slug]` | public | `screen-asso.jsx` | Vitrine club : actifs, infra, moments proposables, projets |
 | `/devis/[ref]` | auth (org) | (à concevoir) | Suivi d'un devis (statut, échanges, acceptation) |
 | `/reserver/[ref]` | auth (org) | `screen-booking.jsx` | Contractualisation + paiement acompte/solde (Stripe) |
 | `/reserver/[ref]/confirmation` | auth (org) | `BookingConfirmDesktop` | Page post-paiement |
@@ -332,6 +341,7 @@ Tant que `Club.status != 'active'`, ses `Experience` et `ExperienceModule` reste
 > Les chemins d'URL restent en français (contrat d'URL public). Ne pas créer d'autres routes sans signaler.
 
 ### Pages encore à concevoir (signaler avant code)
+- `/clubs` (index liste + carte — nouvelle surface de découverte principale, cf. amendement club-first ci-dessus).
 - `/devis/[ref]`, `/compte`, `/inscription-entreprise`.
 - `/cgu` (CGV **pro**), `/confidentialite`, `/mentions-legales`.
 
@@ -417,6 +427,6 @@ Fournir un seed Prisma avec :
 1. **Lire ce document en entier**, puis ouvrir `Sociuly Site Hi-Fi.html` pour le look & feel. Garder à l'esprit que la **logique métier des maquettes est l'ancien modèle B2C** : ne porter que le visuel, réaligner la logique sur cette spec.
 2. **Initialiser le repo** : Next.js + TS + Prisma (porter les tokens CSS de `ds-tokens.jsx`, ne **pas** régénérer de palette).
 3. **Porter le design system avant les pages** : tokens en `globals.css`, puis composants atomiques, puis composites.
-4. **Ordre des écrans** : Landing → Catalogue expériences → Détail expérience → Demande de devis → Contractualisation/Paiement → Confirmation → Console club → Admin. Espace entreprise et page projets après.
+4. **Ordre des écrans** (réordonné club-first, cf. amendement §6) : Landing → **Annuaire clubs (`/clubs`, liste + carte)** → Vitrine club → Détail expérience → Demande de devis → Contractualisation/Paiement → Confirmation → Console club → Admin. Le catalogue `/experiences` (surface secondaire) et la page projets viennent après. Espace entreprise ensuite.
 5. **Ne pas inventer de copy produit** sans validation — mais la copy des maquettes étant B2C, toute reprise doit être **réécrite en ton B2B** et validée.
 6. **Tester chaque écran sur 1440, 1024, 768, 375** avant de passer au suivant.
