@@ -77,6 +77,7 @@ function slugify(s: string): string {
 
 type ClubSeed = {
   slug: string; name: string; clubType: "association_1901" | "club_pro" | "sasp" | "autre";
+  federation: "FFF" | "FFR" | "FFHB" | "FFBB" | "FFT" | "autre";
   vatLiable: boolean; siret: string; city: string; postalCode: string;
   lat: number; lng: number; status: "active" | "pending_verification";
   canHostVipMatch?: boolean; hasVenue?: boolean; venueCapacity?: number;
@@ -86,42 +87,42 @@ type ClubSeed = {
 
 const CLUBS: ClubSeed[] = [
   {
-    slug: "sig-strasbourg", name: "SIG Strasbourg", clubType: "club_pro", vatLiable: true,
+    slug: "sig-strasbourg", name: "SIG Strasbourg", clubType: "club_pro", federation: "FFBB", vatLiable: true,
     siret: "11111111111111", city: "Strasbourg", postalCode: "67000", lat: 48.5839, lng: 7.7455,
     status: "active", canHostVipMatch: true, hasVenue: true, venueCapacity: 6200,
     presidentEmail: "president@sig-strasbourg.fr", presidentName: "Martin Weiss",
     project: { title: "École de jeunes U17", targetCents: 1_500_000, ratio: 0.62 },
   },
   {
-    slug: "rc-strasbourg", name: "RC Strasbourg", clubType: "association_1901", vatLiable: false,
+    slug: "rc-strasbourg", name: "RC Strasbourg", clubType: "association_1901", federation: "FFR", vatLiable: false,
     siret: "22222222222222", city: "Strasbourg", postalCode: "67200", lat: 48.6012, lng: 7.7905,
     status: "active", hasVenue: true, venueCapacity: 800,
     presidentEmail: "president@rc-strasbourg.fr", presidentName: "Claire Hoffmann",
     project: { title: "Vestiaires neufs", targetCents: 800_000, ratio: 0.78 },
   },
   {
-    slug: "asnl-nancy", name: "ASNL Nancy", clubType: "club_pro", vatLiable: true,
+    slug: "asnl-nancy", name: "ASNL Nancy", clubType: "club_pro", federation: "FFF", vatLiable: true,
     siret: "33333333333333", city: "Nancy", postalCode: "54000", lat: 48.7005, lng: 6.2008,
     status: "active", canHostVipMatch: true, hasVenue: true, venueCapacity: 20000,
     presidentEmail: "president@asnl-nancy.fr", presidentName: "Julien Rémy",
     project: { title: "Centre de formation", targetCents: 2_000_000, ratio: 0.30 },
   },
   {
-    slug: "grand-nancy-asptt", name: "Grand Nancy ASPTT", clubType: "association_1901", vatLiable: false,
+    slug: "grand-nancy-asptt", name: "Grand Nancy ASPTT", clubType: "association_1901", federation: "FFT", vatLiable: false,
     siret: "44444444444444", city: "Nancy", postalCode: "54500", lat: 48.6701, lng: 6.1503,
     status: "active", hasVenue: true, venueCapacity: 500,
     presidentEmail: "president@gn-asptt.fr", presidentName: "Sophie Marchand",
     project: { title: "Matériel d'entraînement", targetCents: 450_000, ratio: 0.52 },
   },
   {
-    slug: "metz-handball", name: "Metz Handball", clubType: "sasp", vatLiable: true,
+    slug: "metz-handball", name: "Metz Handball", clubType: "sasp", federation: "FFHB", vatLiable: true,
     siret: "55555555555555", city: "Metz", postalCode: "57000", lat: 49.1102, lng: 6.1903,
     status: "active", canHostVipMatch: true, hasVenue: true, venueCapacity: 4500,
     presidentEmail: "president@metz-handball.fr", presidentName: "Nadia Lefèvre",
     project: { title: "Académie jeunes", targetCents: 1_200_000, ratio: 0.68 },
   },
   {
-    slug: "societe-nautique-metz", name: "Société Nautique Metz", clubType: "association_1901", vatLiable: false,
+    slug: "societe-nautique-metz", name: "Société Nautique Metz", clubType: "association_1901", federation: "autre", vatLiable: false,
     siret: "66666666666666", city: "Metz", postalCode: "57050", lat: 49.1251, lng: 6.1604,
     status: "active", hasVenue: true, venueCapacity: 120,
     presidentEmail: "president@sn-metz.fr", presidentName: "Paul Girard",
@@ -129,7 +130,7 @@ const CLUBS: ClubSeed[] = [
   },
   {
     // Club en attente de vérification (test console admin §10).
-    slug: "cercle-escrime-metz", name: "Cercle d'Escrime Metz", clubType: "association_1901", vatLiable: false,
+    slug: "cercle-escrime-metz", name: "Cercle d'Escrime Metz", clubType: "association_1901", federation: "autre", vatLiable: false,
     siret: "77777777777777", city: "Metz", postalCode: "57070", lat: 49.1051, lng: 6.1502,
     status: "pending_verification",
     presidentEmail: "president@ce-metz.fr", presidentName: "Léa Dubois",
@@ -284,6 +285,7 @@ async function main() {
         corporateReady: isActive, bankDetailsVerified: isActive,
         insuranceRcPro: isActive, certifiedInstructor: isActive, canInvoice: isActive,
         hasVenue: c.hasVenue ?? false, venueCapacity: c.venueCapacity, canHostVipMatch: c.canHostVipMatch ?? false,
+        federation: c.federation,
         federationNumber: c.clubType === "association_1901" ? "FED-" + c.siret.slice(0, 6) : null,
         // Documents KYC : tous présents pour les clubs actifs ; pour le club en
         // attente, RIB + pièce d'identité manquants (dossier incomplet à valider).
@@ -296,7 +298,7 @@ async function main() {
           ],
         },
       },
-      update: { name: c.name, status: c.status },
+      update: { name: c.name, status: c.status, federation: c.federation },
     });
     clubIdBySlug.set(c.slug, club.id);
 
