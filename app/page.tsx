@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { Btn, Card, Chip, Avatar, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { Logo, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
+import { Logo, ClubCard, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/landing/impact-map";
 import { getMarketplaceExperiences } from "@/lib/marketplace/experiences.server";
+import { getDiscoveryClubs } from "@/lib/clubs/discovery.server";
+import {
+  filterAndSortClubs,
+  DEFAULT_CLUB_FILTERS,
+  SPORT_LABEL,
+  type DiscoveryClub,
+} from "@/lib/clubs/discovery";
 import {
   CATEGORY_LABEL,
   CITY_LABEL,
@@ -90,6 +97,17 @@ export default async function LandingPage() {
     experiences = [];
   }
 
+  // Découverte club-first (SPEC §6) : on met en avant de VRAIS clubs partenaires
+  // (lien actif vers /clubs/[slug]) — surface de découverte principale. Tri par
+  // pertinence (note pondérée par les avis, puis nb d'expériences).
+  let clubs: DiscoveryClub[] = [];
+  try {
+    clubs = await getDiscoveryClubs();
+  } catch {
+    clubs = [];
+  }
+  const featuredClubs = filterAndSortClubs(clubs, DEFAULT_CLUB_FILTERS).slice(0, 4);
+
   // Section « Expériences populaires » : on affiche de VRAIES fiches publiées
   // (lien actif vers /experiences/[slug]) plutôt que des cartes statiques, qui
   // pointaient toutes vers le href par défaut d'ExperienceCard → 404. Strasbourg
@@ -128,13 +146,13 @@ export default async function LandingPage() {
               par des clubs sportifs locaux. Chaque expérience finance un projet réel du club.
             </p>
             <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <Link href="/experiences" style={{ textDecoration: "none" }}>
+              <Link href="/clubs" style={{ textDecoration: "none" }}>
                 <Btn variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} color="#fff" />}>
-                  Découvrir les expériences
+                  Découvrir les clubs
                 </Btn>
               </Link>
-              <Link href="/inscription-club" style={{ textDecoration: "none" }}>
-                <Btn variant="outline" size="lg">Inscrire mon club</Btn>
+              <Link href="/experiences" style={{ textDecoration: "none" }}>
+                <Btn variant="outline" size="lg">Voir les expériences</Btn>
               </Link>
             </div>
           </div>
@@ -223,7 +241,7 @@ export default async function LandingPage() {
           </div>
           <div className="howitworks-steps" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, alignItems: "flex-start" }}>
             {[
-              ["01", "Choisissez une expérience", "Cohésion, initiation, match VIP — conçus par les clubs proches."],
+              ["01", "Choisissez un club", "Un club sportif proche — amateur ou pro — et ses expériences sur mesure."],
               ["02", "Demandez un devis", "Le club ajuste et vous l'envoie sous 48h. Acompte sécurisé Stripe."],
               ["03", "Le club encaisse", "Un projet réel avance — vous mesurez l'impact local concret."],
             ].map(([n, t, d]) => (
@@ -244,8 +262,47 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* FEATURED EXPERIENCES — vraies fiches publiées (lien actif). Masquée si
-          le catalogue est indisponible, pour ne pas afficher de liens morts. */}
+      {/* FEATURED CLUBS — découverte principale (SPEC §6). Vraies fiches de clubs
+          actifs (lien actif vers /clubs/[slug]). Masquée si l'annuaire est vide. */}
+      {featuredClubs.length > 0 && (
+        <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div className="sy-mono">Clubs partenaires</div>
+              <h2 className="sy-h1" style={{ marginTop: 6 }}>Choisissez votre club, près de chez vous.</h2>
+            </div>
+            <Link href="/clubs" style={{ textDecoration: "none" }}>
+              <Btn variant="ghost" iconRight={<Icon name="arrow" size={14} />}>Tous les clubs</Btn>
+            </Link>
+          </div>
+          <div className="sy-grid-4">
+            {featuredClubs.map((c) => (
+              <ClubCard
+                key={c.id}
+                name={c.name}
+                slug={c.slug}
+                initials={c.initials}
+                sportLabel={c.sport === "autre" ? c.typeLabel : SPORT_LABEL[c.sport]}
+                typeLabel={c.typeLabel}
+                city={c.cityRaw}
+                distanceKm={c.distanceKm}
+                rating={c.rating}
+                reviews={c.reviews}
+                experienceCount={c.experienceCount}
+                fromPrice={c.fromPrice}
+                project={c.project}
+                goal={c.goal}
+                hue={c.hue}
+                canHostVipMatch={c.canHostVipMatch}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* FEATURED EXPERIENCES — surface secondaire. Vraies fiches publiées (lien
+          actif). Masquée si le catalogue est indisponible, pour ne pas afficher
+          de liens morts. */}
       {featured.length > 0 && (
         <section style={{ padding: "56px var(--page-pad) 0", maxWidth: 1440, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
