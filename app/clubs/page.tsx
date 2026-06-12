@@ -4,7 +4,7 @@ import { ClubsFilters } from "@/components/clubs/filters";
 import { ClubsResults } from "@/components/clubs/results";
 import { MarketplaceViewProvider } from "@/components/marketplace/view-context";
 import { getDiscoveryClubs } from "@/lib/clubs/discovery.server";
-import { filterAndSortClubs, parseClubFilters } from "@/lib/clubs/discovery";
+import { filterAndSortClubs, parseClubFilters, type DiscoveryClub } from "@/lib/clubs/discovery";
 
 // Découverte club-first (SPEC §6, amendement 2026-06) : surface de découverte
 // PRINCIPALE de Sociuly. Liste + carte des clubs partenaires actifs des 3 villes
@@ -23,7 +23,16 @@ type Props = {
 export default async function ClubsPage({ searchParams }: Props) {
   const params = await searchParams;
   const filters = parseClubFilters(params);
-  const all = await getDiscoveryClubs();
+  // Surface de découverte principale : une lecture annuaire en échec (base
+  // injoignable, etc.) ne doit pas casser toute la page en exception serveur.
+  // On dégrade vers l'annuaire vide (état « aucun club » géré par ClubsResults),
+  // comme le fait déjà la landing (app/page.tsx). L'erreur est loguée côté serveur.
+  let all: DiscoveryClub[] = [];
+  try {
+    all = await getDiscoveryClubs();
+  } catch (error) {
+    console.error("[/clubs] échec de la lecture de l'annuaire clubs :", error);
+  }
   const results = filterAndSortClubs(all, filters);
 
   return (
