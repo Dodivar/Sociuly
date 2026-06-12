@@ -146,6 +146,179 @@ export function ExperienceCard({
   );
 }
 
+// ─────── ClubCard ───────
+// Carte de découverte club-first (/clubs, cf. SPEC §6) — porte la logique de
+// l'AssoCard du mockup en vocabulaire « club ». Surface de découverte principale :
+// le club est l'entrée, l'Experience reste l'unité de conversion (CTA → vitrine).
+export type ClubCardProps = {
+  name: string;
+  slug: string;
+  initials?: string;
+  /** Sport dérivé de Club.federation (ex. « Basket »). */
+  sportLabel: string;
+  /** Type de club (« Club pro » / « Association »…). */
+  typeLabel?: string;
+  city: string;
+  /** Distance au centre-ville sélectionné (km), null si non pertinent. */
+  distanceKm?: number | null;
+  rating?: number;
+  reviews?: number;
+  /** Nombre d'expériences publiées proposées par le club. */
+  experienceCount: number;
+  /** Prix d'appel TTC en euros (« à partir de »), null si aucune expérience. */
+  fromPrice?: number | null;
+  /** Projet de saison phare soutenu par les expériences du club. */
+  project?: string | null;
+  goal?: number;
+  hue?: ExperienceHue;
+  /** Met en avant la capacité à recevoir en match VIP (atout B2B premium). */
+  canHostVipMatch?: boolean;
+  style?: CSSProperties;
+};
+
+export function ClubCard({
+  name = "SIG Strasbourg",
+  slug = "sig-strasbourg",
+  initials,
+  sportLabel = "Basket",
+  typeLabel = "Club pro",
+  city = "Strasbourg",
+  distanceKm = 2,
+  rating = 4.9,
+  reviews = 47,
+  experienceCount = 6,
+  fromPrice = 1_200,
+  project = "École de jeunes U17",
+  goal = 0.62,
+  hue = "teal",
+  canHostVipMatch,
+  style,
+}: ClubCardProps) {
+  const h = HUES[hue];
+  const ini = initials ?? name.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <Link href={`/clubs/${slug}`} style={{ textDecoration: "none", color: "inherit" }}>
+      <div
+        className="sy-card"
+        style={{
+          padding: 0, overflow: "hidden", borderRadius: "var(--radius-lg)",
+          border: "1px solid var(--line)", background: "var(--surface)",
+          cursor: "pointer", transition: "transform .2s ease, box-shadow .2s ease",
+          ...style,
+        }}
+      >
+        {/* Bandeau identité (cover dégradé + logo + sport) */}
+        <div style={{ position: "relative" }}>
+          <div
+            className="sy-img"
+            style={{
+              height: 96, borderRadius: 0,
+              background: `linear-gradient(135deg, ${h.bg} 0%, ${h.bg}cc 50%, ${h.bg}aa 100%)`,
+            }}
+          >
+            <svg
+              viewBox="0 0 200 96"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.22 }}
+              aria-hidden
+            >
+              <circle cx="168" cy="26" r="22" fill={h.accent} opacity="0.7" />
+              <path d="M0 78 Q 50 50 100 64 T 200 56 L 200 96 L 0 96 Z" fill={h.accent} />
+            </svg>
+            <span
+              className="sy-img-label"
+              style={{ position: "absolute", top: 12, left: 12, background: "rgba(252,249,241,.92)", color: "var(--ink-2)" }}
+            >
+              {sportLabel}
+            </span>
+            {canHostVipMatch && (
+              <span
+                className="sy-img-label"
+                style={{
+                  position: "absolute", top: 12, right: 12,
+                  background: "var(--accent)", color: "#fff",
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                }}
+              >
+                <Icon name="star" size={10} filled color="#fff" /> Match VIP
+              </span>
+            )}
+          </div>
+          {/* Logo club chevauchant le bandeau */}
+          <div
+            style={{
+              position: "absolute", left: 16, bottom: -22,
+              width: 52, height: 52, borderRadius: 14,
+              border: "3px solid var(--surface)", background: "var(--surface-2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "var(--display)", fontWeight: 700, fontSize: 18,
+              color: "var(--primary)", fontVariationSettings: "var(--display-var)",
+            }}
+          >
+            {ini}
+          </div>
+        </div>
+
+        <div style={{ padding: "30px 16px 16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+            <h3 className="sy-h3" style={{ flex: 1 }}>{name}</h3>
+            {typeLabel && <span className="sy-mono" style={{ fontSize: 10 }}>{typeLabel}</span>}
+          </div>
+          <div className="sy-small sy-muted" style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <Icon name="pin" size={12} color="var(--ink-3)" />
+            <span>{city}{distanceKm != null ? ` · ${distanceKm} km` : ""}</span>
+            {reviews > 0 && (
+              <>
+                <span>·</span>
+                <Stars value={rating} size={11} />
+                <span className="sy-mono" style={{ fontSize: 10 }}>{rating.toFixed(1)} ({reviews})</span>
+              </>
+            )}
+          </div>
+
+          {/* Pied : nb d'expériences + prix d'appel */}
+          <div
+            style={{
+              marginTop: 14, paddingTop: 12, borderTop: "1px dashed var(--line-2)",
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+            }}
+          >
+            <div className="sy-small" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Icon name="sparkle" size={13} color="var(--accent-deep)" />
+              <span className="sy-h4">
+                {experienceCount} {experienceCount > 1 ? "expériences" : "expérience"}
+              </span>
+            </div>
+            {fromPrice != null && (
+              <div className="sy-small sy-muted" style={{ textAlign: "right" }}>
+                dès{" "}
+                <span
+                  className="sy-num"
+                  style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 15, color: "var(--ink)" }}
+                >
+                  €{fromPrice}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {project && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <div className="sy-mono" style={{ fontSize: 10 }}>Soutient</div>
+                <div className="sy-mono sy-num" style={{ fontSize: 10, color: "var(--accent-deep)" }}>
+                  {Math.round((goal ?? 0) * 100)}%
+                </div>
+              </div>
+              <div className="sy-h4" style={{ marginTop: 2, color: "var(--ink)" }}>{project}</div>
+              <Progress value={goal ?? 0} style={{ marginTop: 8 }} />
+            </div>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 // ─────── ReviewCard ───────
 export function ReviewCard({
   name = "Élodie M. · DRH",
@@ -272,10 +445,12 @@ export function Logo({ size = 22, color = "var(--ink)" }: { size?: number; color
   );
 }
 
+// Découverte club-first (SPEC §6) : « Clubs » est l'entrée principale, « Expériences »
+// la surface secondaire. La carte primaire est désormais celle des clubs (/clubs).
 const TOPNAV_ITEMS = [
-  { id: "experiences", label: "Expériences", href: "/experiences" },
   { id: "clubs",       label: "Clubs",       href: "/clubs" },
-  { id: "carte",       label: "Carte",       href: "/experiences?vue=carte" },
+  { id: "experiences", label: "Expériences", href: "/experiences" },
+  { id: "carte",       label: "Carte",       href: "/clubs?vue=carte" },
   { id: "projets",     label: "Projets",     href: "/projets" },
 ];
 

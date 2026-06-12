@@ -144,12 +144,15 @@ Tant que `status != 'active'` → toutes les `Experience`/`ExperienceModule` res
 
 Routes canoniques (cf. SPEC.md §6). Maquettes = référence **visuelle** ; logique/copy à réaligner B2B. Les routes `/prestations` et `/associations` du code actuel sont à **renommer** (`/experiences`, `/clubs`).
 
+> **Découverte club-first (amendement 2026-06, cf. SPEC.md §6)** : la surface de découverte **principale est le club** (`/clubs`, liste + carte), l'expérience devient secondaire. La carte plotte des **clubs** (la géo vit sur `Club.geo`) ; la facette sport dérive de `Club.federation`. Reste B2B / sur-devis : `/clubs` est une surface de découverte, pas un annuaire self-service — l'unité achetée est toujours une `Experience` → devis.
+
 | Route | Auth | Écran de référence |
 |---|---|---|
 | `/` | public | `screen-landing.jsx` (Landing B2B) |
-| `/experiences` | public | `screen-marketplace.jsx` (catalogue d'expériences) |
+| `/clubs` | public | `screen-marketplace.jsx` adapté — **découverte principale : liste + carte clubs**, filtres sport/ville/format/capacité |
+| `/clubs/[slug]` | public | `screen-asso.jsx` (vitrine club + ses expériences) |
+| `/experiences` | public | `screen-marketplace.jsx` (catalogue d'expériences — **secondaire**) |
 | `/experiences/[slug]` | public | `screen-detail.jsx` (+ CTA « Demander un devis ») |
-| `/clubs/[slug]` | public | `screen-asso.jsx` (vitrine club) |
 | `/devis/[ref]` | `org_buyer` | (à concevoir — suivi de devis) |
 | `/reserver/[ref]` | `org_buyer` | `screen-booking.jsx` (paiement acompte/solde) |
 | `/reserver/[ref]/confirmation` | `org_buyer` | `BookingConfirmDesktop` |
@@ -164,7 +167,7 @@ Routes canoniques (cf. SPEC.md §6). Maquettes = référence **visuelle** ; logi
 | `/inscription-club` | public | (existant — onboarding club + KYC corporate) |
 | `/inscription-entreprise` | public | (à concevoir — onboarding organisation) |
 
-Chemins d'URL en français (contrat d'URL public). **Ne pas créer d'autres routes** sans signaler. Pages à concevoir avant code : `/devis/[ref]`, `/compte`, `/inscription-entreprise`, `/cgu` (CGV pro), `/confidentialite`, `/mentions-legales`.
+Chemins d'URL en français (contrat d'URL public). **Ne pas créer d'autres routes** sans signaler. Pages à concevoir avant code : `/clubs` (index liste + carte — nouvelle découverte principale), `/devis/[ref]`, `/compte`, `/inscription-entreprise`, `/cgu` (CGV pro), `/confidentialite`, `/mentions-legales`.
 
 ---
 

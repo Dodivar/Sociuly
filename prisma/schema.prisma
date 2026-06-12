@@ -42,6 +42,18 @@ enum ClubType {
   autre
 }
 
+/// Fédération sportive du club (SPEC §3). Pilote la facette « sport » de la
+/// découverte club-first (/clubs) : FFF football, FFR rugby, FFHB handball,
+/// FFBB basket, FFT tennis, autre pour les autres disciplines.
+enum Federation {
+  FFF
+  FFR
+  FFHB
+  FFBB
+  FFT
+  autre
+}
+
 enum ClubStatus {
   pending_verification
   active
@@ -260,6 +272,7 @@ model Club {
   status              ClubStatus @default(pending_verification)
   siretVerified       Boolean    @default(false) // SIRET vérifié via API INSEE Sirene
   corporateReady      Boolean    @default(false)
+  federation          Federation @default(autre) // sport/discipline — facette de découverte (SPEC §3)
   federationNumber    String? // affiliation fédérale (association_1901)
   stripeAccountId     String?
   bankDetailsVerified Boolean    @default(false)
@@ -285,6 +298,8 @@ model Club {
 
   @@index([siret])
   @@index([status])
+  // Découverte club-first (/clubs) : filtre statut actif + facette sport (SPEC §3/§6).
+  @@index([status, federation])
 }
 
 /// Pièce justificative KYC d'un club (Supabase Storage). 1 ligne par type attendu.
