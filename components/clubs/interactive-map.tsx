@@ -4,10 +4,18 @@
 // Plote des CLUBS (la géo vit sur Club.geo, SPEC §6) : marker = pastille initiales,
 // popup = mini-fiche club. Synchro hover/select liste ↔ carte. Centrée Grand-Est ;
 // recadrage auto sur la position si la géolocalisation est déjà autorisée.
+//
+// Anti-chevauchement : les clubs proches (plusieurs par ville au zoom Grand-Est)
+// sont REGROUPÉS via Supercluster. À fort zoom les clusters se défont et chaque
+// club retrouve sa pastille. Un clic sur un cluster zoome sur son emprise
+// (getClusterExpansionZoom). Clusters ET pastilles restent des <button> DOM
+// (navigables au clavier — WCAG AA, cf. CLAUDE.md §7), contrairement à un rendu
+// en layer canvas natif qui aurait cassé l'accessibilité et la synchro liste.
 // Lazy-loadée côté client uniquement (cf. results.tsx → next/dynamic, ssr:false).
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
+import Supercluster from "supercluster";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ds/icon";
@@ -27,7 +35,22 @@ type Props = {
   style?: CSSProperties;
 };
 
-// Applique le style de la pastille selon son état (actif = survol/sélection).
+// Zoom max auquel Supercluster regroupe encore : au-delà, chaque club est isolé.
+const CLUSTER_MAX_ZOOM = 16;
+// Rayon de regroupement (px) : assez large pour dégrouper les villes du Grand-Est,
+// assez serré pour séparer dès qu'on distingue les clubs.
+const CLUSTER_RADIUS = 56;
+
+// Propriétés portées par chaque point dans l'index Supercluster.
+type ClubPointProps = { clubId: string };
+
+// Une entrée du registre de markers : soit une pastille « club » (feuille), soit
+// un cluster. Les deux sont des markers MapLibre à élément DOM.
+type MarkerEntry =
+  | { kind: "leaf"; clubId: string; marker: maplibregl.Marker; pill: HTMLButtonElement }
+  | { kind: "cluster"; marker: maplibregl.Marker };
+
+// Applique le style de la pastille feuille selon son état (actif = survol/sélection).
 function styleMarkerPill(pill: HTMLButtonElement, active: boolean) {
   pill.style.transform = `scale(${active ? 1.12 : 1})`;
   pill.style.background = active ? "var(--accent)" : "var(--surface)";
@@ -35,6 +58,14 @@ function styleMarkerPill(pill: HTMLButtonElement, active: boolean) {
   pill.style.border = `1.5px solid ${active ? "var(--accent-deep)" : "var(--ink)"}`;
   pill.style.boxShadow = active ? "var(--shadow-md)" : "0 4px 12px rgba(11,21,48,.18)";
   pill.style.zIndex = active ? "6" : "2";
+}
+
+// Dimensionne un cluster selon le nombre de clubs regroupés (densité lisible d'un
+// coup d'œil) — palette DS « stade » (navy), compteur en blanc.
+function clusterDiameter(count: number): number {
+  if (count < 10) return 38;
+  if (count < 25) return 46;
+  return 54;
 }
 
 export function InteractiveClubsMap({
@@ -49,20 +80,174 @@ export function InteractiveClubsMap({
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  // Markers MapLibre indexés par id de club (pour synchro hover/select).
-  const markersRef = useRef<Map<string, { marker: maplibregl.Marker; pill: HTMLButtonElement }>>(
-    new Map(),
-  );
+  // Index spatial Supercluster (reconstruit quand la liste de clubs change).
+  const superRef = useRef<Supercluster<ClubPointProps> | null>(null);
+  // Markers MapLibre visibles, indexés par clé (`leaf:<id>` ou `cluster:<id>`).
+  const markersRef = useRef<Map<string, MarkerEntry>>(new Map());
+  // Refs « live » lues par syncMarkers (appelé hors cycle React, sur moveend) :
+  // garantit que les markers reconstruits reflètent l'état/les handlers courants.
   const onHoverRef = useRef(onHover);
   const onSelectRef = useRef(onSelect);
+  const clubsRef = useRef(clubs);
+  const hoveredIdRef = useRef(hoveredId);
+  const selectedIdRef = useRef(selectedId);
+  const syncRef = useRef<() => void>(() => {});
   onHoverRef.current = onHover;
   onSelectRef.current = onSelect;
+  clubsRef.current = clubs;
+  hoveredIdRef.current = hoveredId;
+  selectedIdRef.current = selectedId;
 
   const [ready, setReady] = useState(false);
   // Incrémenté à chaque déplacement : force le recalcul de la position du popup.
   const [, setTick] = useState(0);
 
   const selected = clubs.find((c) => c.id === selectedId) ?? null;
+
+  // Construit l'élément DOM d'une pastille « club » (feuille) + ses handlers.
+  function createLeafElement(club: DiscoveryClub): { root: HTMLDivElement; pill: HTMLButtonElement } {
+    const root = document.createElement("div");
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className = "sy-num";
+    pill.textContent = club.initials;
+    pill.setAttribute("aria-label", `${club.name} — ${SPORT_LABEL[club.sport]}`);
+    Object.assign(pill.style, {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: "34px",
+      height: "34px",
+      padding: "0 8px",
+      borderRadius: "999px",
+      fontFamily: "var(--display)",
+      fontWeight: "700",
+      fontSize: "13px",
+      fontVariationSettings: "var(--display-var)",
+      whiteSpace: "nowrap",
+      cursor: "pointer",
+      transition: "transform .15s ease, background .15s ease, color .15s ease",
+    } satisfies Partial<CSSStyleDeclaration>);
+    styleMarkerPill(pill, false);
+
+    pill.addEventListener("mouseenter", () => onHoverRef.current(club.id));
+    pill.addEventListener("mouseleave", () => onHoverRef.current(null));
+    pill.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onSelectRef.current(club.id);
+    });
+    root.appendChild(pill);
+    return { root, pill };
+  }
+
+  // Construit l'élément DOM d'un cluster : clic → zoom sur l'emprise du cluster.
+  function createClusterElement(lng: number, lat: number, count: number, clusterId: number): HTMLButtonElement {
+    const d = clusterDiameter(count);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sy-num clubs-cluster";
+    btn.textContent = String(count);
+    btn.setAttribute("aria-label", `${count} clubs regroupés — cliquer pour agrandir la zone`);
+    Object.assign(btn.style, {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: `${d}px`,
+      height: `${d}px`,
+      borderRadius: "999px",
+      background: "var(--primary)",
+      color: "#fff",
+      border: "2px solid var(--surface)",
+      fontFamily: "var(--display)",
+      fontWeight: "700",
+      fontSize: count < 100 ? "14px" : "12px",
+      fontVariationSettings: "var(--display-var)",
+      cursor: "pointer",
+      boxShadow: "0 6px 16px rgba(11,21,48,.28)",
+      transition: "transform .15s ease",
+      zIndex: "3",
+    } satisfies Partial<CSSStyleDeclaration>);
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const map = mapRef.current;
+      const index = superRef.current;
+      if (!map || !index) return;
+      const expansionZoom = index.getClusterExpansionZoom(clusterId);
+      // Garantit une progression visible même si l'expansion théorique est faible.
+      map.easeTo({
+        center: [lng, lat],
+        zoom: Math.max(expansionZoom, map.getZoom() + 0.8),
+        duration: 420,
+      });
+    });
+    return btn;
+  }
+
+  // Recalcule les clusters pour la fenêtre courante et réconcilie les markers.
+  // Appelée à l'init, sur `moveend`, et à chaque changement de la liste filtrée.
+  function syncMarkers() {
+    const map = mapRef.current;
+    const index = superRef.current;
+    if (!map || !index || !ready) return;
+
+    const b = map.getBounds();
+    const bbox: [number, number, number, number] = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+    const zoom = Math.round(map.getZoom());
+    const features = index.getClusters(bbox, zoom);
+
+    const store = markersRef.current;
+    const desired = new Set<string>();
+
+    for (const feature of features) {
+      const [lng, lat] = feature.geometry.coordinates;
+      const props = feature.properties;
+
+      if ("cluster" in props && props.cluster) {
+        const key = `cluster:${props.cluster_id}`;
+        desired.add(key);
+        if (!store.has(key)) {
+          const el = createClusterElement(lng, lat, props.point_count, props.cluster_id);
+          const marker = new maplibregl.Marker({ element: el, anchor: "center" })
+            .setLngLat([lng, lat])
+            .addTo(map);
+          store.set(key, { kind: "cluster", marker });
+        }
+      } else {
+        const clubId = (props as ClubPointProps).clubId;
+        const key = `leaf:${clubId}`;
+        desired.add(key);
+        const existing = store.get(key);
+        if (existing && existing.kind === "leaf") {
+          existing.marker.setLngLat([lng, lat]);
+        } else {
+          const club = clubsRef.current.find((c) => c.id === clubId);
+          if (!club) continue;
+          const { root, pill } = createLeafElement(club);
+          const marker = new maplibregl.Marker({ element: root, anchor: "center" })
+            .setLngLat([lng, lat])
+            .addTo(map);
+          store.set(key, { kind: "leaf", clubId, marker, pill });
+        }
+      }
+    }
+
+    // Retire les markers qui ne sont plus dans la fenêtre / le niveau de zoom.
+    for (const [key, entry] of store) {
+      if (!desired.has(key)) {
+        entry.marker.remove();
+        store.delete(key);
+      }
+    }
+
+    // Reflète l'état hover/select sur les pastilles fraîchement (re)montées.
+    for (const entry of store.values()) {
+      if (entry.kind === "leaf") {
+        styleMarkerPill(entry.pill, entry.clubId === hoveredIdRef.current || entry.clubId === selectedIdRef.current);
+      }
+    }
+  }
+  syncRef.current = syncMarkers;
 
   // ─── Init MapLibre (une seule fois) ───
   useEffect(() => {
@@ -86,6 +271,12 @@ export function InteractiveClubsMap({
     });
     map.addControl(geolocate, "top-right");
 
+    // Les pastilles/clusters sont des markers DOM, positionnés par projection :
+    // ils n'ont pas besoin du premier rendu GL. On déclenche donc `ready` dès que
+    // le style est parsé (`styledata`), ce qui suffit à projeter. `load` (qui
+    // attend le premier rendu) reste le déclencheur principal et porte, lui, le
+    // recadrage géoloc. setReady est idempotent (React ignore une valeur égale).
+    map.once("styledata", () => setReady(true));
     map.on("load", () => {
       setReady(true);
       // On ne déclenche le recadrage que si la permission est DÉJÀ accordée
@@ -102,6 +293,9 @@ export function InteractiveClubsMap({
 
     const bump = () => setTick((t) => t + 1);
     map.on("move", bump);
+    // Re-clusterise une fois le geste terminé (pattern Supercluster standard :
+    // pendant le geste les markers restent ancrés à leur lnglat, on regroupe au repos).
+    map.on("moveend", () => syncRef.current());
 
     return () => {
       map.remove();
@@ -110,73 +304,28 @@ export function InteractiveClubsMap({
     };
   }, []);
 
-  // ─── Synchronise les markers avec la liste filtrée ───
+  // ─── (Re)construit l'index Supercluster et resynchronise les markers ───
+  // Déclenché quand la liste filtrée change ou dès que la carte est prête.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready) return;
-
-    const store = markersRef.current;
-    const nextIds = new Set(clubs.map((c) => c.id));
-
-    for (const [id, entry] of store) {
-      if (!nextIds.has(id)) {
-        entry.marker.remove();
-        store.delete(id);
-      }
-    }
-
-    for (const c of clubs) {
-      const existing = store.get(c.id);
-      if (existing) {
-        existing.pill.textContent = c.initials;
-        existing.pill.setAttribute("aria-label", `${c.name} — ${SPORT_LABEL[c.sport]}`);
-        existing.marker.setLngLat([c.lng, c.lat]);
-        continue;
-      }
-
-      const root = document.createElement("div");
-      const pill = document.createElement("button");
-      pill.type = "button";
-      pill.className = "sy-num";
-      pill.textContent = c.initials;
-      pill.setAttribute("aria-label", `${c.name} — ${SPORT_LABEL[c.sport]}`);
-      Object.assign(pill.style, {
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minWidth: "34px",
-        height: "34px",
-        padding: "0 8px",
-        borderRadius: "999px",
-        fontFamily: "var(--display)",
-        fontWeight: "700",
-        fontSize: "13px",
-        fontVariationSettings: "var(--display-var)",
-        whiteSpace: "nowrap",
-        cursor: "pointer",
-        transition: "transform .15s ease, background .15s ease, color .15s ease",
-      } satisfies Partial<CSSStyleDeclaration>);
-      styleMarkerPill(pill, false);
-
-      pill.addEventListener("mouseenter", () => onHoverRef.current(c.id));
-      pill.addEventListener("mouseleave", () => onHoverRef.current(null));
-      pill.addEventListener("click", (e) => {
-        e.stopPropagation();
-        onSelectRef.current(c.id);
-      });
-      root.appendChild(pill);
-
-      const marker = new maplibregl.Marker({ element: root, anchor: "center" })
-        .setLngLat([c.lng, c.lat])
-        .addTo(map);
-      store.set(c.id, { marker, pill });
-    }
+    if (!ready) return;
+    const points: Array<Supercluster.PointFeature<ClubPointProps>> = clubs.map((c) => ({
+      type: "Feature",
+      properties: { clubId: c.id },
+      geometry: { type: "Point", coordinates: [c.lng, c.lat] },
+    }));
+    superRef.current = new Supercluster<ClubPointProps>({
+      radius: CLUSTER_RADIUS,
+      maxZoom: CLUSTER_MAX_ZOOM,
+    }).load(points);
+    syncRef.current();
   }, [clubs, ready]);
 
-  // ─── Reflète l'état hover/select sur les pastilles ───
+  // ─── Reflète l'état hover/select sur les pastilles feuilles visibles ───
   useEffect(() => {
-    for (const [id, entry] of markersRef.current) {
-      styleMarkerPill(entry.pill, id === hoveredId || id === selectedId);
+    for (const entry of markersRef.current.values()) {
+      if (entry.kind === "leaf") {
+        styleMarkerPill(entry.pill, entry.clubId === hoveredId || entry.clubId === selectedId);
+      }
     }
   }, [hoveredId, selectedId, clubs]);
 
@@ -195,6 +344,14 @@ export function InteractiveClubsMap({
   return (
     <div ref={wrapRef} style={{ position: "relative", height: "100%", overflow: "hidden", ...style }}>
       <div ref={mapNodeRef} style={{ position: "absolute", inset: 0 }} />
+
+      <style>{`
+        .clubs-cluster:hover { transform: scale(1.08); }
+        .clubs-cluster:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+        @media (prefers-reduced-motion: reduce) {
+          .clubs-cluster { transition: none; }
+        }
+      `}</style>
 
       {ready && clubs.length === 0 && (
         <div
