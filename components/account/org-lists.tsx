@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ds/icon";
 import { StatusChip, EmptyState } from "@/components/account/account-bits";
+import { PayBalanceButton } from "@/components/account/pay-balance-button";
 import {
   QUOTE_STATUS_LABEL,
   QUOTE_STATUS_VISUAL,
@@ -116,6 +117,8 @@ export function BookingRows({ bookings, limit }: { bookings: OrgBooking[]; limit
                 <Link href={b.payHref} className="sy-btn sy-btn-primary sy-btn-sm">
                   <Icon name="lock" size={13} color="#fff" /> Régler l'acompte
                 </Link>
+              ) : b.status === "deposit_paid" ? (
+                <PayBalanceButton bookingNumber={b.bookingNumber} />
               ) : b.status === "completed" && !b.reviewed ? (
                 <span className="sy-btn sy-btn-soft sy-btn-sm">
                   <Icon name="star" size={13} /> Laisser un avis
