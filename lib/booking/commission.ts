@@ -10,7 +10,7 @@
 // route handlers, cron). Ne JAMAIS l'importer dans un Client Component.
 // TVA 20 % (décision actée) ; aucune TVA sur la commission elle-même (décision actée).
 
-import { VAT_RATE } from "./tunnel";
+import { effectiveVatRate } from "./tunnel";
 
 /** Taux de commission Sociuly sur le TTC (SPEC §4). Source unique. */
 export const COMMISSION_RATE = 0.06;
@@ -18,7 +18,7 @@ export const COMMISSION_RATE = 0.06;
 export type BookingAmounts = {
   /** Base hors taxes (somme des lignes HT du devis). */
   amountHTCents: number;
-  /** TVA 20 % sur la base HT. */
+  /** TVA sur la base HT (0 si club non assujetti — décision §11). */
   vatCents: number;
   /** Total TTC = HT + TVA, payé par l'entreprise. */
   grossAmountTTCCents: number;
@@ -30,10 +30,12 @@ export type BookingAmounts = {
 
 /**
  * Décompose un montant HT (cents) en HT / TVA / TTC + commission Sociuly + net club.
- * Unique source de vérité du calcul de commission (Stripe application_fee_amount).
+ * `vatLiable` (= Club.vatLiable) pilote la TVA : 20 % si assujetti, 0 % sinon
+ * (décision §11). Unique source de vérité du calcul de commission
+ * (Stripe application_fee_amount).
  */
-export function computeBookingAmounts(amountHTCents: number): BookingAmounts {
-  const vatCents = Math.round(amountHTCents * VAT_RATE);
+export function computeBookingAmounts(amountHTCents: number, vatLiable: boolean): BookingAmounts {
+  const vatCents = Math.round(amountHTCents * effectiveVatRate(vatLiable));
   const grossAmountTTCCents = amountHTCents + vatCents;
   const feeAmountCents = Math.round(grossAmountTTCCents * COMMISSION_RATE);
   const netAmountCents = grossAmountTTCCents - feeAmountCents;

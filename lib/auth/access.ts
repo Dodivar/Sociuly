@@ -10,7 +10,7 @@
 //   /compte, /devis, /reserver → org_buyer
 
 import { DEV_CLUB_ID } from "@/lib/console/dev";
-import type { Role, SessionContext } from "./session";
+import type { Role, SessionContext } from "./claims";
 
 /** Page d'atterrissage par défaut selon le rôle (post-login, redirections). */
 export function homePathForRole(

@@ -5,11 +5,14 @@
 // éditeur à droite. Le club chiffre une demande (draft) puis l'envoie (sent) ;
 // l'entreprise répond ensuite côté /devis/[ref].
 //
-// Les mutations (envoyer / modifier) sont des TODO(api) : ici elles ne font que
-// muter l'état local (placeholder). En Phase B → server actions (Zod), génération
-// du PDF + email Resend, et passage Quote.draft → sent côté serveur.
+// Les mutations passent par les Server Actions (lib/actions/quotes.ts) : envoi
+// (draft → sent, calcul des montants + numéro DEV serveur) et réouverture
+// (sent → draft). L'état local est mis à jour optimiste puis resynchronisé via
+// router.refresh(). (PDF + email Resend : étape ultérieure.)
 
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { reopenQuoteAction, sendQuoteAction } from "@/lib/actions/quotes";
 import { Btn, Input, Tabs } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import {
@@ -54,6 +57,9 @@ function StatusChip({ status }: { status: QuoteStatus }) {
 }
 
 export function QuotesView({ quotes }: Props) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [actionError, setActionError] = useState<string | null>(null);
   const [rows, setRows] = useState<Quote[]>(quotes);
   const [tab, setTab] = useState<TabId>("all");
   const [query, setQuery] = useState("");
@@ -91,32 +97,53 @@ export function QuotesView({ quotes }: Props) {
     updateQuote(id, { lines });
   }
 
-  // Envoi du devis : draft → sent (+ validUntil 21j, fil de discussion).
+  // Envoi du devis : draft → sent. Calcul des montants + numéro DEV côté serveur ;
+  // ici on met à jour l'état optimiste puis on resynchronise via router.refresh().
   function sendQuote(id: string, message: string) {
     const q = rows.find((r) => r.id === id);
     if (!q) return;
-    updateQuote(id, {
-      status: "sent",
-      sentAtLabel: "à l'instant",
-      validUntilISO: defaultValidUntilISO(),
-      revisionCount: q.revisionCount, // inchangé à l'envoi
-      thread: [
-        ...q.thread,
-        {
-          id: `t-${Date.now()}`,
-          from: "club",
-          author: "Vous (club)",
-          atLabel: "à l'instant",
-          kind: "sent",
-          body: message.trim() || "Voici votre devis. N'hésitez pas si vous avez des questions.",
-        },
-      ],
+    setActionError(null);
+    startTransition(async () => {
+      const res = await sendQuoteAction({
+        quoteId: id,
+        lines: q.lines.map((l) => ({
+          label: l.label,
+          detail: l.detail,
+          quantity: l.quantity,
+          unitPriceCents: l.unitPriceCents,
+        })),
+        message: message.trim() || undefined,
+      });
+      if (!res.ok) { setActionError(res.error); return; }
+      updateQuote(id, {
+        status: "sent",
+        sentAtLabel: "à l'instant",
+        validUntilISO: defaultValidUntilISO(),
+        thread: [
+          ...q.thread,
+          {
+            id: `t-${Date.now()}`,
+            from: "club",
+            author: "Vous (club)",
+            atLabel: "à l'instant",
+            kind: "sent",
+            body: message.trim() || "Voici votre devis. N'hésitez pas si vous avez des questions.",
+          },
+        ],
+      });
+      router.refresh();
     });
   }
 
   // Repasse un devis envoyé en édition (le club veut le modifier avant réponse).
   function reopenForEdit(id: string) {
-    updateQuote(id, { status: "draft" });
+    setActionError(null);
+    startTransition(async () => {
+      const res = await reopenQuoteAction({ quoteId: id });
+      if (!res.ok) { setActionError(res.error); return; }
+      updateQuote(id, { status: "draft" });
+      router.refresh();
+    });
   }
 
   return (
@@ -170,6 +197,8 @@ export function QuotesView({ quotes }: Props) {
         {selected ? (
           <QuoteDetailPane
             quote={selected}
+            pending={pending}
+            actionError={actionError}
             onBack={() => setMobileDetailOpen(false)}
             onLinesChange={(lines) => setLines(selected.id, lines)}
             onSend={(msg) => sendQuote(selected.id, msg)}
@@ -211,7 +240,7 @@ export function QuotesView({ quotes }: Props) {
 
 // ─────────────── List row ───────────────
 function QuoteListRow({ quote, active, onClick }: { quote: Quote; active: boolean; onClick: () => void }) {
-  const { amountTTCCents } = quoteAmounts(quote.lines);
+  const { amountTTCCents } = quoteAmounts(quote.lines, quote.clubVatLiable);
   const isRevision = quote.status === "draft" && quote.revisionCount > 0;
   return (
     <button
@@ -263,9 +292,11 @@ function QuoteListRow({ quote, active, onClick }: { quote: Quote; active: boolea
 
 // ─────────────── Detail pane ───────────────
 function QuoteDetailPane({
-  quote, onBack, onLinesChange, onSend, onReopen,
+  quote, pending, actionError, onBack, onLinesChange, onSend, onReopen,
 }: {
   quote: Quote;
+  pending: boolean;
+  actionError: string | null;
   onBack: () => void;
   onLinesChange: (lines: QuoteLine[]) => void;
   onSend: (message: string) => void;
@@ -298,7 +329,7 @@ function QuoteDetailPane({
             <Icon name="chat" size={14} /> Contacter
           </a>
           {q.status === "sent" && (
-            <Btn variant="outline" onClick={onReopen}>Modifier</Btn>
+            <Btn variant="outline" disabled={pending} onClick={onReopen}>Modifier</Btn>
           )}
           {q.status === "accepted" && q.bookingRef && (
             <span className="sy-chip sy-chip-sm" style={{ background: "var(--primary-soft)", color: "var(--primary-deep)", fontWeight: 600 }}>
@@ -352,6 +383,8 @@ function QuoteDetailPane({
           <QuoteLinesSection
             quote={q}
             editable={editable}
+            pending={pending}
+            actionError={actionError}
             onLinesChange={onLinesChange}
             onSend={onSend}
           />
@@ -420,15 +453,17 @@ function QuoteDetailPane({
 
 // ─────────────── Lines section (editor / read-only) ───────────────
 function QuoteLinesSection({
-  quote, editable, onLinesChange, onSend,
+  quote, editable, pending, actionError, onLinesChange, onSend,
 }: {
   quote: Quote;
   editable: boolean;
+  pending: boolean;
+  actionError: string | null;
   onLinesChange: (lines: QuoteLine[]) => void;
   onSend: (message: string) => void;
 }) {
   const [message, setMessage] = useState("");
-  const { amountTTCCents, depositCents, balanceCents } = quoteAmounts(quote.lines);
+  const { amountTTCCents, depositCents, balanceCents } = quoteAmounts(quote.lines, quote.clubVatLiable);
 
   function patchLine(id: string, patch: Partial<QuoteLine>) {
     onLinesChange(quote.lines.map((l) => (l.id === id ? { ...l, ...patch } : l)));
@@ -524,9 +559,9 @@ function QuoteLinesSection({
         <TotalRow label="Total TTC" value={eurDecimal(amountTTCCents)} strong />
         <TotalRow label={`Acompte (${Math.round(DEPOSIT_RATE * 100)} %)`} value={eurDecimal(depositCents)} />
         <TotalRow label="Solde avant l'événement" value={eurDecimal(balanceCents)} />
-        {/* TODO(§11) — ventilation HT/TVA : décision comptable OUVERTE (Club.vatLiable). */}
+        {/* TVA selon Club.vatLiable (décision §11) — lignes saisies HT. */}
         <div className="sy-mono" style={{ marginTop: 8, color: "var(--ink-3)" }}>
-          TVA : à confirmer (selon statut du club) · ventilation HT/TVA à venir
+          Lignes HT · {quote.clubVatLiable ? "TVA 20 % appliquée" : "club non assujetti (TVA 0 %)"}
         </div>
       </div>
 
@@ -548,13 +583,16 @@ function QuoteLinesSection({
             </div>
             <Btn
               variant="primary"
-              disabled={!canSend}
+              disabled={!canSend || pending}
               onClick={() => onSend(message)}
               iconRight={<Icon name="arrow" size={15} color="#fff" />}
             >
-              {quote.revisionCount > 0 ? "Renvoyer le devis" : "Envoyer le devis"}
+              {pending ? "Envoi…" : quote.revisionCount > 0 ? "Renvoyer le devis" : "Envoyer le devis"}
             </Btn>
           </div>
+          {actionError && (
+            <p className="sy-small" role="alert" style={{ marginTop: 8, color: "var(--danger)" }}>{actionError}</p>
+          )}
           {!canSend && (
             <div className="sy-small sy-muted" style={{ marginTop: 8 }}>
               Renseignez au moins une ligne avec un intitulé et un prix avant l'envoi.
@@ -630,8 +668,9 @@ function ThreadSection({ quote }: { quote: Quote }) {
 // ─────────────── Payout card (vue club, SPEC §5) ───────────────
 function PayoutCard({ quote }: { quote: Quote }) {
   // SPEC §5 — la commission Sociuly (6 % du TTC) est visible côté club (payout net),
-  // jamais surfacée à l'acheteur. TODO(§11) — ventilation HT/TVA OUVERTE.
-  const { amountTTCCents, depositCents, balanceCents } = quoteAmounts(quote.lines);
+  // jamais surfacée à l'acheteur. Affichage indicatif ; l'autorité de calcul est
+  // computeBookingAmounts (serveur). TVA selon Club.vatLiable (décision §11).
+  const { amountTTCCents, depositCents, balanceCents } = quoteAmounts(quote.lines, quote.clubVatLiable);
   const feeCents = Math.round(amountTTCCents * 0.06);
   const netCents = amountTTCCents - feeCents;
 

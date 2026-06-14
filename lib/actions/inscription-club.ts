@@ -1,7 +1,11 @@
 "use server";
 
-// TODO Phase B: installer zod, @prisma/client, @supabase/ssr, stripe, resend
-// puis brancher chaque stub sur la vraie implémentation.
+// Onboarding club. Le lookup SIRET est branché sur l'API INSEE réelle
+// (lib/account/siret.ts, guardée par INSEE_SIRENE_API_KEY). La création DB du Club
+// + ClubMember + provisioning du compte président (Supabase) + Stripe Connect reste
+// à finaliser avec le chantier paiements (#2) et le stockage des pièces (Storage).
+
+import { lookupSiret as inseeLookup } from "@/lib/account/siret";
 
 export type Sport =
   | "football" | "rugby" | "handball" | "volleyball" | "basketball"
@@ -37,23 +41,17 @@ export type InscriptionDraft = {
   step3?: Step3Data;
 };
 
-// ─── Lookup SIRET via INSEE Sirene (stub Phase B) ────────────────────────────
+// ─── Lookup SIRET via INSEE Sirene (réel, guardé par INSEE_SIRENE_API_KEY) ────
 export async function lookupSiret(siret: string): Promise<{
   success: boolean;
   nomAssociation?: string;
   error?: string;
 }> {
-  // TODO Phase B: GET https://api.insee.fr/entreprises/sirene/V3/siret/{siret}
-  // Authorization: Bearer {process.env.INSEE_SIRENE_API_KEY}
-  await new Promise((r) => setTimeout(r, 700));
-
-  if (siret.replace(/\s/g, "") === "00000000000000") {
-    return { success: false, error: "SIRET introuvable dans la base INSEE" };
-  }
-  return {
-    success: true,
-    nomAssociation: "Association récupérée automatiquement",
-  };
+  const res = await inseeLookup(siret);
+  // Une erreur explicite (format / introuvable / API down) bloque ; sinon on
+  // laisse passer (clé non configurée → vérification déférée au KYC admin, §4).
+  if (res.error) return { success: false, error: res.error };
+  return { success: true, nomAssociation: res.name };
 }
 
 // ─── Stripe Connect onboarding URL (stub Phase B) ────────────────────────────

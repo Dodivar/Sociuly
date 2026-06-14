@@ -40,16 +40,35 @@ alter table public."User"
 -- Trigger : à chaque création d'un utilisateur de connexion (magic link), créer
 -- automatiquement la ligne public.User correspondante (même id, email recopié).
 -- updatedAt n'a pas de défaut DB (Prisma @updatedAt = applicatif) → on le fournit.
+--
+-- Rôle initial : transmis via raw_user_meta_data au moment de l'inscription
+-- (/inscription-club → club_admin, /inscription-entreprise → org_buyer ; cf. ADR
+-- 0001 §4). On le valide contre l'enum UserRole (sinon repli org_buyer) puis on
+-- le recopie dans raw_app_meta_data (= app_metadata, claim NON modifiable par
+-- l'utilisateur) → présent dans le JWT, lu par le middleware Edge et la RLS.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  requested_role text := new.raw_user_meta_data ->> 'role';
+  initial_role   text := case
+                           when requested_role in ('org_buyer', 'club_admin', 'sociuly_admin')
+                             then requested_role
+                           else 'org_buyer'
+                         end;
 begin
-  insert into public."User" (id, email, "createdAt", "updatedAt")
-  values (new.id, new.email, now(), now())
+  insert into public."User" (id, email, role, "createdAt", "updatedAt")
+  values (new.id, new.email, initial_role::"UserRole", now(), now())
   on conflict (id) do nothing;
+
+  update auth.users
+     set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
+                             || jsonb_build_object('role', initial_role)
+   where id = new.id;
+
   return new;
 end;
 $$;
@@ -105,3 +124,58 @@ drop policy if exists "Project public read" on public."Project";
 create policy "Project public read" on public."Project"
   for select to anon, authenticated
   using (status in ('active', 'funded'));
+
+
+-- ─── §E. Access Token Hook : rattachements à jour dans le JWT (APRÈS migration) ─
+-- Rafraîchit `app_metadata` (role + club_ids + organization_id) à CHAQUE émission
+-- de JWT, depuis l'état réel des tables — indispensable au multi-club (SPEC §11)
+-- et au rattachement org_buyer postérieur à la création du compte. Le serveur lit
+-- la même vérité via Prisma (lib/auth/resolve.server.ts) ; ces claims sont le
+-- cache Edge consommé par le middleware (lib/auth/access.ts).
+--
+-- ⚠️ À déclarer aussi dans Supabase Dashboard → Auth → Hooks → « Customize Access
+--    Token (JWT) Claims » en pointant sur cette fonction.
+create or replace function public.custom_access_token_hook(event jsonb)
+returns jsonb
+language plpgsql
+stable
+set search_path = public
+as $$
+declare
+  uid      uuid := (event ->> 'user_id')::uuid;
+  app_meta jsonb := coalesce(event #> '{claims,app_metadata}', '{}'::jsonb);
+  v_role   text;
+  v_org    text;
+  v_clubs  jsonb;
+begin
+  select u.role::text, u."organizationId"::text
+    into v_role, v_org
+    from public."User" u
+   where u.id = uid;
+
+  select coalesce(jsonb_agg(cm."clubId"::text), '[]'::jsonb)
+    into v_clubs
+    from public."ClubMember" cm
+   where cm."userId" = uid;
+
+  app_meta := app_meta
+              || jsonb_build_object('role', v_role)
+              || jsonb_build_object('club_ids', v_clubs);
+  -- N'expose organization_id que s'il existe (org_buyer rattaché).
+  if v_org is not null then
+    app_meta := app_meta || jsonb_build_object('organization_id', v_org);
+  else
+    app_meta := app_meta - 'organization_id';
+  end if;
+
+  return jsonb_set(event, '{claims,app_metadata}', app_meta);
+end;
+$$;
+
+-- Le hook s'exécute sous le rôle `supabase_auth_admin` : lui donner l'accès en
+-- lecture aux tables interrogées, et l'exécution de la fonction. On retire
+-- l'exécution aux rôles client (anon/authenticated) par principe de moindre privilège.
+grant usage on schema public to supabase_auth_admin;
+grant execute on function public.custom_access_token_hook(jsonb) to supabase_auth_admin;
+grant select on public."User", public."ClubMember" to supabase_auth_admin;
+revoke execute on function public.custom_access_token_hook(jsonb) from authenticated, anon, public;

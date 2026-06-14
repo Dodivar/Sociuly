@@ -5,63 +5,35 @@
 // `org_buyer` (rattaché à une `Organization`).
 //
 // Décision d'archi (cf. docs/adr/0001-rbac-role-resolution.md) :
-//   • Le rôle + les rattachements (clubIds, organizationId) sont lus depuis les
-//     claims `app_metadata` du JWT Supabase. Aucun aller-retour DB dans le
-//     middleware (qui tourne sur chaque requête) → seam compatible RLS.
-//   • Tant que le schéma Prisma / le trigger `on_auth_user_created` ne sont pas
-//     en place (décision « dev stub + clean seam »), `roleContextFromUser` lit
-//     ces claims s'ils existent ; sinon le rôle est `null` (utilisateur sans
-//     rattachement → pas d'accès aux espaces protégés).
-//
-// TODO(prisma) : une fois les tables User/ClubMember/Organization créées, les
-// claims seront alimentés par le trigger Postgres + un Access Token Hook
-// Supabase. Le reste du code (middleware, gardes de layout) reste inchangé.
+//   • RBAC à deux niveaux, deux sources cohérentes :
+//     – MIDDLEWARE (Edge, chaque requête) : `roleContextFromUser` lit le rôle +
+//       les rattachements depuis les claims `app_metadata` du JWT Supabase.
+//       Aucun aller-retour DB (Prisma incompatible Edge) → barrage rapide.
+//     – SERVEUR (layouts/gardes/actions, runtime Node) : `getSession()` lit la
+//       base (Prisma) — source de VÉRITÉ autoritaire, fraîche même si le JWT est
+//       périmé (rattachement org récent, multi-club). Repli sur les claims JWT
+//       si la base est injoignable (incident transitoire → on ne verrouille pas
+//       un utilisateur légitime).
+//   • Les claims sont alimentés par le trigger `on_auth_user_created` (rôle
+//     initial) + l'Access Token Hook Supabase (rafraîchit club_ids/organization_id
+//     à chaque émission de JWT) — cf. prisma/manual/0001_extensions_rls_auth.sql.
 
-import type { User } from "@supabase/supabase-js";
+import { cache } from "react";
 import { DEV_CLUB_ID } from "@/lib/console/dev";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import {
+  ROLES,
+  isRole,
+  roleContextFromUser,
+  type Role,
+  type SessionContext,
+} from "./claims";
 
-export const ROLES = ["org_buyer", "club_admin", "sociuly_admin"] as const;
-export type Role = (typeof ROLES)[number];
-
-export type SessionContext = {
-  userId: string;
-  email: string | null;
-  /** `null` = authentifié mais sans rôle résolu (compte orphelin / non rattaché). */
-  role: Role | null;
-  /** Clubs dont l'utilisateur est membre (via ClubMember). Vide si non club_admin. */
-  clubIds: string[];
-  /** Organisation acheteuse rattachée. `null` si non org_buyer. */
-  organizationId: string | null;
-};
-
-function isRole(value: unknown): value is Role {
-  return typeof value === "string" && (ROLES as readonly string[]).includes(value);
-}
-
-function toStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((v): v is string => typeof v === "string");
-}
-
-/**
- * Construit le contexte de session à partir d'un `User` Supabase.
- * Fonction PURE (pas d'I/O) : réutilisée par `getSession()` (côté Server
- * Component / Action) et par le middleware, qui dispose déjà du `user`.
- */
-export function roleContextFromUser(user: User): SessionContext {
-  const meta = (user.app_metadata ?? {}) as Record<string, unknown>;
-  const role = isRole(meta.role) ? meta.role : null;
-
-  return {
-    userId: user.id,
-    email: user.email ?? null,
-    role,
-    clubIds: toStringArray(meta.club_ids),
-    organizationId:
-      typeof meta.organization_id === "string" ? meta.organization_id : null,
-  };
-}
+// Réexporte la surface pure (types + lecture des claims) pour conserver un point
+// d'import unique « @/lib/auth/session » côté serveur. La logique vit dans
+// `claims.ts` (compatible Edge) ; ce module y ajoute la résolution DB (Node-only).
+export { ROLES, isRole, roleContextFromUser };
+export type { Role, SessionContext };
 
 /**
  * Indique si l'authentification est réellement appliquée.
@@ -94,8 +66,16 @@ export function devStubSession(): SessionContext {
  * Récupère la session courante côté serveur (Server Components, Server Actions,
  * Route Handlers). Retourne `null` si l'utilisateur n'est pas authentifié.
  * En mode maquette (Supabase non configuré) retourne une session de démo.
+ *
+ * Le rôle + les rattachements sont résolus de façon AUTORITAIRE depuis la base
+ * (Prisma) ; en cas d'indisponibilité (build sans DB, incident transitoire) on
+ * retombe sur les claims JWT pour ne pas verrouiller un utilisateur légitime.
+ *
+ * Mémoïsé par requête (`react/cache`) : `getSession()` est appelé plusieurs fois
+ * par rendu (garde de layout + getters scopés sur l'organisation) — une seule
+ * lecture Supabase + DB par requête.
  */
-export async function getSession(): Promise<SessionContext | null> {
+export const getSession = cache(async function getSession(): Promise<SessionContext | null> {
   if (!isAuthEnforced()) {
     return devStubSession();
   }
@@ -106,5 +86,21 @@ export async function getSession(): Promise<SessionContext | null> {
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  // Résolution DB autoritaire. Import DYNAMIQUE : garde Prisma (Node-only) hors
+  // du graphe statique de ce module, partagé avec le middleware Edge.
+  try {
+    const { resolveSessionFromDb } = await import("./resolve.server");
+    const dbContext = await resolveSessionFromDb(user.id, user.email ?? null);
+    if (dbContext) return dbContext;
+  } catch (error) {
+    // Base injoignable : repli sur les claims JWT (déjà signés, fiables). On
+    // log sans interrompre l'accès — défense en profondeur côté RLS de toute façon.
+    console.warn(
+      "[auth] résolution DB du rôle indisponible, repli sur les claims JWT :",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
   return roleContextFromUser(user);
-}
+});

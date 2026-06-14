@@ -2,19 +2,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Logo, SiteFooter } from "@/components/ds/patterns";
 import { QuoteView } from "@/components/devis/quote-view";
+import { currentOrgId } from "@/lib/account/org";
+import { isAuthEnforced } from "@/lib/auth/session";
 import { requireRole } from "@/lib/auth/rbac";
 import { getQuoteByRef } from "@/lib/devis/quotes.server";
 
 // Suivi & validation d'un devis côté entreprise — /devis/[ref] (SPEC §6).
-// `ref` = token opaque (décision §11). Réservé au rôle org_buyer.
-// TODO(api): scoper en plus sur session.organizationId == quote.organizationId.
+// `ref` = token opaque (décision §11). Réservé au rôle org_buyer ET à
+// l'organisation propriétaire du devis (anti-IDOR — un org_buyer ne lit pas le
+// devis d'une autre entreprise). Scope omis en mode maquette (auth désactivée).
 
 type Props = { params: Promise<{ ref: string }> };
 
 export default async function QuotePage({ params }: Props) {
   const { ref } = await params;
   await requireRole(["org_buyer"], `/devis/${ref}`);
-  const quote = await getQuoteByRef(ref);
+  const orgId = isAuthEnforced() ? (await currentOrgId()) ?? undefined : undefined;
+  const quote = await getQuoteByRef(ref, orgId);
   if (!quote) notFound();
 
   return (

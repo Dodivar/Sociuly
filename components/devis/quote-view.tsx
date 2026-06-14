@@ -6,12 +6,19 @@
 //   • Demander une modification → retour au club (Quote.draft, révision) ;
 //   • Refuser    → Quote.refused.
 //
-// Les décisions sont des TODO(api) : ici mutations d'état local (placeholder).
-// En Phase B → server actions (Zod), création du Booking + acompte Stripe, emails.
+// Les décisions appellent les Server Actions (lib/actions/quotes.ts) : acceptation
+// → Quote(accepted) + Booking, révision → retour au club, refus → Quote(refused).
+// L'état local est mis à jour optimiste puis resynchronisé via router.refresh().
 // La commission Sociuly (6 %) n'est jamais affichée ici (SPEC §5).
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  acceptQuoteAction,
+  refuseQuoteAction,
+  requestRevisionAction,
+} from "@/lib/actions/quotes";
 import { Btn, Card } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { ImpactMini } from "@/components/ds/impact";
@@ -31,50 +38,66 @@ import {
 type Props = { quote: Quote };
 
 export function QuoteView({ quote }: Props) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<QuoteStatus>(quote.status);
   const [thread, setThread] = useState<QuoteThreadEntry[]>(quote.thread);
+  const [bookingRef, setBookingRef] = useState<string | undefined>(quote.bookingRef);
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [revisionMsg, setRevisionMsg] = useState("");
   const [refuseOpen, setRefuseOpen] = useState(false);
 
-  const { amountTTCCents, depositCents, balanceCents } = quoteAmounts(quote.lines);
+  const { amountTTCCents, depositCents, balanceCents } = quoteAmounts(quote.lines, quote.clubVatLiable);
   const remaining = quote.validUntilISO ? daysUntil(quote.validUntilISO) : null;
   const expired = status === "expired" || (status === "sent" && remaining !== null && remaining < 0);
 
-  // ── Décisions (TODO api : server actions) ───────────────────────────────────
-  function accept() {
-    setStatus("accepted");
-    setThread((t) => [
-      ...t,
-      { id: `t-${Date.now()}`, from: "org", author: quote.contactName.split(" · ")[0], atLabel: "à l'instant", kind: "decision",
-        body: "Devis accepté. Je procède au règlement de l'acompte." },
-    ]);
-  }
-  function requestRevision() {
-    if (!revisionMsg.trim()) return;
-    setStatus("draft");
-    setThread((t) => [
-      ...t,
-      { id: `t-${Date.now()}`, from: "org", author: quote.contactName.split(" · ")[0], atLabel: "à l'instant", kind: "revision",
-        body: revisionMsg.trim() },
-    ]);
-    setRevisionOpen(false);
-    setRevisionMsg("");
-  }
-  function refuse() {
-    setStatus("refused");
-    setThread((t) => [
-      ...t,
-      { id: `t-${Date.now()}`, from: "org", author: quote.contactName.split(" · ")[0], atLabel: "à l'instant", kind: "decision",
-        body: "Devis refusé." },
-    ]);
-    setRefuseOpen(false);
+  const authorName = quote.contactName.split(" · ")[0];
+  function optimisticEntry(kind: QuoteThreadEntry["kind"], body: string): QuoteThreadEntry {
+    return { id: `t-${Date.now()}`, from: "org", author: authorName, atLabel: "à l'instant", kind, body };
   }
 
-  const decided = status === "accepted" || status === "refused";
+  // ── Décisions (Server Actions, lib/actions/quotes.ts) ───────────────────────
+  function accept() {
+    setError(null);
+    startTransition(async () => {
+      const res = await acceptQuoteAction({ ref: quote.ref });
+      if (!res.ok) { setError(res.error); return; }
+      setBookingRef(res.bookingRef);
+      setStatus("accepted");
+      setThread((t) => [...t, optimisticEntry("decision", "Devis accepté. Je procède au règlement de l'acompte.")]);
+      router.refresh();
+    });
+  }
+  function requestRevision() {
+    const msg = revisionMsg.trim();
+    if (!msg) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await requestRevisionAction({ ref: quote.ref, message: msg });
+      if (!res.ok) { setError(res.error); return; }
+      setStatus("draft");
+      setThread((t) => [...t, optimisticEntry("revision", msg)]);
+      setRevisionOpen(false);
+      setRevisionMsg("");
+      router.refresh();
+    });
+  }
+  function refuse() {
+    setError(null);
+    startTransition(async () => {
+      const res = await refuseQuoteAction({ ref: quote.ref });
+      if (!res.ok) { setError(res.error); return; }
+      setStatus("refused");
+      setThread((t) => [...t, optimisticEntry("decision", "Devis refusé.")]);
+      setRefuseOpen(false);
+      router.refresh();
+    });
+  }
+
   // Réf. de réservation pour régler l'acompte (présente sur un devis déjà accepté côté serveur).
-  const checkoutHref = quote.bookingRef
-    ? `/reserver/${quote.bookingRef}?slug=${quote.experienceSlug}`
+  const checkoutHref = bookingRef
+    ? `/reserver/${bookingRef}?slug=${quote.experienceSlug}`
     : null;
 
   return (
@@ -184,17 +207,20 @@ export function QuoteView({ quote }: Props) {
             <div style={{ marginTop: 16 }}>
               {status === "sent" && !expired && (
                 <>
-                  <Btn variant="primary" size="lg" block onClick={accept} icon={<Icon name="check" size={16} color="#fff" />}>
-                    Accepter le devis
+                  <Btn variant="primary" size="lg" block onClick={accept} disabled={pending} icon={<Icon name="check" size={16} color="#fff" />}>
+                    {pending ? "Traitement…" : "Accepter le devis"}
                   </Btn>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <Btn variant="outline" block onClick={() => { setRevisionOpen((v) => !v); setRefuseOpen(false); }}>
+                    <Btn variant="outline" block disabled={pending} onClick={() => { setRevisionOpen((v) => !v); setRefuseOpen(false); }}>
                       Demander une modif.
                     </Btn>
-                    <Btn variant="ghost" block onClick={() => { setRefuseOpen((v) => !v); setRevisionOpen(false); }}>
+                    <Btn variant="ghost" block disabled={pending} onClick={() => { setRefuseOpen((v) => !v); setRevisionOpen(false); }}>
                       Refuser
                     </Btn>
                   </div>
+                  {error && (
+                    <p className="sy-small" role="alert" style={{ marginTop: 10, color: "var(--danger)" }}>{error}</p>
+                  )}
 
                   {revisionOpen && (
                     <div style={{ marginTop: 12 }}>
@@ -207,8 +233,8 @@ export function QuoteView({ quote }: Props) {
                         onChange={(e) => setRevisionMsg(e.target.value)}
                         placeholder="Ex : pouvez-vous ajouter une collation et revoir l'effectif à 30 ?"
                       />
-                      <Btn variant="dark" block style={{ marginTop: 8 }} disabled={!revisionMsg.trim()} onClick={requestRevision}>
-                        Envoyer au club
+                      <Btn variant="dark" block style={{ marginTop: 8 }} disabled={pending || !revisionMsg.trim()} onClick={requestRevision}>
+                        {pending ? "Envoi…" : "Envoyer au club"}
                       </Btn>
                     </div>
                   )}
@@ -217,7 +243,9 @@ export function QuoteView({ quote }: Props) {
                       <p className="sy-small" style={{ color: "var(--ink-2)" }}>
                         Confirmer le refus de ce devis ? Le club en sera informé.
                       </p>
-                      <Btn variant="dark" block style={{ marginTop: 8 }} onClick={refuse}>Confirmer le refus</Btn>
+                      <Btn variant="dark" block style={{ marginTop: 8 }} disabled={pending} onClick={refuse}>
+                        {pending ? "Traitement…" : "Confirmer le refus"}
+                      </Btn>
                     </div>
                   )}
                 </>

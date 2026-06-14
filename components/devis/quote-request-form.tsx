@@ -11,16 +11,16 @@
 //   • « sur mesure » : devis rattaché au CLUB seul (experienceId = null, SPEC §3) —
 //     date / effectif / format / budget libres. Route /clubs/[slug]/devis.
 //
-// Modèle « frictionless » (décision §11) : on capte SIRET + email ; côté serveur
-// l'Organization est créée/rapprochée et un magic-link est envoyé pour suivre le
-// devis. TODO(api): server action (Zod) → upsert Organization + create Quote +
-// email Resend. Ici la soumission affiche un état de confirmation (placeholder).
+// Modèle « frictionless » (décision §11) : on capte SIRET + contact ; la Server
+// Action requestQuoteAction crée/rapproche l'Organization et ouvre un Quote(draft)
+// côté club (numéro DEV, contact mémorisé sur le devis). Aucun paiement ici.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { requestQuoteAction } from "@/lib/actions/quote-request";
 import { Btn, Card, Field, Input, Select, Textarea } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
-import { eurDecimal, SAMPLE_SENT_QUOTE_REF } from "@/lib/devis/quotes";
+import { eurDecimal } from "@/lib/devis/quotes";
 
 export type QuoteRequestExperience = {
   slug: string;
@@ -82,6 +82,9 @@ export function QuoteRequestForm({ club, experience, initial }: Props) {
   const clamp = (n: number) => Math.min(capacityMax, Math.max(capacityMin, n));
 
   const [sent, setSent] = useState(false);
+  const [sentRef, setSentRef] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const [slotIdx, setSlotIdx] = useState(initial?.slotIdx ?? 0);
   const [customDate, setCustomDate] = useState("");
   const [format, setFormat] = useState("sur_mesure");
@@ -140,13 +143,43 @@ export function QuoteRequestForm({ club, experience, initial }: Props) {
     return Object.keys(e).length === 0;
   }
 
+  // Lieu final (enum Quote.location). En expérience non flexible → lieu de l'exp. ;
+  // sinon le choix « Au club » mappe vers at_club, « À votre adresse » vers at_client.
+  function resolvedLocation(): "at_client" | "at_club" | "at_venue" | "flexible" {
+    if (experience && !canChooseLocation) return experience.location;
+    return locationMode === "at_client" ? "at_client" : "at_club";
+  }
+
   function submit(ev: React.FormEvent) {
     ev.preventDefault();
     if (!validate()) return;
-    // TODO(api): server action → upsert Organization + create Quote(draft) + email.
-    // En sur mesure : experienceId = null, clubId = club.slug (SPEC §3).
-    setSent(true);
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    setSubmitError(null);
+
+    const slot = experience?.slots[slotIdx];
+    const serviceAddress = needsAddress
+      ? `${addressLine.trim()}, ${addressPostal.trim()} ${addressCity.trim()}`.trim()
+      : undefined;
+
+    startTransition(async () => {
+      const res = await requestQuoteAction({
+        clubSlug: club.slug,
+        experienceSlug: experience?.slug,
+        requestedDateISO: isCustom ? customDate : slot?.date ?? "",
+        requestedTime: isCustom ? undefined : slot?.time,
+        participants,
+        format: isCustom ? (format as "sur_mesure" | "demi_journee" | "journee" | "soiree") : undefined,
+        budgetCents: isCustom && budget ? Number(budget) * 100 : undefined,
+        location: resolvedLocation(),
+        serviceAddress,
+        company: { name: companyName.trim(), siret: siret.trim() },
+        contact: { name: contactName.trim(), email: contactEmail.trim(), phone: phone.trim() || undefined },
+        message: message.trim() || undefined,
+      });
+      if (!res.ok) { setSubmitError(res.error); return; }
+      setSentRef(res.ref);
+      setSent(true);
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   const requestTitle = isCustom ? "votre demande sur mesure" : experience.title;
@@ -169,12 +202,13 @@ export function QuoteRequestForm({ club, experience, initial }: Props) {
           <Link href="/experiences" style={{ textDecoration: "none" }}>
             <Btn variant="outline" size="lg">Découvrir d'autres expériences</Btn>
           </Link>
-          {/* Lien dev : le parcours réel passe par le magic-link de l'email. */}
-          <Link href={`/devis/${SAMPLE_SENT_QUOTE_REF}`} style={{ textDecoration: "none" }}>
-            <Btn variant="primary" size="lg" iconRight={<Icon name="arrow" size={15} color="#fff" />}>
-              Voir un exemple de devis
-            </Btn>
-          </Link>
+          {sentRef && (
+            <Link href={`/devis/${sentRef}`} style={{ textDecoration: "none" }}>
+              <Btn variant="primary" size="lg" iconRight={<Icon name="arrow" size={15} color="#fff" />}>
+                Suivre ma demande
+              </Btn>
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -326,10 +360,15 @@ export function QuoteRequestForm({ club, experience, initial }: Props) {
           <Link href={backHref} style={{ textDecoration: "none" }}>
             <Btn variant="ghost" icon={<Icon name="arrowLeft" size={14} />}>{backLabel}</Btn>
           </Link>
-          <Btn type="submit" variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} color="#fff" />}>
-            Envoyer ma demande de devis
+          <Btn type="submit" variant="primary" size="lg" disabled={pending} iconRight={<Icon name="arrow" size={16} color="#fff" />}>
+            {pending ? "Envoi…" : "Envoyer ma demande de devis"}
           </Btn>
         </div>
+        {submitError && (
+          <p className="sy-small" role="alert" style={{ marginTop: 10, color: "var(--danger)", textAlign: "right" }}>
+            {submitError}
+          </p>
+        )}
       </div>
 
       {/* Récap latéral */}
