@@ -39,7 +39,7 @@ export default async function BookingPage({ params }: Props) {
   if (slotIdx < 0) slotIdx = 0;
 
   // 4. Montant ferme issu du devis (prime toute estimation recalculée).
-  const { amountTTCCents } = quoteAmounts(quote.lines);
+  const { amountTTCCents } = quoteAmounts(quote.lines, quote.clubVatLiable);
 
   const experience: BookingExperience = {
     ref,

@@ -607,6 +607,18 @@ model Review {
   @@index([clubId, status])
 }
 
+/// Compteur de séquence atomique pour la numérotation légale (DEV-YYYY-NNNNN,
+/// SOC-YYYY-NNNNN, factures). Une ligne par (scope, année). L'incrément se fait en
+/// une seule instruction SQL (INSERT … ON CONFLICT … DO UPDATE … RETURNING) pour
+/// rester atomique en environnement serverless concurrent — cf. lib/devis/numbering.server.ts.
+model Counter {
+  scope String // "quote" | "booking" | "invoice"
+  year  Int
+  value Int    @default(0)
+
+  @@id([scope, year])
+}
+
 /// Versement Stripe au club (transfert D+1 après completedAt, §4). Net = TTC − commission.
 model Payout {
   id        String  @id @default(uuid()) @db.Uuid

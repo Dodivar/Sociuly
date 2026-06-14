@@ -54,6 +54,7 @@ function toQuoteView(q: QuoteRow): Quote {
     experienceTitle: q.experience?.title ?? "Sur mesure",
     experienceSlug: q.experience?.slug ?? "",
     clubName: q.club.name,
+    clubVatLiable: q.club.vatLiable,
     projectTitle: q.experience?.project?.title ?? undefined,
     requestedDateISO: isoDate(q.requestedDate) ?? "",
     requestedTime: q.requestedTime ?? undefined,

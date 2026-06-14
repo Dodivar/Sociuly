@@ -12,22 +12,23 @@
 //   4. Un devis non répondu après validUntil → Quote(expired) (cron, Phase B).
 //
 // DÉCISIONS §11 actées :
-//   - validité d'un devis : QUOTE_VALIDITY_DAYS = 21 jours (passer à 14 si besoin) ;
+//   - validité d'un devis : QUOTE_VALIDITY_DAYS = 21 jours ;
 //   - acompte 30 % NON ajustable (DEPOSIT_RATE, source unique dans lib/booking/tunnel) ;
-//   - TVA différée : on n'éclate pas HT/TVA tant que la base (Club.vatLiable) n'est
-//     pas tranchée → vatCents = 0, amountHT = amountTTC, TODO(§11) (BLOQUANT montants) ;
+//   - solde dû à D−14 (BALANCE_DUE_DAYS_BEFORE, lib/booking/tunnel) ;
+//   - TVA selon Club.vatLiable : 20 % si assujetti (club_pro/sasp), 0 % pour les
+//     assos loi 1901 exonérées (porté par Quote.clubVatLiable → quoteAmounts) ;
 //   - aller-retour autorisé : l'entreprise peut renvoyer le devis en draft (révision)
 //     sans nouveau statut (reste dans l'enum SPEC §3), tracé via revisionCount + thread ;
 //   - URL : `ref` = token opaque (non énumérable), slug humain transmis en query.
 //
 // Les getters lisent Prisma (Quote + lines + events + org/club/experience/booking)
 // et mappent vers le view-model ci-dessous. Le scope (org_buyer pour /devis,
-// club_admin pour la console) est appliqué au niveau route. Les mutations (création
-// depuis une Experience, chiffrage, envoi, acceptation) restent à brancher en
-// Server Actions avec calcul commission/acompte côté serveur (TODO).
+// club_admin pour la console) est appliqué au niveau route. Les MUTATIONS (chiffrage,
+// envoi, acceptation, refus, révision) sont des Server Actions dans
+// lib/actions/quotes.ts (calcul commission/acompte côté serveur).
 // Tous les montants sont en centimes (Int), jamais de float (SPEC §3).
 
-import { DEPOSIT_RATE, VAT_RATE } from "@/lib/booking/tunnel";
+import { DEPOSIT_RATE, effectiveVatRate } from "@/lib/booking/tunnel";
 import type { ExperienceLocation } from "@/lib/marketplace/experience-detail";
 
 // ─────── Statut du devis (SPEC §3 — Quote.status) ───────
@@ -75,6 +76,8 @@ export type Quote = {
   experienceTitle: string;
   experienceSlug: string;
   clubName: string;
+  /** Club assujetti à la TVA (Club.vatLiable) → pilote le taux de TVA du devis (§11). */
+  clubVatLiable: boolean;
   projectTitle?: string;
 
   // Demande initiale (renseignée par l'entreprise)
@@ -134,22 +137,23 @@ export const LOCATION_LABEL: Record<ExperienceLocation, string> = {
 // ─────── Calcul des montants (TTC) ───────
 // SPEC §5 — le TTC = montant payé par l'entreprise ; la commission Sociuly (6 %)
 // n'est jamais surfacée à l'acheteur (calcul serveur uniquement, absent d'ici).
-// TODO(§11) — ventilation HT/TVA selon Club.vatLiable : décision comptable OUVERTE,
-// BLOQUANTE. Tant qu'elle n'est pas tranchée : vatCents = 0, amountHT = amountTTC.
+// TVA selon le club (décision §11) : `vatLiable` = Club.vatLiable (20 % si
+// assujetti, 0 % pour les assos loi 1901). Côté serveur, l'autorité de calcul est
+// computeBookingAmounts (lib/booking/commission.ts) ; cette fonction sert l'affichage.
 export function lineSubtotalCents(line: QuoteLine): number {
   return line.quantity * line.unitPriceCents;
 }
 
-export function quoteAmounts(lines: QuoteLine[]): {
+export function quoteAmounts(lines: QuoteLine[], vatLiable: boolean): {
   amountTTCCents: number;
   amountHTCents: number;
   vatCents: number;
   depositCents: number;
   balanceCents: number;
 } {
-  // Les lignes sont exprimées HT ; TVA 20 % (décision actée) → TTC payé par l'acheteur.
+  // Les lignes sont exprimées HT ; TVA selon assujettissement du club → TTC payé.
   const amountHTCents = lines.reduce((sum, l) => sum + lineSubtotalCents(l), 0);
-  const vatCents = Math.round(amountHTCents * VAT_RATE);
+  const vatCents = Math.round(amountHTCents * effectiveVatRate(vatLiable));
   const amountTTCCents = amountHTCents + vatCents;
   const depositCents = Math.round(amountTTCCents * DEPOSIT_RATE);
   const balanceCents = amountTTCCents - depositCents;

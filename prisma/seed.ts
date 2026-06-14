@@ -547,6 +547,22 @@ async function main() {
     update: {},
   });
 
+  // Compteurs de numérotation alignés sur les numéros déjà posés ci-dessus, pour
+  // que les Server Actions (envoi de devis, acceptation) ne réémettent pas un
+  // numéro en collision (DEV/SOC/FAC — cf. lib/devis/numbering.server.ts).
+  const counters: { scope: string; year: number; value: number }[] = [
+    { scope: "quote", year: 2026, value: 3 }, // DEV-2026-00001..00003
+    { scope: "booking", year: 2026, value: 2 }, // SOC-2026-00001..00002
+    { scope: "invoice", year: 2026, value: 1 }, // 1 facture seedée
+  ];
+  for (const c of counters) {
+    await prisma.counter.upsert({
+      where: { scope_year: { scope: c.scope, year: c.year } },
+      create: c,
+      update: { value: c.value },
+    });
+  }
+
   console.log("✓ Seed terminé.");
 }
 

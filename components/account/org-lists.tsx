@@ -47,7 +47,7 @@ export function QuoteRows({ quotes, limit }: { quotes: Quote[]; limit?: number }
     <ul className="ol-list">
       {rows.map((q) => {
         const v = QUOTE_STATUS_VISUAL[q.status];
-        const { amountTTCCents } = quoteAmounts(q.lines);
+        const { amountTTCCents } = quoteAmounts(q.lines, q.clubVatLiable);
         return (
           <li key={q.id} className="ol-row ol-row-quote">
             <div className="ol-cell-status">

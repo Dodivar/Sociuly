@@ -62,16 +62,31 @@ export type FieldErrors = Partial<Record<keyof BookingForm, string>>;
 export type StepNumber = 1 | 2 | 3;
 export const LAST_TUNNEL_STEP: StepNumber = 3;
 
-// ─────── Acompte (SPEC §4 — défaut 30%, décision OUVERTE §11) ───────
-// TODO(§11) : le pourcentage d'acompte et la date limite de solde (D−X) doivent
-// être validés. Ne pas figer ailleurs qu'ici.
+// ─────── Acompte & solde (SPEC §4 / décision §11 actée) ───────
+// Acompte 30 % du TTC à l'acceptation ; solde dû à D−14 de l'événement (passage
+// deposit_paid → confirmed). Source unique — ne pas figer ailleurs.
 export const DEPOSIT_RATE = 0.3;
+export const BALANCE_DUE_DAYS_BEFORE = 14;
 
-// ─────── TVA (décision actée : 20 % pour Sociuly et les clubs) ───────
-// Les lignes de devis (QuoteLine.unitPriceCents) sont exprimées HT ; le TTC payé
-// par l'acheteur = HT × (1 + TVA_RATE). La commission Sociuly (6 % TTC) est, elle,
+/** Date limite de règlement du solde = date de l'événement − BALANCE_DUE_DAYS_BEFORE. */
+export function balanceDueDate(eventDate: Date): Date {
+  const due = new Date(eventDate);
+  due.setDate(due.getDate() - BALANCE_DUE_DAYS_BEFORE);
+  return due;
+}
+
+// ─────── TVA (décision §11 actée : selon Club.vatLiable) ───────
+// Les lignes de devis (QuoteLine.unitPriceCents) sont exprimées HT. La TVA n'est
+// due que si le club est assujetti (club_pro/sasp → vatLiable=true) ; les assos
+// loi 1901 en sont exonérées (vatLiable=false → taux 0). Le TTC payé par
+// l'acheteur = HT × (1 + tva effective). La commission Sociuly (6 % TTC) est, elle,
 // calculée UNIQUEMENT côté serveur (lib/booking/commission.ts) et jamais surfacée.
 export const VAT_RATE = 0.2;
+
+/** Taux de TVA effectif selon l'assujettissement du club (décision §11). */
+export function effectiveVatRate(vatLiable: boolean): number {
+  return vatLiable ? VAT_RATE : 0;
+}
 
 // ─────── Estimation indicative (TTC) avant devis ferme ───────
 // Teaser affiché dans le tunnel avant le devis contractuel ; basePriceCents /
