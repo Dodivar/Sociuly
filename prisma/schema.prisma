@@ -484,6 +484,13 @@ model Quote {
   location       ModuleLocation? // lieu d'exécution souhaité (réutilise l'enum module)
   serviceAddress String? // adresse si location = at_client
 
+  // Contact à l'origine de la demande (snapshot). Capté au formulaire public AVANT
+  // tout compte auth : le club doit pouvoir répondre même si l'Organization n'a pas
+  // encore de primaryContact (User). Prioritaire sur organization.primaryContact à l'affichage.
+  requesterName  String?
+  requesterEmail String?
+  requesterPhone String?
+
   // Montants (cents). TVA 20 % (décision produit). Commission Sociuly = feeAmount.
   amountHTCents  Int
   vatCents       Int
