@@ -2,11 +2,13 @@ import Link from "next/link";
 import { Icon } from "@/components/ds/icon";
 import { PanelCard } from "@/components/account/account-bits";
 import { QuoteRows } from "@/components/account/org-lists";
+import { currentOrgId } from "@/lib/account/org";
 import { getQuotesForOrg } from "@/lib/devis/quotes.server";
 
 // Devis de l'entreprise — /compte/devis (SPEC §6).
 export default async function CompteDevisPage() {
-  const quotes = await getQuotesForOrg();
+  const orgId = (await currentOrgId()) ?? undefined;
+  const quotes = await getQuotesForOrg(orgId);
 
   return (
     <PanelCard

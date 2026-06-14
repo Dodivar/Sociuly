@@ -2,15 +2,16 @@ import Link from "next/link";
 import { Icon } from "@/components/ds/icon";
 import { StatCard, PanelCard } from "@/components/account/account-bits";
 import { QuoteRows, BookingRows } from "@/components/account/org-lists";
-import { getOrgBookings, getOrganizationSummary } from "@/lib/account/org";
+import { currentOrgId, getOrgBookings, getOrganizationSummary } from "@/lib/account/org";
 import { getQuotesForOrg, eurWhole } from "@/lib/devis/quotes.server";
 
 // Vue d'ensemble de l'espace entreprise — /compte (SPEC §6).
 
 export default async function ComptePage() {
+  const orgId = (await currentOrgId()) ?? undefined;
   const [org, quotes, bookings] = await Promise.all([
     getOrganizationSummary(),
-    getQuotesForOrg(),
+    getQuotesForOrg(orgId),
     getOrgBookings(),
   ]);
 

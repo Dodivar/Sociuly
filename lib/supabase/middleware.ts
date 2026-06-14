@@ -10,7 +10,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { checkRouteAccess } from "@/lib/auth/access";
-import { roleContextFromUser } from "@/lib/auth/session";
+// Edge : on importe la lecture PURE des claims depuis `claims.ts` (jamais
+// `session.ts`, qui tire Prisma via la résolution DB — incompatible Edge).
+import { roleContextFromUser } from "@/lib/auth/claims";
 import { isSupabaseConfigured } from "./server";
 
 type CookieSet = { name: string; value: string; options: CookieOptions };

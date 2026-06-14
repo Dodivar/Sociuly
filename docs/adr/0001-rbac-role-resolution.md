@@ -1,6 +1,6 @@
 # ADR 0001 — Résolution de rôle & RBAC
 
-**Statut** : accepté (v1, partiellement stubbé)
+**Statut** : accepté (v1) — résolution DB autoritaire en place (maj 2026-06-14)
 **Date** : 2026-06-08
 **Périmètre** : SPEC §4 (rôles), §6 (routes & auth), CLAUDE.md §3/§8
 
@@ -21,33 +21,37 @@ Avant cette décision :
 
 ## Décisions
 
-### 1. Source du rôle — claims `app_metadata` du JWT (seam unique)
+### 1. Deux sources cohérentes — claims JWT (Edge) + lecture DB autoritaire (Node)
 
 Le rôle (`org_buyer | club_admin | sociuly_admin`) et les rattachements
-(`club_ids[]`, `organization_id`) sont lus depuis les claims **`app_metadata`**
-du JWT Supabase, via une fonction **pure** `roleContextFromUser()`
-(`lib/auth/session.ts`).
+(`club_ids[]`, `organization_id`) sont disponibles via deux chemins, par couche :
 
-Pourquoi `app_metadata` plutôt qu'une lecture DB :
+- **Middleware (Edge, chaque requête)** : `roleContextFromUser()` (pure, zéro I/O)
+  lit les claims **`app_metadata`** du JWT Supabase. Pas d'aller-retour DB
+  (Prisma incompatible Edge — cf. `.claude/rules/01-tech-stack.md`), barrage rapide.
+- **Serveur (layouts/gardes/actions, Node)** : `getSession()` lit la **base via
+  Prisma** (`lib/auth/resolve.server.ts`) — `User.role` + `User.organizationId`
+  + `ClubMember[].clubId`. C'est la **source de vérité autoritaire** : fraîche
+  même si le JWT est périmé (rattachement org récent, ajout multi-club avant
+  réémission du token). Import **dynamique** pour garder Prisma hors du graphe
+  Edge ; lecture **mémoïsée par requête** (`react/cache`).
 
-- Le **middleware tourne sur chaque requête** → un aller-retour DB par requête
-  serait coûteux. Les claims sont déjà dans le JWT (zéro I/O).
+Pourquoi conserver `app_metadata` :
+
 - `app_metadata` n'est **pas modifiable par l'utilisateur** (contrairement à
   `user_metadata`) → sûr pour porter une autorisation.
 - C'est la **fondation des policies RLS** (cf. décision 3) : les mêmes claims
   servent côté Postgres (`auth.jwt() -> 'app_metadata'`).
 
-**État actuel (« dev stub + clean seam »)** : tant que les tables Prisma et le
-trigger ne sont pas posés, les claims peuvent être vides → `role = null`
-(utilisateur authentifié mais sans accès aux espaces protégés). En dev sans
-Supabase configuré, `getSession()` renvoie une **session de démo** pilotable par
-`DEV_AUTH_ROLE` pour garder la maquette navigable.
+**Repli** : si la base est injoignable (build sans DB, incident transitoire),
+`getSession()` retombe sur les claims JWT — on ne verrouille pas un utilisateur
+légitime. En dev sans Supabase configuré, `getSession()` renvoie une **session de
+démo** pilotable par `DEV_AUTH_ROLE` pour garder la maquette navigable.
 
-> **TODO(prisma)** : une fois `User/ClubMember/Organization` créés, alimenter
-> `app_metadata` via le trigger `on_auth_user_created` (rôle initial) + un
-> **Access Token Hook** Supabase (rafraîchit `club_ids`/`organization_id` à
-> chaque émission de JWT). Aucun changement requis dans le middleware ni les
-> gardes.
+Alimentation des claims (production) : le trigger `on_auth_user_created` pose le
+rôle initial dans `app_metadata`, et l'**Access Token Hook**
+`custom_access_token_hook` rafraîchit `role`/`club_ids`/`organization_id` à chaque
+émission de JWT — cf. `prisma/manual/0001_extensions_rls_auth.sql` (§C, §E).
 
 ### 2. RBAC à deux niveaux
 
@@ -65,7 +69,7 @@ Matrice appliquée :
 |---|---|---|
 | `/admin/**` | `sociuly_admin` | — |
 | `/console/:clubId/**` | `club_admin` | `clubId ∈ session.clubIds` (ClubMember) |
-| `/compte`, `/devis`, `/reserver` | `org_buyer` | (à venir : scope `organizationId`) |
+| `/compte`, `/devis`, `/reserver` | `org_buyer` | scope `organizationId` (getters /compte + ownership `/devis/:ref`, anti-IDOR) |
 
 En **mode maquette** (Supabase non configuré), l'auth n'est pas appliquée :
 le middleware passe outre et les gardes sont permissives — la navigation des
@@ -109,8 +113,12 @@ transmis via `raw_user_meta_data` au moment du `signInWithOtp`/invitation.
 
 ## Fichiers
 
-- `lib/auth/session.ts` — types, `getSession()`, `roleContextFromUser()`, dev stub.
-- `lib/auth/rbac.ts` — `checkRouteAccess()`, `homePathForRole()`, gardes serveur.
-- `lib/supabase/middleware.ts` — gating après refresh de session.
+- `lib/auth/session.ts` — types, `getSession()` (résolution DB autoritaire + repli claims, mémoïsée), `roleContextFromUser()` (claims, Edge), dev stub.
+- `lib/auth/resolve.server.ts` — `resolveSessionFromDb()` : lecture Prisma `User.role` / `User.organizationId` / `ClubMember[].clubId` (server-only).
+- `lib/auth/access.ts` — `checkRouteAccess()`, `homePathForRole()` (pur, importé par le middleware Edge).
+- `lib/auth/rbac.ts` — gardes serveur `requireSession/requireRole/requireClubAccess`.
+- `lib/account/org.ts` — `currentOrgId()` : organisation de la session (scope /compte, /devis).
+- `lib/supabase/middleware.ts` — gating après refresh de session (claims JWT).
 - `app/auth/callback/route.ts` — redirection post-login par rôle.
-- `supabase/migrations/0001_auth_user_trigger.sql` — trigger + squelette RLS (à appliquer post-Prisma).
+- `prisma/manual/0001_extensions_rls_auth.sql` — **source unique** : pont Auth (§C), RLS (§D), Access Token Hook (§E). À appliquer post-migration (runbook `prisma/manual/README.md`).
+- `supabase/migrations/0001_auth_user_trigger.sql` — déprécié (pointeur vers le fichier canonique).

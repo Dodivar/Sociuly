@@ -108,10 +108,18 @@ export async function getQuotesForOrg(orgId?: string): Promise<Quote[]> {
   }, []);
 }
 
-/** Récupère un devis par son token opaque d'URL (/devis/[ref]). */
-export async function getQuoteByRef(ref: string): Promise<Quote | null> {
+/**
+ * Récupère un devis par son token opaque d'URL (/devis/[ref]).
+ * `orgId` (org_buyer connecté) restreint au devis appartenant à l'organisation —
+ * un devis d'une autre organisation renvoie `null` (→ notFound, anti-IDOR). Omis
+ * en mode maquette (pas de session réelle) pour garder la navigation ouverte.
+ */
+export async function getQuoteByRef(ref: string, orgId?: string): Promise<Quote | null> {
   return readForBuild<Quote | null>(async () => {
-    const q = await prisma.quote.findUnique({ where: { ref }, include: QUOTE_INCLUDE });
+    const q = await prisma.quote.findFirst({
+      where: { ref, ...(orgId ? { organizationId: orgId } : {}) },
+      include: QUOTE_INCLUDE,
+    });
     return q ? toQuoteView(q) : null;
   }, null);
 }

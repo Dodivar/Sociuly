@@ -3,22 +3,36 @@
 // L'espace regroupe devis, réservations, factures et équipe.
 // Montants en centimes (Int), jamais de float (SPEC §3).
 
+import { cache } from "react";
 import type { IconName } from "@/components/ds/icon";
+import { getSession } from "@/lib/auth/session";
 import { prisma, readForBuild } from "@/lib/prisma";
 import type { BookingStatus } from "@/lib/generated/prisma/enums";
 
-// Organisation de démonstration (fallback historique). En attendant le câblage de
-// la session, l'org courante = première organisation (cf. resolveOrg).
+// Organisation de démonstration (repli historique, mode maquette).
 export const DEMO_ORG_NAME = "Klaxoon SAS";
 
-// TODO(auth): remplacer par l'Organization de l'org_buyer authentifié (session Supabase).
-async function resolveOrg() {
-  // Build sans base / base injoignable (CI/preview) : aucune org → les getters /compte
-  // court-circuitent vers un repli vide, ce qui laisse le prérendu aboutir.
-  return readForBuild(
-    () => prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
-    null,
-  );
+// Organisation courante = celle de l'org_buyer authentifié (session.organizationId).
+// Repli sur la première organisation quand la session ne porte pas d'org réelle :
+//   • mode maquette / dev stub (organizationId factice « demo ») ;
+//   • build sans base / base injoignable (CI/preview) → null → repli vide.
+// Mémoïsé par requête : appelé par chaque getter de l'espace /compte.
+const resolveOrg = cache(async function resolveOrg() {
+  return readForBuild(async () => {
+    const session = await getSession();
+    if (session?.organizationId) {
+      const own = await prisma.organization.findUnique({
+        where: { id: session.organizationId },
+      });
+      if (own) return own;
+    }
+    return prisma.organization.findFirst({ orderBy: { createdAt: "asc" } });
+  }, null);
+});
+
+/** Identifiant de l'organisation courante (scope des getters /devis, /compte). `null` hors session/DB. */
+export async function currentOrgId(): Promise<string | null> {
+  return (await resolveOrg())?.id ?? null;
 }
 
 const SIZE_LABEL: Record<string, string> = {
