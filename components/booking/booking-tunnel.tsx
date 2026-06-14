@@ -14,9 +14,10 @@
 //  - validation par étape (date dispo, adresse si `at_client`, infos entreprise) ;
 //  - état persistant entre étapes (sessionStorage, clé dérivée de la réf.).
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { startDepositCheckout } from "@/lib/actions/payments";
 import { Btn, Card, Field, Input, Select, Stars, Textarea } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo } from "@/components/ds/patterns";
@@ -85,6 +86,8 @@ export function BookingTunnel({
   // Étape maximale atteinte → borne la navigation avant via le stepper.
   const [maxStep, setMaxStep] = useState<StepNumber>(1);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [paying, startPaying] = useTransition();
+  const [payError, setPayError] = useState<string | null>(null);
   // Numéro de réservation stable pour le placeholder de confirmation.
   const [bookingNumber] = useState(makeBookingNumber);
 
@@ -149,8 +152,21 @@ export function BookingTunnel({
     }
     setErrors({});
     if (step === LAST_TUNNEL_STEP) {
-      // CTA paiement — PLACEHOLDER : aucune charge Stripe ici (à brancher).
-      router.push(`/reserver/${encodeURIComponent(bookingNumber)}/confirmation`);
+      // Paiement de l'acompte. En mode verrouillé (devis accepté), `experience.ref`
+      // est le vrai bookingNumber → Stripe Checkout. Hors flux réel (estimation
+      // legacy), on retombe sur la confirmation placeholder.
+      if (!locked) {
+        router.push(`/reserver/${encodeURIComponent(bookingNumber)}/confirmation`);
+        return;
+      }
+      setPayError(null);
+      startPaying(async () => {
+        const res = await startDepositCheckout(experience.ref);
+        if (!res.ok) { setPayError(res.error); return; }
+        // URL Stripe (absolue) → redirection plein écran ; URL interne (dev) → router.
+        if (/^https?:\/\//.test(res.url)) window.location.href = res.url;
+        else router.push(res.url);
+      });
       return;
     }
     const next = (step + 1) as StepNumber;
@@ -267,9 +283,10 @@ export function BookingTunnel({
                   variant="primary"
                   size="lg"
                   onClick={goNext}
+                  disabled={paying}
                   icon={<Icon name="lock" size={15} color="#fff" />}
                 >
-                  Payer l&apos;acompte · {eurDecimal(deposit)}
+                  {paying ? "Redirection…" : <>Payer l&apos;acompte · {eurDecimal(deposit)}</>}
                 </Btn>
               ) : (
                 <Btn
@@ -281,6 +298,11 @@ export function BookingTunnel({
                 </Btn>
               )}
             </div>
+            {payError && (
+              <p className="sy-small" role="alert" style={{ marginTop: 12, color: "var(--danger)", textAlign: "right" }}>
+                {payError}
+              </p>
+            )}
           </Card>
         </div>
 
