@@ -469,7 +469,7 @@ async function main() {
   await prisma.invoice.upsert({
     where: { bookingId: b2.id },
     create: {
-      invoiceNumber: "F-2026-00001", bookingId: b2.id,
+      invoiceNumber: "FAC-2026-00001", bookingId: b2.id,
       amountHTCents: inv.ht, vatCents: inv.vat, amountTTCCents: inv.ttc,
     },
     update: {},

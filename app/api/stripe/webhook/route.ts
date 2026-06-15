@@ -7,6 +7,7 @@ import type Stripe from "stripe";
 
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { prisma } from "@/lib/prisma";
+import { issueInvoiceForBooking } from "@/lib/documents/invoice.server";
 
 export const runtime = "nodejs";
 // Le corps brut est requis pour vérifier la signature : pas de cache, pas de parsing.
@@ -62,10 +63,16 @@ async function onCheckoutCompleted(session: Stripe.Checkout.Session) {
   const from = kind === "deposit" ? "quote_accepted" : "deposit_paid";
   const to = kind === "deposit" ? "deposit_paid" : "confirmed";
 
-  await prisma.booking.updateMany({
+  const { count } = await prisma.booking.updateMany({
     where: { id: bookingId, status: from },
     data: { status: to },
   });
+
+  // Solde réglé → la réservation est confirmée : on émet la facture finale.
+  // Conditionné à `count > 0` : un rejeu Stripe (état déjà confirmé) ne régénère rien.
+  if (count > 0 && kind === "balance") {
+    await issueInvoiceForBooking(bookingId);
+  }
 }
 
 /** Onboarding Connect terminé → le club peut encaisser : on lève bankDetailsVerified. */

@@ -144,7 +144,7 @@ export type OrgInvoice = {
   dateLabel: string;
   amountTTCCents: number;
   status: OrgInvoiceStatus;
-  /** TODO(api): URL réelle du PDF (Supabase Storage / @react-pdf/renderer). */
+  /** Lien de téléchargement (route serveur qui sert le PDF depuis Supabase Storage). */
   pdfUrl: string;
 };
 
@@ -252,7 +252,8 @@ export async function getOrgInvoices(): Promise<OrgInvoice[]> {
     dateLabel: frShort(inv.createdAt),
     amountTTCCents: inv.amountTTCCents,
     status: PAID_BOOKING.has(inv.booking.status) ? "paid" : "pending",
-    pdfUrl: inv.pdfUrl ?? "#",
+    // Le PDF est servi (et régénéré si besoin) par la route dédiée, autorisée à l'org.
+    pdfUrl: `/compte/factures/${inv.id}/pdf`,
   }));
 }
 

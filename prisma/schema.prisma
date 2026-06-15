@@ -586,7 +586,10 @@ model Invoice {
   amountHTCents  Int
   vatCents       Int
   amountTTCCents Int
-  pdfUrl         String?
+  // Chemin interne du PDF dans le bucket Supabase Storage privé `invoices`
+  // (PDF généré via @react-pdf/renderer). L'URL publique n'est jamais stockée :
+  // elle est signée à la volée par la route de téléchargement (TTL court, §8).
+  pdfStoragePath String?
 
   createdAt DateTime @default(now())
 }
