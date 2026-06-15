@@ -172,8 +172,7 @@ export function InvoiceRows({ invoices, limit }: { invoices: OrgInvoice[]; limit
             </div>
             <div className="ol-amount">{eurWhole(inv.amountTTCCents)}</div>
             <div className="ol-action">
-              {/* TODO(api): PDF réel (@react-pdf/renderer + Supabase Storage). */}
-              <a href={inv.pdfUrl} className="sy-btn sy-btn-soft sy-btn-sm" aria-label={`Télécharger la facture ${inv.invoiceNumber}`}>
+              <a href={inv.pdfUrl} target="_blank" rel="noopener" className="sy-btn sy-btn-soft sy-btn-sm" aria-label={`Télécharger la facture ${inv.invoiceNumber}`}>
                 <Icon name="download" size={13} /> PDF
               </a>
             </div>
