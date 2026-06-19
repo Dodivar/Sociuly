@@ -10,6 +10,7 @@ import {
   filterAndSortClubs,
   DEFAULT_CLUB_FILTERS,
   SPORT_LABEL,
+  SPORT_ICON,
   type DiscoveryClub,
 } from "@/lib/clubs/discovery";
 import {
@@ -311,6 +312,7 @@ export default async function LandingPage() {
                 slug={c.slug}
                 initials={c.initials}
                 sportLabel={c.sport === "autre" ? c.typeLabel : SPORT_LABEL[c.sport]}
+                sportIcon={SPORT_ICON[c.sport]}
                 typeLabel={c.typeLabel}
                 city={c.cityRaw}
                 distanceKm={c.distanceKm}

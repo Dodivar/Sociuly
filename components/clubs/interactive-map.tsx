@@ -17,11 +17,12 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
 import Supercluster from "supercluster";
 import Link from "next/link";
+import { renderToStaticMarkup } from "react-dom/server";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ds/icon";
 import { Stars } from "@/components/ds/components";
 import { GRAND_EST_CENTER, GRAND_EST_ZOOM, MAP_STYLE_URL } from "@/lib/map";
-import { SPORT_LABEL, type DiscoveryClub } from "@/lib/clubs/discovery";
+import { SPORT_LABEL, SPORT_ICON, type DiscoveryClub } from "@/lib/clubs/discovery";
 
 type Props = {
   clubs: DiscoveryClub[];
@@ -110,15 +111,27 @@ export function InteractiveClubsMap({
     const pill = document.createElement("button");
     pill.type = "button";
     pill.className = "sy-num";
-    pill.textContent = club.initials;
     pill.setAttribute("aria-label", `${club.name} — ${SPORT_LABEL[club.sport]}`);
+
+    // Icône du sport (set Icon maison) à gauche des initiales. `currentColor`
+    // suit la couleur du pill, qui bascule au survol/sélection (styleMarkerPill).
+    const ic = document.createElement("span");
+    ic.setAttribute("aria-hidden", "true");
+    ic.style.display = "inline-flex";
+    ic.innerHTML = renderToStaticMarkup(
+      <Icon name={SPORT_ICON[club.sport]} size={14} color="currentColor" />,
+    );
+    const txt = document.createElement("span");
+    txt.textContent = club.initials;
+    pill.append(ic, txt);
     Object.assign(pill.style, {
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
+      gap: "5px",
       minWidth: "34px",
       height: "34px",
-      padding: "0 8px",
+      padding: "0 9px",
       borderRadius: "999px",
       fontFamily: "var(--display)",
       fontWeight: "700",
