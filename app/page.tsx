@@ -3,6 +3,7 @@ import { Btn, Card, Chip, Avatar, SearchBar } from "@/components/ds/components";
 import { Icon } from "@/components/ds/icon";
 import { Logo, ClubCard, ExperienceCard, SectionHeader, SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/landing/impact-map";
+import { PhotoCover } from "@/components/ds/photo-cover";
 import { getMarketplaceExperiences } from "@/lib/marketplace/experiences.server";
 import { getDiscoveryClubs } from "@/lib/clubs/discovery.server";
 import {
@@ -40,6 +41,29 @@ const HUE_BG: Record<string, string> = {
   yellow: "linear-gradient(160deg, #f1c14a 0%, #b8861a 100%)",
   green:  "linear-gradient(160deg, #1f4b3f 0%, #14332b 100%)",
   teal:   "linear-gradient(160deg, #2a6f5c 0%, #14332b 100%)",
+};
+
+// Photos d'illustration (sport collectif, groupes joyeux). Hotlink Unsplash —
+// licence libre, usage commercial sans attribution. Centralisées ici pour être
+// remplaçables facilement (ex. par des visuels self-hosted dans /public quand
+// disponibles). Le composant PhotoCover gère le fallback si une image échoue.
+const unsplash = (id: string, w: number) =>
+  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=70`;
+
+const HERO_PHOTOS = {
+  cohesion:   { id: "1552674605-db6ffd4facb5", alt: "Équipe sportive soudée lors d'un atelier de cohésion" },
+  initiation: { id: "1517649763962-0c623066013b", alt: "Initiation au football encadrée par un coach" },
+  matchVip:   { id: "1546483875-ad9014c88eba", alt: "Match de basket dans une salle, ambiance hospitalité VIP" },
+} as const;
+
+// Une photo par catégorie d'expérience (tuiles « Par type d'expérience »).
+const CATEGORY_PHOTOS: Record<string, { id: string; alt: string }> = {
+  cohesion:    { id: "1571019613454-1cb2f99b2d8b", alt: "Groupe souriant lors d'un atelier de cohésion d'équipe" },
+  initiation:  { id: "1535131749006-b7f58c99034b", alt: "Initiation sportive en groupe sur un terrain" },
+  tournoi:     { id: "1574629810360-7efbbe195018", alt: "Équipe motivée pendant un mini-tournoi" },
+  match_vip:   { id: "1505666287802-931dc83948e9", alt: "Tribune et terrain lors d'un match VIP" },
+  masterclass: { id: "1461896836934-ffe607ba8211", alt: "Sportifs à l'écoute d'un joueur professionnel" },
+  coulisses:   { id: "1543351611-58f69d7c1781", alt: "Moment convivial autour du sport, cocktail et coulisses" },
 };
 
 const REVIEWS = [
@@ -172,6 +196,7 @@ export default async function LandingPage() {
                 <path d="M0 240 Q 60 200 110 220 T 220 200 L 220 320 L 0 320 Z" fill="#e8623d" opacity="0.55" />
                 <path d="M0 280 Q 80 250 130 270 T 220 260 L 220 320 L 0 320 Z" fill="#14332b" />
               </svg>
+              <PhotoCover src={unsplash(HERO_PHOTOS.cohesion.id, 900)} alt={HERO_PHOTOS.cohesion.alt} priority />
               <span
                 className="sy-img-label"
                 style={{ position: "absolute", bottom: 16, left: 16, background: "rgba(252,249,241,.95)" }}
@@ -191,6 +216,7 @@ export default async function LandingPage() {
                 <circle cx="50" cy="50" r="22" fill="#fff" />
                 <path d="M30 80 L 70 80 M40 60 L 60 60" stroke="#fff" strokeWidth="3" />
               </svg>
+              <PhotoCover src={unsplash(HERO_PHOTOS.initiation.id, 600)} alt={HERO_PHOTOS.initiation.alt} />
               <span
                 className="sy-img-label"
                 style={{ position: "absolute", bottom: 12, left: 12, background: "rgba(252,249,241,.95)" }}
@@ -209,6 +235,7 @@ export default async function LandingPage() {
               <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.35 }}>
                 <path d="M0 70 L 30 50 L 60 65 L 100 40 L 100 100 L 0 100 Z" fill="#fff" />
               </svg>
+              <PhotoCover src={unsplash(HERO_PHOTOS.matchVip.id, 600)} alt={HERO_PHOTOS.matchVip.alt} />
               <span
                 className="sy-img-label"
                 style={{ position: "absolute", bottom: 12, left: 12, background: "rgba(252,249,241,.95)" }}
@@ -427,6 +454,13 @@ export default async function LandingPage() {
                     <circle cx="68" cy="32" r="18" fill="#fff" opacity="0.55" />
                     <path d="M0 70 Q 30 55 50 65 T 96 60 L 96 96 L 0 96 Z" fill="#fff" opacity="0.2" />
                   </svg>
+                  {CATEGORY_PHOTOS[c.id] && (
+                    <PhotoCover
+                      src={unsplash(CATEGORY_PHOTOS[c.id].id, 240)}
+                      alt={CATEGORY_PHOTOS[c.id].alt}
+                      scrim="none"
+                    />
+                  )}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1, minWidth: 0 }}>
                   <div>
