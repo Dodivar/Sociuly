@@ -20,8 +20,8 @@ import {
 } from "@/lib/marketplace/experiences";
 
 // Page marketing statique régénérée toutes les 5 min (ISR) : la carte d'impact
-// reflète le catalogue sans rendre la page dynamique à chaque requête. Le
-// catalogue lui-même est mis en cache (cf. getMarketplaceExperiences).
+// plote les clubs partenaires sans rendre la page dynamique à chaque requête.
+// L'annuaire club (et le catalogue) sont mis en cache (cf. getDiscoveryClubs).
 export const revalidate = 300;
 
 // `id` aligné sur les Category de la marketplace → lien `/experiences?cat=<id>`.
@@ -111,9 +111,9 @@ const FAQ = [
 ];
 
 export default async function LandingPage() {
-  // Mêmes expériences publiées que la page /experiences (catalogue Prisma + géo),
-  // affichées sur la carte d'impact ci-dessous. Si la base est indisponible, la
-  // page marketing reste affichée (carte sans pastilles) plutôt que de planter.
+  // Catalogue d'expériences publiées (mêmes fiches que /experiences) — alimente
+  // les sections « Expériences populaires » et les compteurs par catégorie. Si la
+  // base est indisponible, la page marketing reste affichée plutôt que de planter.
   let experiences: MarketplaceExperience[] = [];
   try {
     experiences = await getMarketplaceExperiences();
@@ -123,7 +123,8 @@ export default async function LandingPage() {
 
   // Découverte club-first (SPEC §6) : on met en avant de VRAIS clubs partenaires
   // (lien actif vers /clubs/[slug]) — surface de découverte principale. Tri par
-  // pertinence (note pondérée par les avis, puis nb d'expériences).
+  // pertinence (note pondérée par les avis, puis nb d'expériences). Ces clubs
+  // alimentent aussi la carte d'impact (plot des clubs, pas des expériences).
   let clubs: DiscoveryClub[] = [];
   try {
     clubs = await getDiscoveryClubs();
@@ -393,7 +394,7 @@ export default async function LandingPage() {
               </div>
             </div>
           </div>
-          <ImpactMap experiences={experiences} style={{ aspectRatio: "4/3" }} />
+          <ImpactMap clubs={clubs} style={{ aspectRatio: "4/3" }} />
         </div>
       </section>
 

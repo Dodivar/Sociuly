@@ -5,7 +5,8 @@ export type IconName =
   | "check" | "close" | "chevron" | "star" | "pin" | "calendar" | "user" | "users"
   | "flag" | "sparkle" | "euro" | "bolt" | "filter" | "menu" | "bell" | "chat"
   | "image" | "upload" | "settings" | "home" | "grid" | "trophy" | "leaf" | "coin"
-  | "download" | "info" | "eye" | "lock";
+  | "download" | "info" | "eye" | "lock"
+  | "football" | "rugby" | "handball" | "basket" | "tennis";
 
 type Props = {
   name: IconName;
@@ -53,6 +54,12 @@ const PATHS: Record<IconName, ReactElement> = {
   info:      <><circle cx="12" cy="12" r="9" /><path d="M12 8v.01M11 12h1v5h1" /></>,
   eye:       <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>,
   lock:      <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
+  // ─── Sports (dérivés de Club.federation) — même style trait que le reste du set ───
+  football:  <><circle cx="12" cy="12" r="9" /><path d="m12 7 3.4 2.5-1.3 4h-4.2L8.6 9.5 12 7Z" /><path d="M12 3v4M21 9.5l-5.6 1M18 19l-3.9-3M6 19l3.9-3M3 9.5l5.6 1" /></>,
+  basket:    <><circle cx="12" cy="12" r="9" /><path d="M12 3v18M3 12h18" /><path d="M5.6 5.6c4 4 4 8.8 0 12.8M18.4 5.6c-4 4-4 8.8 0 12.8" /></>,
+  rugby:     <><ellipse cx="12" cy="12" rx="9" ry="5.5" transform="rotate(-45 12 12)" /><path d="m8.5 15.5 7-7" /><path d="m10 14 1.4 1.4M12 12l1.4 1.4M14 10l1.4 1.4" /></>,
+  handball:  <><circle cx="12" cy="12" r="9" /><path d="M12 12V3M12 12l7.8 4.5M12 12 4.2 16.5" /></>,
+  tennis:    <><circle cx="12" cy="12" r="9" /><path d="M4.6 7c3.6 2.4 3.6 7.6 0 10M19.4 7c-3.6 2.4-3.6 7.6 0 10" /></>,
 };
 
 export function Icon({ name, size = 16, color = "currentColor", filled = false, style }: Props) {
