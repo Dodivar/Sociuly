@@ -29,6 +29,8 @@ export function ClubTabs({ clubName, experiences, projects, reviews, team, count
 
   return (
     <>
+      {/* Navigation de section : filet de séparation pleine largeur, barre transparente.
+          Le scroll horizontal préserve l'accès aux onglets sur mobile sans créer de cadre. */}
       <div
         style={{
           marginTop: 32,
@@ -37,17 +39,19 @@ export function ClubTabs({ clubName, experiences, projects, reviews, team, count
           WebkitOverflowScrolling: "touch",
         }}
       >
-        <Tabs
-          variant="underline"
-          active={active}
-          onChange={(id) => setActive(id as TabId)}
-          items={[
-            { id: "experiences", label: `Expériences · ${counts.experiences}` },
-            { id: "projets", label: `Projets · ${counts.projects}` },
-            { id: "avis", label: `Avis · ${counts.reviews}` },
-            { id: "team", label: "Équipe" },
-          ]}
-        />
+        <div style={{ display: "inline-block", minWidth: "100%" }}>
+          <Tabs
+            variant="underline"
+            active={active}
+            onChange={(id) => setActive(id as TabId)}
+            items={[
+              { id: "experiences", label: `Expériences · ${counts.experiences}` },
+              { id: "projets", label: `Projets · ${counts.projects}` },
+              { id: "avis", label: `Avis · ${counts.reviews}` },
+              { id: "team", label: "Équipe" },
+            ]}
+          />
+        </div>
       </div>
 
       <div style={{ marginTop: 20, paddingBottom: 48 }}>
