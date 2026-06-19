@@ -267,10 +267,66 @@ button { font-family: inherit; }
 .sy-topnav-nav { display: flex; align-items: center; gap: 36px; }
 .sy-topnav-actions { display: flex; gap: 10px; align-items: center; }
 
+/* Déclencheur burger : masqué au-dessus du breakpoint mobile. */
+.sy-mobilenav-trigger { display: none; }
+
 @media (max-width: 768px) {
   .sy-topnav { padding: 14px 16px; }
   .sy-topnav-tabs { display: none; }
   .sy-topnav-ghost-hide { display: none; }
+  .sy-mobilenav-trigger { display: inline-flex; }
+}
+
+/* ─────── MobileNav (burger + drawer) ─────── */
+.sy-mobilenav-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+  backdrop-filter: blur(2px);
+  display: flex; justify-content: flex-end;
+  animation: sy-mobilenav-fade 0.18s ease;
+}
+.sy-mobilenav-panel {
+  width: min(86vw, 360px); height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  animation: sy-mobilenav-slide 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow-y: auto;
+}
+.sy-mobilenav-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 8px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.sy-mobilenav-links { display: flex; flex-direction: column; }
+.sy-mobilenav-link {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 8px; min-height: 44px;
+  font-family: var(--display); font-weight: 600; font-size: 18px;
+  color: var(--ink); text-decoration: none;
+  border-radius: var(--radius-md);
+  border-bottom: 1px solid var(--line);
+}
+.sy-mobilenav-link:last-child { border-bottom: none; }
+.sy-mobilenav-link.on { color: var(--accent-deep); }
+.sy-mobilenav-link:hover { background: var(--surface-2); }
+.sy-mobilenav-actions {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: auto; padding-top: 16px;
+}
+
+@keyframes sy-mobilenav-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes sy-mobilenav-slide {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sy-mobilenav-overlay, .sy-mobilenav-panel { animation: none; }
 }
 
 /* ─────── SiteFooter ─────── */
