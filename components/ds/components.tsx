@@ -2,7 +2,7 @@
 
 import type {
   ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, KeyboardEvent,
-  ReactNode, RefObject, TextareaHTMLAttributes,
+  ReactNode, Ref, RefObject, TextareaHTMLAttributes,
 } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -51,7 +51,11 @@ export function Btn({
   );
 }
 
-type IconBtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { size?: "sm" | "md" };
+type IconBtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  size?: "sm" | "md";
+  /** React 19 : ref transmis comme prop classique (focus management). */
+  ref?: Ref<HTMLButtonElement>;
+};
 export function IconBtn({ size = "md", children, className, ...rest }: IconBtnProps) {
   const cls = cx(
     "sy-btn", "sy-btn-soft",

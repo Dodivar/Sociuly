@@ -4,6 +4,7 @@ import { CONSOLE_PUBLIC_LINK } from "@/lib/console/dev";
 import { Avatar, Btn, Card, Chip, Progress, Stars } from "./components";
 import { Icon } from "./icon";
 import { ImpactMini } from "./impact";
+import { MobileNav } from "./mobile-nav";
 import { TopNavTabs } from "./topnav-tabs";
 
 // ─────── ExperienceCard ───────
@@ -495,11 +496,13 @@ export function TopNav({
             <Link href="/inscription-club" style={{ textDecoration: "none" }} className="sy-topnav-ghost-hide">
               <Btn variant="ghost" size="sm">Inscrire mon club</Btn>
             </Link>
-            <Link href="/connexion" style={{ textDecoration: "none" }}>
+            <Link href="/connexion" style={{ textDecoration: "none" }} className="sy-topnav-ghost-hide">
               <Btn variant="dark" size="sm">Se connecter</Btn>
             </Link>
           </>
         )}
+        {/* Déclencheur burger + drawer : visible uniquement ≤768px (cf. globals.css). */}
+        <MobileNav items={TOPNAV_ITEMS} account={account} />
       </div>
     </nav>
   );
