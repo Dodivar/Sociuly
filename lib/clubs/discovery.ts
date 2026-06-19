@@ -8,6 +8,7 @@
 // expériences publiées du club. Montants en cents en base, exposés en euros ici.
 
 import type { ExperienceHue } from "@/components/ds/patterns";
+import type { IconName } from "@/components/ds/icon";
 import { type City } from "@/lib/marketplace/experiences";
 
 // ─────── Sport (dérivé de Club.federation, SPEC §3) ───────
@@ -29,6 +30,16 @@ export const SPORT_LABEL: Record<Sport, string> = {
   basket: "Basket",
   tennis: "Tennis",
   autre: "Autre",
+};
+
+/** Glyphe DS (set Icon maison) représentant chaque sport — `autre` retombe sur le trophée. */
+export const SPORT_ICON: Record<Sport, IconName> = {
+  football: "football",
+  rugby: "rugby",
+  handball: "handball",
+  basket: "basket",
+  tennis: "tennis",
+  autre: "trophy",
 };
 
 /** Mapping enum Prisma `Federation` → identifiant Sport. */

@@ -10,7 +10,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import type { MarketplaceExperience } from "@/lib/marketplace/experiences";
+import type { DiscoveryClub } from "@/lib/clubs/discovery";
 
 // Placeholder partagé : réserve la place (évite le layout shift via l'aspect-ratio
 // porté par le conteneur) avant ET pendant le chargement du chunk MapLibre.
@@ -35,10 +35,10 @@ const ImpactMapClient = dynamic(
 );
 
 export function ImpactMap({
-  experiences,
+  clubs,
   style,
 }: {
-  experiences: MarketplaceExperience[];
+  clubs: DiscoveryClub[];
   style?: CSSProperties;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -75,7 +75,7 @@ export function ImpactMap({
   return (
     <div ref={ref} style={{ position: "relative", ...style }}>
       {inView ? (
-        <ImpactMapClient experiences={experiences} style={{ position: "absolute", inset: 0 }} />
+        <ImpactMapClient clubs={clubs} style={{ position: "absolute", inset: 0 }} />
       ) : (
         <MapPlaceholder />
       )}

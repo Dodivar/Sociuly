@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { CONSOLE_PUBLIC_LINK } from "@/lib/console/dev";
 import { Avatar, Btn, Card, Chip, Progress, Stars } from "./components";
-import { Icon } from "./icon";
+import { Icon, type IconName } from "./icon";
 import { ImpactMini } from "./impact";
 import { MobileNav } from "./mobile-nav";
 import { TopNavTabs } from "./topnav-tabs";
@@ -157,6 +157,8 @@ export type ClubCardProps = {
   initials?: string;
   /** Sport dérivé de Club.federation (ex. « Basket »). */
   sportLabel: string;
+  /** Glyphe DS du sport, affiché à gauche du nom du club. */
+  sportIcon?: IconName;
   /** Type de club (« Club pro » / « Association »…). */
   typeLabel?: string;
   city: string;
@@ -182,6 +184,7 @@ export function ClubCard({
   slug = "sig-strasbourg",
   initials,
   sportLabel = "Basket",
+  sportIcon,
   typeLabel = "Club pro",
   city = "Strasbourg",
   distanceKm = 2,
@@ -261,8 +264,13 @@ export function ClubCard({
 
         <div style={{ padding: "30px 16px 16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-            <h3 className="sy-h3" style={{ flex: 1 }}>{name}</h3>
-            {typeLabel && <span className="sy-mono" style={{ fontSize: 10 }}>{typeLabel}</span>}
+            <h3 className="sy-h3" style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+              {sportIcon && (
+                <Icon name={sportIcon} size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+              )}
+              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+            </h3>
+            {typeLabel && <span className="sy-mono" style={{ fontSize: 10, flexShrink: 0 }}>{typeLabel}</span>}
           </div>
           <div className="sy-small sy-muted" style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <Icon name="pin" size={12} color="var(--ink-3)" />

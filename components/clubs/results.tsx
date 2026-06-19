@@ -13,7 +13,7 @@ import { Icon } from "@/components/ds/icon";
 import { ClubCard } from "@/components/ds/patterns";
 import { useMarketplaceView } from "@/components/marketplace/view-context";
 import { CITY_LABEL } from "@/lib/marketplace/experiences";
-import { SPORT_LABEL, type ClubFilters, type DiscoveryClub } from "@/lib/clubs/discovery";
+import { SPORT_LABEL, SPORT_ICON, type ClubFilters, type DiscoveryClub } from "@/lib/clubs/discovery";
 
 const PAGE_SIZE = 8;
 
@@ -103,6 +103,7 @@ export function ClubsResults({ clubs, filters }: Props) {
                     slug={c.slug}
                     initials={c.initials}
                     sportLabel={c.sport === "autre" ? c.typeLabel : SPORT_LABEL[c.sport]}
+                    sportIcon={SPORT_ICON[c.sport]}
                     typeLabel={c.typeLabel}
                     city={c.cityRaw}
                     distanceKm={c.distanceKm}

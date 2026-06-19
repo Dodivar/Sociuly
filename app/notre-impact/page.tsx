@@ -4,8 +4,8 @@ import { Btn, Card, Chip } from "@/components/ds/components";
 import { Icon, type IconName } from "@/components/ds/icon";
 import { SiteFooter, TopNav } from "@/components/ds/patterns";
 import { ImpactMap } from "@/components/landing/impact-map";
-import { getMarketplaceExperiences } from "@/lib/marketplace/experiences.server";
-import { type MarketplaceExperience } from "@/lib/marketplace/experiences";
+import { getDiscoveryClubs } from "@/lib/clubs/discovery.server";
+import { type DiscoveryClub } from "@/lib/clubs/discovery";
 
 // Page statique régénérée toutes les 5 min (ISR) ; catalogue mis en cache.
 export const revalidate = 300;
@@ -166,13 +166,13 @@ const METHODOLOGY: ReadonlyArray<{ t: string; d: string }> = [
 ];
 
 export default async function NotreImpactPage() {
-  // Mêmes expériences publiées que la page /experiences, affichées sur la carte.
+  // Clubs partenaires (découverte club-first, SPEC §6) plotés sur la carte.
   // Dégradation gracieuse si la base est indisponible (carte sans pastilles).
-  let experiences: MarketplaceExperience[] = [];
+  let clubs: DiscoveryClub[] = [];
   try {
-    experiences = await getMarketplaceExperiences();
+    clubs = await getDiscoveryClubs();
   } catch {
-    experiences = [];
+    clubs = [];
   }
 
   return (
@@ -279,7 +279,7 @@ export default async function NotreImpactPage() {
               </div>
             </div>
           </div>
-          <ImpactMap experiences={experiences} style={{ aspectRatio: "4/3" }} />
+          <ImpactMap clubs={clubs} style={{ aspectRatio: "4/3" }} />
         </div>
       </section>
 
