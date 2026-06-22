@@ -17,10 +17,12 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
 import Supercluster from "supercluster";
+import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { GRAND_EST_CENTER, GRAND_EST_ZOOM, MAP_STYLE_URL } from "@/lib/map";
 import { Icon } from "@/components/ds/icon";
+import { Stars } from "@/components/ds/components";
 import { SPORT_ICON, SPORT_LABEL, type DiscoveryClub } from "@/lib/clubs/discovery";
 
 // Config de regroupement — alignée sur la carte de découverte /clubs
@@ -40,16 +42,27 @@ type MarkerEntry =
   | { kind: "leaf"; marker: maplibregl.Marker }
   | { kind: "cluster"; marker: maplibregl.Marker };
 
-// Construit l'élément DOM d'une pastille « club » : icône du sport à gauche du nom,
-// lien vers la vitrine du club. `hot` met en avant le club focal (pastille orange + halo).
-function createPinElement(club: DiscoveryClub, hot: boolean): HTMLAnchorElement {
-  const link = document.createElement("a");
-  link.href = `/clubs/${club.slug}`;
+// Construit l'élément DOM d'une pastille « club » : icône du sport à gauche du nom.
+// Un clic OUVRE la mini-fiche du club (overlay React) — la navigation vers la
+// vitrine ne se fait qu'au second clic, depuis la fiche (cohérence avec la carte
+// de découverte /clubs, qui ne navigue jamais au premier clic). `hot` met en avant
+// le club focal (pastille orange + halo).
+function createPinElement(
+  club: DiscoveryClub,
+  hot: boolean,
+  onSelect: (id: string) => void,
+): HTMLButtonElement {
+  const link = document.createElement("button");
+  link.type = "button";
   link.className = "sy-impact-marker";
   link.setAttribute(
     "aria-label",
     `${club.name} — ${SPORT_LABEL[club.sport]}, ${club.cityRaw}`,
   );
+  link.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onSelect(club.id);
+  });
 
   const pin = document.createElement("span");
   pin.className = "sy-impact-pin";
@@ -128,6 +141,16 @@ export function ImpactMapClient({
   const syncRef = useRef<() => void>(() => {});
 
   const [ready, setReady] = useState(false);
+  // Club dont la mini-fiche est ouverte (overlay React positionné par projection).
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Ref « live » du sélecteur, lue par les handlers de pastilles construits hors
+  // cycle React (dans syncMarkers). Évite de recréer les markers à chaque sélection.
+  const onSelectRef = useRef<(id: string) => void>(() => {});
+  onSelectRef.current = (id: string) => setSelectedId((prev) => (prev === id ? null : id));
+  // Incrémenté à chaque déplacement : force le recalcul de la position de la fiche.
+  const [, setTick] = useState(0);
+
+  const selected = clubs.find((c) => c.id === selectedId) ?? null;
 
   // Construit l'élément DOM d'un cluster : clic → zoom sur l'emprise du cluster.
   function createClusterElement(lng: number, lat: number, count: number, clusterId: number): HTMLButtonElement {
@@ -209,7 +232,7 @@ export function ImpactMapClient({
         if (!store.has(key)) {
           const club = clubsRef.current.find((c) => c.id === clubId);
           if (!club) continue;
-          const el = createPinElement(club, club.id === hotIdRef.current);
+          const el = createPinElement(club, club.id === hotIdRef.current, onSelectRef.current);
           const marker = new maplibregl.Marker({ element: el, anchor: "center" })
             .setLngLat([lng, lat])
             .addTo(map);
@@ -256,6 +279,8 @@ export function ImpactMapClient({
     });
     // Repli aussi après un resize (MapLibre peut re-déplier l'attribution).
     map.on("resize", () => collapseAttribution(map));
+    // Suit le déplacement pour réancrer la mini-fiche ouverte sur sa pastille.
+    map.on("move", () => setTick((t) => t + 1));
     // Re-clusterise une fois le geste terminé (pattern Supercluster standard).
     map.on("moveend", () => syncRef.current());
 
@@ -291,6 +316,13 @@ export function ImpactMapClient({
   // Statistiques de l'encart, dérivées des clubs réellement affichés.
   const cityCount = new Set(clubs.map((c) => c.city)).size;
 
+  // Position écran de la mini-fiche : projection de la pastille du club sélectionné
+  // (recalculée à chaque `move` via setTick). null tant que la carte n'est pas prête.
+  const popupPoint =
+    selected && mapRef.current && ready
+      ? mapRef.current.project([selected.lng, selected.lat])
+      : null;
+
   return (
     <div
       style={{
@@ -302,7 +334,11 @@ export function ImpactMapClient({
 
       <style>{`
         @keyframes sy-ping { 0% { transform: scale(1); opacity: .6 } 100% { transform: scale(1.7); opacity: 0 } }
-        .sy-impact-marker { display: block; text-decoration: none; cursor: pointer; }
+        .sy-impact-marker {
+          display: block; text-decoration: none; cursor: pointer;
+          appearance: none; background: none; border: 0; padding: 0;
+          font: inherit; color: inherit;
+        }
         .sy-impact-marker:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; border-radius: 999px; }
         .sy-impact-pin {
           display: inline-flex; align-items: center; gap: 6px;
@@ -342,6 +378,85 @@ export function ImpactMapClient({
           .sy-impact-ping { animation: none; }
         }
       `}</style>
+
+      {/* Mini-fiche du club sélectionné (overlay React → DS conservé). Réutilise
+          le pattern de la carte de découverte /clubs : sport · type, nom, ville ·
+          distance, note + avis, expériences, puis CTA « Voir » → navigation. */}
+      {selected && popupPoint && (
+        <div
+          style={{
+            position: "absolute",
+            left: popupPoint.x,
+            top: popupPoint.y,
+            transform: "translate(-50%, calc(-100% - 24px))",
+            zIndex: 10,
+            width: 252,
+          }}
+        >
+          <div
+            className="sy-card sy-card-elevated"
+            style={{ padding: 12, borderRadius: "var(--radius-md)", position: "relative" }}
+          >
+            <button
+              type="button"
+              aria-label="Fermer"
+              onClick={() => setSelectedId(null)}
+              className="sy-btn sy-btn-soft sy-btn-icon-sm"
+              style={{ position: "absolute", top: 8, right: 8 }}
+            >
+              <Icon name="close" size={12} />
+            </button>
+            <div className="sy-mono" style={{ color: "var(--accent-deep)" }}>
+              {SPORT_LABEL[selected.sport]} · {selected.typeLabel}
+            </div>
+            <Link href={`/clubs/${selected.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="sy-h4" style={{ marginTop: 2, paddingRight: 20 }}>{selected.name}</div>
+            </Link>
+            <div
+              className="sy-small sy-muted"
+              style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
+            >
+              <Icon name="pin" size={12} color="var(--ink-3)" />
+              <span>{selected.cityRaw} · {selected.distanceKm} km</span>
+              {selected.reviews > 0 && (
+                <>
+                  <span>·</span>
+                  <Stars value={selected.rating} size={11} />
+                  <span className="sy-mono" style={{ fontSize: 10 }}>
+                    {selected.rating.toFixed(1)} ({selected.reviews})
+                  </span>
+                </>
+              )}
+            </div>
+            <div
+              style={{
+                marginTop: 10, display: "flex", alignItems: "center",
+                justifyContent: "space-between", gap: 8,
+              }}
+            >
+              <div className="sy-small" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <Icon name="sparkle" size={12} color="var(--accent-deep)" />
+                <span className="sy-h4">
+                  {selected.experienceCount} {selected.experienceCount > 1 ? "expériences" : "expérience"}
+                </span>
+              </div>
+              <Link href={`/clubs/${selected.slug}`} style={{ textDecoration: "none" }}>
+                <span className="sy-btn sy-btn-primary sy-btn-sm" style={{ borderRadius: 999 }}>
+                  Voir <Icon name="arrow" size={12} color="#fff" />
+                </span>
+              </Link>
+            </div>
+          </div>
+          {/* Pointe de la fiche */}
+          <div
+            style={{
+              position: "absolute", left: "50%", bottom: -7, transform: "translateX(-50%) rotate(45deg)",
+              width: 14, height: 14, background: "var(--surface)",
+              borderRight: "1px solid var(--line)", borderBottom: "1px solid var(--line)",
+            }}
+          />
+        </div>
+      )}
 
       {/* Encart « clubs près de vous » (superposé, conserve le DS) */}
       <div style={{ position: "absolute", left: 16, bottom: 16, right: 16, pointerEvents: "none" }}>
