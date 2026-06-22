@@ -5,17 +5,40 @@
 // partenaires (découverte club-first, SPEC §6 — la géo vit sur `Club.geo`), sous
 // forme de pastilles « nom du club » précédées d'une icône du sport, cliquables
 // vers la vitrine du club (/clubs/[slug]).
+// Anti-chevauchement : comme la carte de découverte /clubs, les clubs trop proches
+// au zoom courant sont REGROUPÉS via Supercluster en une pastille « compteur »
+// (navy, nombre de clubs). À fort zoom les clusters se défont et chaque club
+// retrouve sa pastille ; un clic sur un cluster zoome sur son emprise
+// (getClusterExpansionZoom). Même configuration que components/clubs/interactive-map.
 // Choix UX : le zoom à la molette est DÉSACTIVÉ (scrollZoom) pour ne pas capturer
 // le défilement de la page d'accueil — on garde le pan + les boutons +/−.
 // Lazy-loadée côté client uniquement (cf. impact-map.tsx → next/dynamic, ssr:false).
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
+import Supercluster from "supercluster";
 import { renderToStaticMarkup } from "react-dom/server";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { GRAND_EST_CENTER, GRAND_EST_ZOOM, MAP_STYLE_URL } from "@/lib/map";
 import { Icon } from "@/components/ds/icon";
 import { SPORT_ICON, SPORT_LABEL, type DiscoveryClub } from "@/lib/clubs/discovery";
+
+// Config de regroupement — alignée sur la carte de découverte /clubs
+// (components/clubs/interactive-map.tsx).
+// Zoom max auquel Supercluster regroupe encore : au-delà, chaque club est isolé.
+const CLUSTER_MAX_ZOOM = 16;
+// Rayon de regroupement (px) : assez large pour dégrouper les villes du Grand-Est,
+// assez serré pour séparer dès qu'on distingue les clubs.
+const CLUSTER_RADIUS = 56;
+
+// Propriétés portées par chaque point dans l'index Supercluster.
+type ClubPointProps = { clubId: string };
+
+// Une entrée du registre de markers : soit une pastille « club » (feuille), soit
+// un cluster. Les deux sont des markers MapLibre à élément DOM.
+type MarkerEntry =
+  | { kind: "leaf"; marker: maplibregl.Marker }
+  | { kind: "cluster"; marker: maplibregl.Marker };
 
 // Construit l'élément DOM d'une pastille « club » : icône du sport à gauche du nom,
 // lien vers la vitrine du club. `hot` met en avant le club focal (pastille orange + halo).
@@ -64,6 +87,25 @@ function createPinElement(club: DiscoveryClub, hot: boolean): HTMLAnchorElement 
   return link;
 }
 
+// Dimensionne un cluster selon le nombre de clubs regroupés (densité lisible d'un
+// coup d'œil) — palette DS « stade » (navy), compteur en blanc.
+function clusterDiameter(count: number): number {
+  if (count < 10) return 38;
+  if (count < 25) return 46;
+  return 54;
+}
+
+// Replie l'attribution OpenFreeMap : MapLibre l'affiche dépliée par défaut en mode
+// compact. On retire la classe/attribut d'ouverture pour ne montrer que le bouton ⓘ
+// (l'utilisateur peut toujours la déplier d'un clic).
+function collapseAttribution(map: maplibregl.Map) {
+  const el = map.getContainer().querySelector(".maplibregl-ctrl-attrib");
+  if (el) {
+    el.classList.remove("maplibregl-compact-show");
+    el.removeAttribute("open");
+  }
+}
+
 export function ImpactMapClient({
   clubs,
   style,
@@ -73,10 +115,120 @@ export function ImpactMapClient({
 }) {
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  // Index spatial Supercluster (reconstruit quand la liste de clubs change).
+  const superRef = useRef<Supercluster<ClubPointProps> | null>(null);
+  // Markers MapLibre visibles, indexés par clé (`leaf:<id>` ou `cluster:<id>`).
+  const markersRef = useRef<Map<string, MarkerEntry>>(new Map());
   // Conserve la dernière liste de clubs sans relancer l'init MapLibre.
   const clubsRef = useRef(clubs);
   clubsRef.current = clubs;
+  // Club focal (le plus d'expériences) — mis en avant en pastille orange + halo.
+  const hotIdRef = useRef<string | null>(null);
+  // Ref « live » lue par syncMarkers (appelé hors cycle React, sur moveend).
+  const syncRef = useRef<() => void>(() => {});
 
+  const [ready, setReady] = useState(false);
+
+  // Construit l'élément DOM d'un cluster : clic → zoom sur l'emprise du cluster.
+  function createClusterElement(lng: number, lat: number, count: number, clusterId: number): HTMLButtonElement {
+    const d = clusterDiameter(count);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sy-num sy-impact-cluster";
+    btn.textContent = String(count);
+    btn.setAttribute("aria-label", `${count} clubs regroupés — cliquer pour agrandir la zone`);
+    Object.assign(btn.style, {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: `${d}px`,
+      height: `${d}px`,
+      borderRadius: "999px",
+      background: "var(--primary)",
+      color: "#fff",
+      border: "2px solid var(--surface)",
+      fontFamily: "var(--display)",
+      fontWeight: "700",
+      fontSize: count < 100 ? "14px" : "12px",
+      fontVariationSettings: "var(--display-var)",
+      cursor: "pointer",
+      boxShadow: "0 6px 16px rgba(11,21,48,.28)",
+      transition: "transform .15s ease",
+      zIndex: "3",
+    } satisfies Partial<CSSStyleDeclaration>);
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const map = mapRef.current;
+      const index = superRef.current;
+      if (!map || !index) return;
+      const expansionZoom = index.getClusterExpansionZoom(clusterId);
+      // Garantit une progression visible même si l'expansion théorique est faible.
+      map.easeTo({
+        center: [lng, lat],
+        zoom: Math.max(expansionZoom, map.getZoom() + 0.8),
+        duration: 420,
+      });
+    });
+    return btn;
+  }
+
+  // Recalcule les clusters pour la fenêtre courante et réconcilie les markers.
+  // Appelée à l'init, sur `moveend`, et à chaque changement de la liste de clubs.
+  function syncMarkers() {
+    const map = mapRef.current;
+    const index = superRef.current;
+    if (!map || !index || !ready) return;
+
+    const b = map.getBounds();
+    const bbox: [number, number, number, number] = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+    const zoom = Math.round(map.getZoom());
+    const features = index.getClusters(bbox, zoom);
+
+    const store = markersRef.current;
+    const desired = new Set<string>();
+
+    for (const feature of features) {
+      const [lng, lat] = feature.geometry.coordinates;
+      const props = feature.properties;
+
+      if ("cluster" in props && props.cluster) {
+        const key = `cluster:${props.cluster_id}`;
+        desired.add(key);
+        if (!store.has(key)) {
+          const el = createClusterElement(lng, lat, props.point_count, props.cluster_id);
+          const marker = new maplibregl.Marker({ element: el, anchor: "center" })
+            .setLngLat([lng, lat])
+            .addTo(map);
+          store.set(key, { kind: "cluster", marker });
+        }
+      } else {
+        const clubId = (props as ClubPointProps).clubId;
+        const key = `leaf:${clubId}`;
+        desired.add(key);
+        if (!store.has(key)) {
+          const club = clubsRef.current.find((c) => c.id === clubId);
+          if (!club) continue;
+          const el = createPinElement(club, club.id === hotIdRef.current);
+          const marker = new maplibregl.Marker({ element: el, anchor: "center" })
+            .setLngLat([lng, lat])
+            .addTo(map);
+          store.set(key, { kind: "leaf", marker });
+        }
+      }
+    }
+
+    // Retire les markers qui ne sont plus dans la fenêtre / le niveau de zoom.
+    for (const [key, entry] of store) {
+      if (!desired.has(key)) {
+        entry.marker.remove();
+        store.delete(key);
+      }
+    }
+  }
+  syncRef.current = syncMarkers;
+
+  // ─── Init MapLibre (une seule fois) ───
   useEffect(() => {
     if (!mapNodeRef.current || mapRef.current) return;
 
@@ -94,23 +246,47 @@ export function ImpactMapClient({
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-    const list = clubsRef.current;
-    // Club focal = celui qui propose le plus d'expériences (point premium mis en avant).
-    const hotId = list.length
-      ? list.reduce((a, b) => (b.experienceCount > a.experienceCount ? b : a)).id
-      : null;
-
-    for (const club of list) {
-      new maplibregl.Marker({ element: createPinElement(club, club.id === hotId), anchor: "center" })
-        .setLngLat([club.lng, club.lat])
-        .addTo(map);
-    }
+    // Les pastilles/clusters sont des markers DOM positionnés par projection :
+    // `styledata` (style parsé) suffit à les projeter. setReady est idempotent.
+    map.once("styledata", () => setReady(true));
+    map.on("load", () => {
+      setReady(true);
+      // L'attribution compacte s'ouvre dépliée par défaut → on la replie.
+      collapseAttribution(map);
+    });
+    // Repli aussi après un resize (MapLibre peut re-déplier l'attribution).
+    map.on("resize", () => collapseAttribution(map));
+    // Re-clusterise une fois le geste terminé (pattern Supercluster standard).
+    map.on("moveend", () => syncRef.current());
 
     return () => {
       map.remove();
       mapRef.current = null;
+      markersRef.current.clear();
     };
   }, []);
+
+  // ─── (Re)construit l'index Supercluster et resynchronise les markers ───
+  // Déclenché quand la liste de clubs change ou dès que la carte est prête.
+  useEffect(() => {
+    if (!ready) return;
+    const list = clubs;
+    // Club focal = celui qui propose le plus d'expériences (point premium mis en avant).
+    hotIdRef.current = list.length
+      ? list.reduce((a, b) => (b.experienceCount > a.experienceCount ? b : a)).id
+      : null;
+
+    const points: Array<Supercluster.PointFeature<ClubPointProps>> = list.map((c) => ({
+      type: "Feature",
+      properties: { clubId: c.id },
+      geometry: { type: "Point", coordinates: [c.lng, c.lat] },
+    }));
+    superRef.current = new Supercluster<ClubPointProps>({
+      radius: CLUSTER_RADIUS,
+      maxZoom: CLUSTER_MAX_ZOOM,
+    }).load(points);
+    syncRef.current();
+  }, [clubs, ready]);
 
   // Statistiques de l'encart, dérivées des clubs réellement affichés.
   const cityCount = new Set(clubs.map((c) => c.city)).size;
@@ -140,6 +316,8 @@ export function ImpactMapClient({
         .sy-impact-pin-label { line-height: 1; }
         .sy-impact-marker:hover .sy-impact-pin,
         .sy-impact-marker:focus-visible .sy-impact-pin { transform: scale(1.08); }
+        .sy-impact-cluster:hover { transform: scale(1.08); }
+        .sy-impact-cluster:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
         .sy-impact-ping {
           position: absolute; inset: -6px; border-radius: 999px;
           border: 2px solid var(--accent); opacity: .4;
@@ -160,7 +338,7 @@ export function ImpactMapClient({
           opacity: 1; transform: translateX(-50%) translateY(0);
         }
         @media (prefers-reduced-motion: reduce) {
-          .sy-impact-pin, .sy-impact-tip { transition: none; }
+          .sy-impact-pin, .sy-impact-tip, .sy-impact-cluster { transition: none; }
           .sy-impact-ping { animation: none; }
         }
       `}</style>
